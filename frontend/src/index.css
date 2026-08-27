@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    /* Core Palette */
+    --color-ink: #1C1C1A;
+    --color-graphite: #2A2A28;
+    --color-ivory: #F7F5EF;
+    --color-white: #FFFFFF;
+
+    /* Jewellery Gold & Jewel Spectrum */
+    --color-gold-deep: #9A782F;
+    --color-gold-champagne: #C6A45C;
+    --color-gold-soft: #E9D9A8;
+    --color-champagne-light: #F4EEDC;
+    --color-sand: #ECE7D8;
+
+    /* Purple & Lavender Luxury Theme */
+    --color-purple: #7E22CE;
+    --color-purple-dark: #3B0764;
+    --color-lavender-bg: #F3E8FF;
+    --color-lavender-border: #D8B4FE;
+
+    /* Semantic & Supporting Luxury Tones */
+    --color-sage: #23815F;
+    --color-sage-bg: #E8F4EE;
+    --color-slate-blue: #536B8A;
+    --color-slate-bg: #EDF2F7;
+    --color-plum: #6B4657;
+    --color-plum-bg: #F5EDF1;
+    --color-terracotta: #B97855;
+    --color-terracotta-bg: #FAF1EC;
+
+    /* Surfaces & Borders */
+    --bg-page: #F6F3EC;
+    --bg-surface: #FFFFFF;
+    --border-main: #E4DFD4;
+    --border-gold: #DFCFA6;
+    --border-subtle: #EFECE3;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #F6F3EC;
+    background-image:
+      radial-gradient(circle at 85% 5%, rgba(126, 34, 206, 0.05), transparent 30%),
+      radial-gradient(circle at 15% 95%, rgba(184, 148, 61, 0.04), transparent 28%);
+    background-attachment: fixed;
+    color: #1D1D1B;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom luxury scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F7F5EF;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D5CFC2;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C0B9A8;
+}
+
+/* Shimmer animation for skeletons & luxury highlights */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes float-slow {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-5px) rotate(2deg);
+  }
+}
+
+@keyframes float-reverse {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(4px) rotate(-2deg);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.75;
+    transform: scale(1.05);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(198, 164, 92, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s infinite;
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #1C1C1A 0%, #9A782F 45%, #C6A45C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

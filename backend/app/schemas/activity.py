@@ -1,0 +1,174 @@
+from datetime import date, datetime
+from typing import Optional
+from pydantic import BaseModel, Field
+
+
+# ----------------------------------------------------
+# Customer Activity Schemas
+# ----------------------------------------------------
+class CustomerActivityCreate(BaseModel):
+    employee_id: int
+    customer_name: str = Field(..., min_length=2, max_length=150)
+    phone_number: str = Field(..., min_length=7, max_length=20)
+    activity_date: Optional[date] = None
+    status: str = Field(default="Attended", pattern="^(Attended|Closed|Follow-up|Lost)$")
+    notes: Optional[str] = None
+
+
+class CustomerActivityUpdate(BaseModel):
+    customer_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    activity_date: Optional[date] = None
+    status: Optional[str] = Field(default=None, pattern="^(Attended|Closed|Follow-up|Lost)$")
+    notes: Optional[str] = None
+
+
+class CustomerActivityResponse(BaseModel):
+    id: int
+    branch_id: int
+    employee_id: int
+    employee_name: Optional[str] = None
+    customer_name: str
+    phone_number: str
+    activity_date: date
+    status: str
+    notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ----------------------------------------------------
+# Scheme Record Schemas
+# ----------------------------------------------------
+class SchemeRecordCreate(BaseModel):
+    employee_id: int
+    customer_name: str = Field(..., min_length=2, max_length=150)
+    scheme_name: str = Field(..., min_length=2, max_length=150)
+    amount: float = Field(default=0.0, ge=0)
+    record_date: Optional[date] = None
+    notes: Optional[str] = None
+
+
+class SchemeRecordUpdate(BaseModel):
+    customer_name: Optional[str] = None
+    scheme_name: Optional[str] = None
+    amount: Optional[float] = Field(default=None, ge=0)
+    record_date: Optional[date] = None
+    notes: Optional[str] = None
+
+
+class SchemeRecordResponse(BaseModel):
+    id: int
+    branch_id: int
+    employee_id: int
+    employee_name: Optional[str] = None
+    customer_name: str
+    scheme_name: str
+    amount: float
+    record_date: date
+    notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ----------------------------------------------------
+# Employee Form Media Schemas
+# ----------------------------------------------------
+class FormMediaResponse(BaseModel):
+    id: int
+    branch_id: int
+    employee_id: int
+    employee_name: Optional[str] = None
+    form_type: str
+    file_path: str
+    file_url: str
+    mime_type: str
+    file_size: int
+    notes: Optional[str] = None
+    upload_date: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ----------------------------------------------------
+# Google Review Schemas
+# ----------------------------------------------------
+class GoogleReviewCreate(BaseModel):
+    customer_name: str = Field(..., min_length=2, max_length=150)
+    review_date: Optional[date] = None
+    rating: int = Field(default=5, ge=1, le=5)
+    review_text: str = Field(..., min_length=3)
+    employee_id: Optional[int] = None
+    notes: Optional[str] = None
+    screenshot_url: Optional[str] = None
+    status: str = Field(default="Published", pattern="^(Published|Pending|Verified)$")
+
+
+class GoogleReviewUpdate(BaseModel):
+    customer_name: Optional[str] = None
+    review_date: Optional[date] = None
+    rating: Optional[int] = Field(default=None, ge=1, le=5)
+    review_text: Optional[str] = None
+    employee_id: Optional[int] = None
+    notes: Optional[str] = None
+    screenshot_url: Optional[str] = None
+    status: Optional[str] = Field(default=None, pattern="^(Published|Pending|Verified)$")
+
+
+class GoogleReviewResponse(BaseModel):
+    id: int
+    branch_id: int
+    employee_id: Optional[int] = None
+    employee_name: Optional[str] = None
+    customer_name: str
+    review_date: date
+    rating: int
+    review_text: str
+    notes: Optional[str] = None
+    screenshot_url: Optional[str] = None
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ----------------------------------------------------
+# Attire Record Schemas
+# ----------------------------------------------------
+class AttireRecordCreate(BaseModel):
+    employee_id: int
+    check_date: Optional[date] = None
+    status: str = Field(default="Proper", pattern="^(Proper|Not Proper|Needs Attention)$")
+    notes: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class AttireRecordUpdate(BaseModel):
+    check_date: Optional[date] = None
+    status: Optional[str] = Field(default=None, pattern="^(Proper|Not Proper|Needs Attention)$")
+    notes: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class AttireRecordResponse(BaseModel):
+    id: int
+    branch_id: int
+    employee_id: int
+    employee_name: Optional[str] = None
+    check_date: date
+    status: str
+    notes: Optional[str] = None
+    image_url: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { SignOutConfirmModal } from '../auth/SignOutConfirmModal';
 import logoImg from '../../assets/siri samruddhi logo.png';
 
 interface SidebarProps {
@@ -25,6 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const [employeesOpen, setEmployeesOpen] = useState(
     location.pathname.startsWith('/employees')
   );
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   return (
     <aside className="w-64 bg-[#18181B] text-white flex flex-col h-full border-r border-[#27272A] select-none shadow-2xs">
@@ -215,7 +217,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             </div>
           </div>
           <button
-            onClick={logout}
+            onClick={() => setShowLogoutConfirm(true)}
             title="Sign out"
             className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-[#F87171] hover:bg-white/10 transition-colors cursor-pointer"
           >
@@ -223,6 +225,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           </button>
         </div>
       </div>
+
+      {/* Purple Theme Sign Out Confirmation Modal */}
+      <SignOutConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          logout();
+        }}
+      />
     </aside>
   );
 };

@@ -104,6 +104,11 @@ export const DashboardPage: React.FC = () => {
     day: 'numeric',
   });
 
+  const rawBranch = selectedBranch?.name || user?.branch_name || 'Yelahanka';
+  const branchDisplayName = rawBranch.toLowerCase().includes('branch')
+    ? rawBranch
+    : `${rawBranch} Branch`;
+
   // 7-day sparkline bar heights
   const sparklineDays = [
     { day: 'Mon', height: '40%' },
@@ -158,17 +163,14 @@ export const DashboardPage: React.FC = () => {
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3">
-            {/* Showroom Badge & Date */}
+            {/* Showroom Branch Badge & Date */}
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs font-bold text-[#1D1D1B] px-3 py-1 rounded-full bg-white border border-[#D8B4FE] flex items-center gap-2 shadow-2xs">
+              <span className="text-xs font-bold text-[#1D1D1B] px-3.5 py-1.5 rounded-full bg-white border border-[#D8B4FE] flex items-center gap-2 shadow-2xs">
                 <span className="w-2 h-2 rounded-full bg-[#7E22CE] animate-pulse" />
-                <span>{selectedBranch?.name || 'Yelahanka'} Showroom</span>
-                <span className="font-mono text-[10px] text-[#7E22CE] font-bold bg-[#FAF5FF] px-1.5 py-0.5 rounded-sm border border-[#D8B4FE]">
-                  [{selectedBranch?.code || user?.branch_code || 'YELAHANKA'}]
-                </span>
+                <span>{branchDisplayName}</span>
               </span>
 
-              <span className="text-xs font-semibold text-[#5E5A52] flex items-center gap-1.5 bg-white px-3 py-1 rounded-full border border-[#D8B4FE] shadow-2xs">
+              <span className="text-xs font-semibold text-[#5E5A52] flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-[#D8B4FE] shadow-2xs">
                 <Clock className="w-3.5 h-3.5 text-[#7E22CE]" />
                 <span>{todayFormatted}</span>
               </span>
@@ -180,7 +182,7 @@ export const DashboardPage: React.FC = () => {
                 Welcome back, <span className="text-[#7E22CE] font-extrabold">{user?.full_name || 'ADARSHA'}</span>
               </h1>
               <p className="text-xs sm:text-sm text-[#5E5A52] font-medium mt-1">
-                Showroom Operations & Luxury Jewellery Management Command Center for <span className="font-bold text-[#3B0764] underline decoration-[#7E22CE]/40 underline-offset-2">{selectedBranch?.name || 'Yelahanka'}</span> Branch
+                Showroom Operations & Luxury Jewellery Management Command Center for <span className="font-bold text-[#3B0764] underline decoration-[#7E22CE]/40 underline-offset-2">{branchDisplayName}</span>
               </p>
             </div>
           </div>

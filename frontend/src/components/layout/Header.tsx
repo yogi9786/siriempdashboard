@@ -6,7 +6,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { SignOutConfirmModal } from '../auth/SignOutConfirmModal';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -84,19 +84,14 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenMobileMenu }
         </div>
       </header>
 
-      {/* Logout Confirmation */}
-      <ConfirmDialog
+      {/* Purple Theme Sign Out Confirmation Modal */}
+      <SignOutConfirmModal
         isOpen={showLogoutConfirm}
-        title="Sign Out"
-        message="Are you sure you want to end your manager session for this showroom?"
-        confirmText="Sign Out"
-        cancelText="Cancel"
-        variant="danger"
+        onClose={() => setShowLogoutConfirm(false)}
         onConfirm={() => {
           setShowLogoutConfirm(false);
           logout();
         }}
-        onClose={() => setShowLogoutConfirm(false)}
       />
     </>
   );

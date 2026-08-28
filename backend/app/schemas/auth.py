@@ -11,6 +11,7 @@ class LoginRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
     expires_in: int
     user_id: int
@@ -18,6 +19,7 @@ class TokenResponse(BaseModel):
     full_name: str
     email: Optional[str] = None
     role: str
+    user_type: Optional[str] = None
     branch_id: int
     branch_code: str
     branch_name: str

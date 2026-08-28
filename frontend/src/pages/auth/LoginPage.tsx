@@ -86,23 +86,14 @@ export const LoginPage: React.FC = () => {
     fetchBranches();
   }, []);
 
-  const handleBranchSelect = async (branchCode: string) => {
-    setSelectedBranchCode(branchCode);
+  const handleBranchSelect = (branchCode: string) => {
+    const cleanCode = branchCode.toUpperCase();
+    setSelectedBranchCode(cleanCode);
     setErrorMessage('');
     setPassword('');
 
-    try {
-      const res = await api.get<ManagerPublicOption[]>(`/api/v1/auth/branches/${branchCode}/managers`);
-      if (res.data && res.data.length > 0) {
-        setManagers(res.data);
-        setSelectedManagerUsername(res.data[0].username);
-        return;
-      }
-    } catch (err) {
-      console.warn('Falling back to loaded branches cache');
-    }
-
-    const targetBranch = branches.find((b) => b.code === branchCode);
+    // INSTANT ZERO-LATENCY SWITCH: Immediately populate managers from already-cached branches list
+    const targetBranch = branches.find((b) => b.code.toUpperCase() === cleanCode);
     if (targetBranch && targetBranch.managers && targetBranch.managers.length > 0) {
       setManagers(targetBranch.managers);
       setSelectedManagerUsername(targetBranch.managers[0].username);
@@ -110,6 +101,22 @@ export const LoginPage: React.FC = () => {
       setManagers([]);
       setSelectedManagerUsername('');
     }
+
+    // Non-blocking background sync from .env endpoint
+    api.get<ManagerPublicOption[]>(`/api/v1/auth/branches/${cleanCode}/managers`)
+      .then((res) => {
+        if (res.data && res.data.length > 0) {
+          setManagers(res.data);
+          // Preserve selection if valid or default to first
+          setSelectedManagerUsername((curr) => {
+            const exists = res.data.some((m) => m.username === curr);
+            return exists ? curr : res.data[0].username;
+          });
+        }
+      })
+      .catch(() => {
+        // Handled silently since local state is already applied
+      });
   };
 
   const handleManagerChange = (username: string) => {

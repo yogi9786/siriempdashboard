@@ -34,22 +34,37 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle auth expiration & formatted errors
+// Response Interceptor: Handle auth expiration, notifications & formatted errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
       const status = error.response.status;
+      const data = error.response.data;
+      const errorMsg =
+        typeof data?.detail === 'string'
+          ? data.detail
+          : typeof data?.message === 'string'
+          ? data.message
+          : 'An unexpected server error occurred.';
 
       if (status === 401) {
         // Clear expired token and redirect to login if not already on login or root
         const pathname = window.location.pathname;
-        if (pathname !== '/login' && pathname !== '/') {
+        if (pathname !== '/login' && pathname !== '/' && !pathname.startsWith('/admin/login')) {
           localStorage.removeItem('siri_auth_token');
           localStorage.removeItem('siri_auth_user');
           window.location.href = '/login';
         }
+      } else if (status >= 400 && status !== 404 && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('api:error', { detail: { message: errorMsg } }));
       }
+    } else if (error.request && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('api:error', {
+          detail: { message: 'Unable to connect to backend server. Please verify backend is running.' },
+        })
+      );
     }
     return Promise.reject(error);
   }

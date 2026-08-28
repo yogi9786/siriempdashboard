@@ -7,8 +7,10 @@ interface AuthContextType {
   token: string | null;
   selectedBranch: Branch | null;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
   isLoading: boolean;
   login: (username: string, password: string, branchCode?: string, rememberMe?: boolean) => Promise<boolean>;
+  loginAdmin: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
   setSelectedBranch: (branch: Branch | null) => void;
@@ -88,31 +90,98 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const loginAdmin = async (
+    username: string,
+    password: string,
+    rememberMe = false
+  ): Promise<boolean> => {
+    try {
+      const response = await api.post('/api/v1/admin/auth/login', {
+        username: username.trim(),
+        password: password.trim(),
+        branch_code: 'ALL',
+        remember_me: rememberMe,
+      });
+
+      const data = response.data;
+      const userProfile: User = {
+        id: data.user_id,
+        username: data.username,
+        full_name: data.full_name,
+        email: data.email,
+        role: "SUPER_ADMIN",
+        branch_id: 0,
+        branch_code: "ALL",
+        branch_name: "All Branches (Enterprise)",
+        is_active: true,
+      };
+
+      const branchObj: Branch = {
+        id: 0,
+        code: 'ALL',
+        name: 'All Branches',
+        city: 'All Locations',
+        is_active: true,
+      };
+
+      setToken(data.access_token);
+      setUser(userProfile);
+      setSelectedBranch(branchObj);
+
+      localStorage.setItem('siri_auth_token', data.access_token);
+      if (data.refresh_token) {
+        localStorage.setItem('siri_admin_refresh_token', data.refresh_token);
+      }
+      localStorage.setItem('siri_auth_user', JSON.stringify(userProfile));
+      localStorage.setItem('siri_selected_branch', JSON.stringify(branchObj));
+
+      return true;
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   const logout = () => {
     try {
-      api.post('/api/v1/auth/logout').catch(() => {});
+      if (user?.role === 'SUPER_ADMIN') {
+        api.post('/api/v1/admin/auth/logout').catch(() => {});
+      } else {
+        api.post('/api/v1/auth/logout').catch(() => {});
+      }
     } catch {}
     setToken(null);
     setUser(null);
     localStorage.removeItem('siri_auth_token');
+    localStorage.removeItem('siri_admin_refresh_token');
     localStorage.removeItem('siri_auth_user');
   };
 
   const refreshProfile = async () => {
     if (!token) return;
     try {
-      const res = await api.get<User>('/api/v1/auth/me');
+      const endpoint = user?.role === 'SUPER_ADMIN' ? '/api/v1/admin/auth/me' : '/api/v1/auth/me';
+      const res = await api.get<User>(endpoint);
       setUser(res.data);
-      const branchObj: Branch = {
-        id: res.data.branch_id,
-        code: res.data.branch_code,
-        name: res.data.branch_name,
-        city: res.data.branch_name,
-        is_active: true,
-      };
-      setSelectedBranch(branchObj);
+      if (res.data.role === 'SUPER_ADMIN') {
+        const branchObj: Branch = {
+          id: 0,
+          code: 'ALL',
+          name: 'All Branches',
+          city: 'All Locations',
+          is_active: true,
+        };
+        setSelectedBranch(branchObj);
+      } else {
+        const branchObj: Branch = {
+          id: res.data.branch_id,
+          code: res.data.branch_code,
+          name: res.data.branch_name,
+          city: res.data.branch_name,
+          is_active: true,
+        };
+        setSelectedBranch(branchObj);
+      }
       localStorage.setItem('siri_auth_user', JSON.stringify(res.data));
-      localStorage.setItem('siri_selected_branch', JSON.stringify(branchObj));
     } catch (err) {
       logout();
     }
@@ -121,18 +190,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const verifyInitialAuth = async () => {
       const storedToken = localStorage.getItem('siri_auth_token');
+      const savedUser = localStorage.getItem('siri_auth_user');
       if (storedToken) {
         try {
-          const res = await api.get<User>('/api/v1/auth/me');
+          const parsed = savedUser ? JSON.parse(savedUser) : null;
+          const endpoint = parsed?.role === 'SUPER_ADMIN' ? '/api/v1/admin/auth/me' : '/api/v1/auth/me';
+          const res = await api.get<User>(endpoint);
           setUser(res.data);
-          const branchObj: Branch = {
-            id: res.data.branch_id,
-            code: res.data.branch_code,
-            name: res.data.branch_name,
-            city: res.data.branch_name,
-            is_active: true,
-          };
-          setSelectedBranch(branchObj);
+          if (res.data.role === 'SUPER_ADMIN') {
+            const branchObj: Branch = {
+              id: 0,
+              code: 'ALL',
+              name: 'All Branches',
+              city: 'All Locations',
+              is_active: true,
+            };
+            setSelectedBranch(branchObj);
+          } else {
+            const branchObj: Branch = {
+              id: res.data.branch_id,
+              code: res.data.branch_code,
+              name: res.data.branch_name,
+              city: res.data.branch_name,
+              is_active: true,
+            };
+            setSelectedBranch(branchObj);
+          }
         } catch {
           logout();
         }
@@ -150,8 +233,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         token,
         selectedBranch,
         isAuthenticated: !!token && !!user,
+        isSuperAdmin: user?.role === 'SUPER_ADMIN',
         isLoading,
         login,
+        loginAdmin,
         logout,
         refreshProfile,
         setSelectedBranch,

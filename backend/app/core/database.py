@@ -66,18 +66,26 @@ def auto_migrate_db_schema():
     inspector = inspect(engine)
 
     with engine.connect() as conn:
-        # If SQLite, check if users.email has NOT NULL constraint and fix it
+        # If SQLite, check if users.branch_id or users.email has NOT NULL constraint and fix it
         if engine.dialect.name == "sqlite" and "users" in inspector.get_table_names():
             try:
                 user_cols = inspector.get_columns("users")
+                branch_col = next((c for c in user_cols if c['name'].lower() == 'branch_id'), None)
                 email_col = next((c for c in user_cols if c['name'].lower() == 'email'), None)
+                
+                needs_fix = False
+                if branch_col and not branch_col.get('nullable', True):
+                    needs_fix = True
                 if email_col and not email_col.get('nullable', True):
-                    logger.info("Fixing SQLite users.email NOT NULL constraint...")
+                    needs_fix = True
+
+                if needs_fix:
+                    logger.info("Fixing SQLite users table constraints (making branch_id & email nullable)...")
                     conn.execute(text("PRAGMA foreign_keys = OFF"))
                     conn.execute(text("""
                         CREATE TABLE IF NOT EXISTS users_temp_fix (
                             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                            branch_id INTEGER NOT NULL,
+                            branch_id INTEGER,
                             email VARCHAR(100),
                             username VARCHAR(100) NOT NULL,
                             hashed_password VARCHAR(255) NOT NULL,
@@ -102,7 +110,7 @@ def auto_migrate_db_schema():
                     conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_id ON users (id)"))
                     conn.execute(text("PRAGMA foreign_keys = ON"))
                     conn.commit()
-                    logger.info("Successfully made users.email nullable in SQLite.")
+                    logger.info("Successfully updated users table in SQLite (branch_id & email nullable).")
             except Exception as e:
                 logger.warning(f"Note on SQLite users schema fix: {e}")
 
@@ -125,5 +133,8 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

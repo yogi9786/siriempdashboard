@@ -26,6 +26,10 @@ def seed_database():
     db = SessionLocal()
 
     try:
+        # Enforce Zero-DB Admin Principle: Purge any legacy super admin database rows
+        db.query(User).filter(User.role == "SUPER_ADMIN").delete()
+        db.commit()
+
         print("[SEED] Starting database seeding for 3 branches, 9 managers & 57 employees...")
 
         branches_data = [

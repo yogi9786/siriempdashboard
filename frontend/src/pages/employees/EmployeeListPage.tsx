@@ -344,8 +344,8 @@ export const EmployeeListPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 font-mono text-xs">
-                        <span className="px-2.5 py-1 rounded-md bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] font-bold shadow-2xs">
+                      <td className="px-3 sm:px-5 py-4 font-mono text-xs whitespace-nowrap">
+                        <span className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] font-bold text-[10px] sm:text-xs shadow-2xs whitespace-nowrap inline-flex items-center shrink-0">
                           {emp.employee_code}
                         </span>
                       </td>

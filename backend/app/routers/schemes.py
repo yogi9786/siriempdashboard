@@ -55,7 +55,8 @@ def list_schemes(
             branch_id=r.branch_id,
             employee_id=r.employee_id,
             employee_name=emp_name,
-            customer_name=r.customer_name,
+            customers_count=getattr(r, 'customers_count', 1) or 1,
+            customer_name=r.customer_name or "Customer",
             scheme_name=r.scheme_name,
             amount=r.amount,
             record_date=r.record_date,
@@ -87,7 +88,8 @@ def create_scheme(
     record = SchemeRecord(
         branch_id=current_user.branch_id,
         employee_id=employee.id,
-        customer_name=scheme_data.customer_name.strip(),
+        customers_count=scheme_data.customers_count or 1,
+        customer_name=(scheme_data.customer_name or "Customer").strip(),
         scheme_name=scheme_data.scheme_name.strip(),
         amount=scheme_data.amount or 0.0,
         record_date=scheme_data.record_date or date.today(),
@@ -102,6 +104,7 @@ def create_scheme(
         branch_id=record.branch_id,
         employee_id=record.employee_id,
         employee_name=employee.full_name,
+        customers_count=record.customers_count,
         customer_name=record.customer_name,
         scheme_name=record.scheme_name,
         amount=record.amount,
@@ -113,6 +116,7 @@ def create_scheme(
 
 
 @router.put("/{record_id}", response_model=SchemeRecordResponse, summary="Update a scheme record")
+@router.patch("/{record_id}", response_model=SchemeRecordResponse, summary="Patch a scheme record")
 def update_scheme(
     record_id: int,
     update_data: SchemeRecordUpdate,
@@ -131,6 +135,8 @@ def update_scheme(
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scheme record not found.")
 
+    if update_data.customers_count is not None:
+        record.customers_count = update_data.customers_count
     if update_data.customer_name is not None:
         record.customer_name = update_data.customer_name.strip()
     if update_data.scheme_name is not None:
@@ -151,6 +157,7 @@ def update_scheme(
         branch_id=record.branch_id,
         employee_id=record.employee_id,
         employee_name=emp_name,
+        customers_count=getattr(record, 'customers_count', 1) or 1,
         customer_name=record.customer_name,
         scheme_name=record.scheme_name,
         amount=record.amount,

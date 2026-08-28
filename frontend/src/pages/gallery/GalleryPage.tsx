@@ -22,6 +22,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { FormMedia, Employee } from '../../types';
 import api from '../../api/client';
+import { getMediaUrl } from '../../utils/media';
 
 export const GalleryPage: React.FC = () => {
   const { user, selectedBranch } = useAuth();
@@ -97,6 +98,14 @@ export const GalleryPage: React.FC = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      const maxBytes = 2.5 * 1024 * 1024; // 2.5 MB
+      if (file.size > maxBytes) {
+        toastError('Image size exceeds 2.5 MB limit. Please select or capture an image under 2.5 MB.');
+        e.target.value = '';
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        return;
+      }
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
@@ -106,6 +115,12 @@ export const GalleryPage: React.FC = () => {
     e.preventDefault();
     if (!uploadEmployeeId || !selectedFile) {
       toastError('Please select a staff member and choose/capture an image.');
+      return;
+    }
+
+    const maxBytes = 2.5 * 1024 * 1024;
+    if (selectedFile.size > maxBytes) {
+      toastError('File size exceeds 2.5 MB. Please choose a smaller image.');
       return;
     }
 
@@ -262,7 +277,7 @@ export const GalleryPage: React.FC = () => {
             >
               <div className="aspect-4/3 bg-[#FAF8F3] overflow-hidden relative">
                 <img
-                  src={m.file_url}
+                  src={getMediaUrl(m.file_url)}
                   alt={m.form_type}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
@@ -296,7 +311,7 @@ export const GalleryPage: React.FC = () => {
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
         title="Upload Daily Closing Form"
-        subtitle="Capture or select closing sheets and verification forms"
+        subtitle="Capture or select closing sheets and verification forms (Single image under 2.5 MB)"
         footer={
           <>
             <button
@@ -340,7 +355,10 @@ export const GalleryPage: React.FC = () => {
           />
 
           <div>
-            <label className="block text-xs font-semibold text-[#1D1D1B] mb-1.5">Capture / Choose Image *</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-[#1D1D1B]">Capture / Choose Image *</label>
+              <span className="text-[10px] font-bold text-[#B97855] bg-[#FAF1EC] px-2 py-0.5 rounded-md">Max 2.5 MB</span>
+            </div>
             <input
               type="file"
               accept="image/*"
@@ -386,7 +404,7 @@ export const GalleryPage: React.FC = () => {
           onClick={() => setViewImageModalUrl(null)}
         >
           <div className="relative max-w-3xl max-h-[90vh] bg-white rounded-3xl overflow-hidden shadow-2xl p-3 border border-[#ECCFC0]" onClick={(e) => e.stopPropagation()}>
-            <img src={viewImageModalUrl} alt="Full size" className="max-h-[80vh] w-auto mx-auto object-contain rounded-2xl" />
+            <img src={getMediaUrl(viewImageModalUrl)} alt="Full size" className="max-h-[80vh] w-auto mx-auto object-contain rounded-2xl" />
             <div className="p-3 text-right">
               <button
                 onClick={() => setViewImageModalUrl(null)}

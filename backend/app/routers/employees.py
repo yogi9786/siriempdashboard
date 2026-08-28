@@ -127,21 +127,27 @@ def get_employee(
         )
 
     # Calculate real statistics from database records
-    customers_attended = db.query(CustomerActivity).filter(
+    all_cust = db.query(CustomerActivity).filter(
         CustomerActivity.employee_id == employee.id,
         CustomerActivity.branch_id == current_user.branch_id,
-    ).count()
+    ).all()
+    customers_attended = sum(c.customers_count or 1 for c in all_cust)
 
-    customers_closed = db.query(CustomerActivity).filter(
-        CustomerActivity.employee_id == employee.id,
-        CustomerActivity.branch_id == current_user.branch_id,
-        CustomerActivity.status == "Closed",
-    ).count()
+    def get_closed_count(c: CustomerActivity) -> int:
+        if c.breakdown:
+            parts = c.breakdown.split('|')
+            closed_parts = [p for p in parts if ": closed" in p.lower() or p.strip().lower() == "closed"]
+            if closed_parts:
+                return len(closed_parts)
+        return c.customers_count or 1 if c.status == "Closed" else 0
 
-    schemes_closed = db.query(SchemeRecord).filter(
+    customers_closed = sum(get_closed_count(c) for c in all_cust)
+
+    schemes = db.query(SchemeRecord).filter(
         SchemeRecord.employee_id == employee.id,
         SchemeRecord.branch_id == current_user.branch_id,
-    ).count()
+    ).all()
+    schemes_closed = sum(s.customers_count or 1 for s in schemes)
 
     form_media_count = db.query(EmployeeFormMedia).filter(
         EmployeeFormMedia.employee_id == employee.id,
@@ -157,8 +163,8 @@ def get_employee(
         GoogleReview.employee_id == employee.id,
         GoogleReview.branch_id == current_user.branch_id,
     ).all()
-    google_reviews_count = len(reviews)
-    average_rating = round(sum(r.rating for r in reviews) / google_reviews_count, 1) if google_reviews_count > 0 else 0.0
+    google_reviews_count = sum(r.customers_count or 1 for r in reviews)
+    average_rating = round(sum(r.rating for r in reviews) / len(reviews), 1) if len(reviews) > 0 else 0.0
 
     return EmployeeDetailResponse(
         id=employee.id,

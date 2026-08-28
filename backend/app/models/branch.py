@@ -41,12 +41,12 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    branch_id = Column(Integer, ForeignKey("branches.id"), index=True, nullable=False)
+    branch_id = Column(Integer, ForeignKey("branches.id"), index=True, nullable=True)  # Nullable for SUPER_ADMIN
     email = Column(String(100), unique=True, index=True, nullable=True)
     username = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(100), nullable=False)
-    role = Column(String(50), default="MANAGER", nullable=False)  # MANAGER
+    role = Column(String(50), default="MANAGER", nullable=False)  # SUPER_ADMIN, MANAGER
     is_active = Column(Boolean, default=True, nullable=False)
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utcnow, nullable=False)

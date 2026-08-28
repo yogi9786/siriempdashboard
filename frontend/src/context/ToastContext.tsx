@@ -40,6 +40,17 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const info = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
   const warning = useCallback((msg: string) => showToast(msg, 'warning'), [showToast]);
 
+  React.useEffect(() => {
+    const handleApiError = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message: string }>;
+      if (customEvent.detail?.message) {
+        showToast(customEvent.detail.message, 'error');
+      }
+    };
+    window.addEventListener('api:error', handleApiError);
+    return () => window.removeEventListener('api:error', handleApiError);
+  }, [showToast]);
+
   return (
     <ToastContext.Provider value={{ showToast, success, error, info, warning }}>
       {children}

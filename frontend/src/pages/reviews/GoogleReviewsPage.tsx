@@ -5,6 +5,7 @@ import {
   Search,
   Filter,
   Trash2,
+  Edit2,
   Image as ImageIcon,
   User,
   Calendar,
@@ -38,6 +39,7 @@ export const GoogleReviewsPage: React.FC = () => {
 
   // Add Review Modal State
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [customersCount, setCustomersCount] = useState<number>(1);
   const [customerName, setCustomerName] = useState<string>('');
   const [reviewDate, setReviewDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [rating, setRating] = useState<number>(5);
@@ -49,6 +51,23 @@ export const GoogleReviewsPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Edit Review Modal State
+  const [editingReview, setEditingReview] = useState<GoogleReview | null>(null);
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+
+  const openEditReview = (rev: GoogleReview) => {
+    setEditingReview(rev);
+    setCustomersCount(rev.customers_count || 1);
+    setCustomerName(rev.customer_name || '');
+    setReviewDate(rev.review_date);
+    setRating(rev.rating);
+    setReviewText(rev.review_text);
+    setSelectedEmployeeId(rev.employee_id ? rev.employee_id.toString() : '');
+    setNotes(rev.notes || '');
+    setStatusVal(rev.status || 'Published');
+    setShowEditModal(true);
+  };
 
   // Image Preview Modal
   const [viewImageModalUrl, setViewImageModalUrl] = useState<string | null>(null);
@@ -107,8 +126,8 @@ export const GoogleReviewsPage: React.FC = () => {
 
   const handleCreateReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim() || !reviewText.trim()) {
-      toastError('Please provide customer name and review text.');
+    if (!reviewText.trim()) {
+      toastError('Please provide review text.');
       return;
     }
 
@@ -126,7 +145,8 @@ export const GoogleReviewsPage: React.FC = () => {
       }
 
       await api.post('/api/v1/google-reviews', {
-        customer_name: customerName.trim(),
+        customer_name: customerName.trim() || `Customer Review (${customersCount})`,
+        customers_count: customersCount,
         rating,
         review_date: reviewDate,
         review_text: reviewText.trim(),
@@ -138,6 +158,7 @@ export const GoogleReviewsPage: React.FC = () => {
 
       success('Google review recorded.');
       setShowAddModal(false);
+      setCustomersCount(1);
       setCustomerName('');
       setReviewText('');
       setNotes('');
@@ -147,6 +168,37 @@ export const GoogleReviewsPage: React.FC = () => {
       fetchReviews();
     } catch (err: any) {
       toastError(err.response?.data?.detail || 'Failed to record Google review.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReview || !reviewText.trim()) {
+      toastError('Please provide review text.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await api.patch(`/api/v1/google-reviews/${editingReview.id}`, {
+        customer_name: customerName.trim() || `Customer Review (${customersCount})`,
+        customers_count: customersCount,
+        rating,
+        review_date: reviewDate,
+        review_text: reviewText.trim(),
+        employee_id: selectedEmployeeId ? parseInt(selectedEmployeeId) : null,
+        notes: notes.trim() || null,
+        status: statusVal,
+      });
+
+      success('Google review updated successfully.');
+      setShowEditModal(false);
+      setEditingReview(null);
+      fetchReviews();
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to update Google review.');
     } finally {
       setIsSubmitting(false);
     }
@@ -292,12 +344,22 @@ export const GoogleReviewsPage: React.FC = () => {
                       <Star key={i} className="w-4 h-4 fill-[#C9A227]" />
                     ))}
                   </div>
-                  <button
-                    onClick={() => setDeleteTarget(rev)}
-                    className="text-[#A3A3A3] hover:text-[#C24141] p-1 rounded-md hover:bg-[#FDECEC] transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEditReview(rev)}
+                      className="text-[#737373] hover:text-[#536B8A] p-1 rounded-md hover:bg-[#F0F4F8] transition-colors"
+                      title="Edit Review"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(rev)}
+                      className="text-[#A3A3A3] hover:text-[#C24141] p-1 rounded-md hover:bg-[#FDECEC] transition-colors"
+                      title="Delete Review"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <p className="text-xs text-[#171717] font-medium italic leading-relaxed">
@@ -307,7 +369,12 @@ export const GoogleReviewsPage: React.FC = () => {
 
               <div className="pt-3 border-t border-[#F0EFEA] flex items-center justify-between text-xs">
                 <div>
-                  <p className="font-bold text-[#171717]">{rev.customer_name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-[#171717]">{rev.customer_name}</p>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#F0F4F8] text-[#536B8A] font-bold">
+                      {rev.customers_count || 1} Cust
+                    </span>
+                  </div>
                   <p className="text-[10px] text-[#737373]">
                     Staff: {rev.employee_name || 'Showroom Floor'}
                   </p>
@@ -337,16 +404,37 @@ export const GoogleReviewsPage: React.FC = () => {
         }
       >
         <form onSubmit={handleCreateReview} className="space-y-4">
-          <Input
-            label="Customer Name *"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="e.g. Ananya Sharma"
-            required
-            autoFocus
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Number of Customers *"
+              value={customersCount.toString()}
+              onChange={(e) => setCustomersCount(parseInt(e.target.value))}
+              options={Array.from({ length: 10 }, (_, i) => ({
+                value: (i + 1).toString(),
+                label: `${i + 1} Customer${i > 0 ? 's' : ''}`,
+              }))}
+            />
+
+            <Select
+              label="Star Rating *"
+              value={rating.toString()}
+              onChange={(e) => setRating(parseInt(e.target.value))}
+              options={[
+                { value: '5', label: '⭐⭐⭐⭐⭐ 5 Stars (Excellent)' },
+                { value: '4', label: '⭐⭐⭐⭐ 4 Stars (Good)' },
+                { value: '3', label: '⭐⭐⭐ 3 Stars (Average)' },
+              ]}
+            />
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Customer Name (Optional)"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="e.g. Ananya Sharma"
+            />
+
             <Select
               label="Staff Member (Optional)"
               value={selectedEmployeeId}
@@ -359,6 +447,81 @@ export const GoogleReviewsPage: React.FC = () => {
                 })),
               ]}
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Review Date"
+              type="date"
+              value={reviewDate}
+              onChange={(e) => setReviewDate(e.target.value)}
+            />
+            <Select
+              label="Status"
+              value={statusVal}
+              onChange={(e) => setStatusVal(e.target.value)}
+              options={[
+                { value: 'Published', label: 'Published on Google' },
+                { value: 'Verified', label: 'Verified by Manager' },
+              ]}
+            />
+          </div>
+
+          <Input
+            label="Review Text *"
+            value={reviewText}
+            onChange={(e) => setReviewText(e.target.value)}
+            placeholder="e.g. Excellent collection and helpful showroom executives!"
+            required
+          />
+
+          <Input
+            label="Manager Notes (Optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Remarks or customer feedback"
+          />
+        </form>
+      </Modal>
+
+      {/* Modal: Edit Review */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingReview(null);
+        }}
+        title="Edit Google Customer Review"
+        subtitle="Update review text, rating, or customer details"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowEditModal(false);
+                setEditingReview(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleUpdateReview} isLoading={isSubmitting}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleUpdateReview} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Number of Customers *"
+              value={customersCount.toString()}
+              onChange={(e) => setCustomersCount(parseInt(e.target.value))}
+              options={Array.from({ length: 10 }, (_, i) => ({
+                value: (i + 1).toString(),
+                label: `${i + 1} Customer${i > 0 ? 's' : ''}`,
+              }))}
+            />
 
             <Select
               label="Star Rating *"
@@ -368,6 +531,28 @@ export const GoogleReviewsPage: React.FC = () => {
                 { value: '5', label: '⭐⭐⭐⭐⭐ 5 Stars (Excellent)' },
                 { value: '4', label: '⭐⭐⭐⭐ 4 Stars (Good)' },
                 { value: '3', label: '⭐⭐⭐ 3 Stars (Average)' },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Customer Name (Optional)"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="e.g. Ananya Sharma"
+            />
+
+            <Select
+              label="Staff Member (Optional)"
+              value={selectedEmployeeId}
+              onChange={(e) => setSelectedEmployeeId(e.target.value)}
+              options={[
+                { value: '', label: 'General Showroom Review' },
+                ...employees.map((emp) => ({
+                  value: emp.id.toString(),
+                  label: emp.full_name,
+                })),
               ]}
             />
           </div>

@@ -59,8 +59,10 @@ def list_customer_activities(
             branch_id=r.branch_id,
             employee_id=r.employee_id,
             employee_name=emp_name,
-            customer_name=r.customer_name,
-            phone_number=r.phone_number,
+            customers_count=getattr(r, 'customers_count', 1) or 1,
+            breakdown=getattr(r, 'breakdown', None),
+            customer_name=r.customer_name or "Customer Interaction",
+            phone_number=r.phone_number or "",
             activity_date=r.activity_date,
             status=r.status,
             notes=r.notes,
@@ -92,8 +94,10 @@ def create_customer_activity(
     record = CustomerActivity(
         branch_id=current_user.branch_id,
         employee_id=employee.id,
-        customer_name=activity_data.customer_name.strip(),
-        phone_number=activity_data.phone_number.strip(),
+        customers_count=activity_data.customers_count or 1,
+        breakdown=activity_data.breakdown,
+        customer_name=(activity_data.customer_name or "Customer Interaction").strip(),
+        phone_number=(activity_data.phone_number or "").strip(),
         activity_date=activity_data.activity_date or date.today(),
         status=activity_data.status or "Attended",
         notes=activity_data.notes,
@@ -107,6 +111,8 @@ def create_customer_activity(
         branch_id=record.branch_id,
         employee_id=record.employee_id,
         employee_name=employee.full_name,
+        customers_count=record.customers_count,
+        breakdown=record.breakdown,
         customer_name=record.customer_name,
         phone_number=record.phone_number,
         activity_date=record.activity_date,
@@ -118,6 +124,7 @@ def create_customer_activity(
 
 
 @router.put("/{record_id}", response_model=CustomerActivityResponse, summary="Update a customer activity record")
+@router.patch("/{record_id}", response_model=CustomerActivityResponse, summary="Patch a customer activity record")
 def update_customer_activity(
     record_id: int,
     update_data: CustomerActivityUpdate,
@@ -136,6 +143,10 @@ def update_customer_activity(
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer activity record not found.")
 
+    if update_data.customers_count is not None:
+        record.customers_count = update_data.customers_count
+    if update_data.breakdown is not None:
+        record.breakdown = update_data.breakdown
     if update_data.customer_name is not None:
         record.customer_name = update_data.customer_name.strip()
     if update_data.phone_number is not None:
@@ -156,6 +167,8 @@ def update_customer_activity(
         branch_id=record.branch_id,
         employee_id=record.employee_id,
         employee_name=emp_name,
+        customers_count=getattr(record, 'customers_count', 1) or 1,
+        breakdown=getattr(record, 'breakdown', None),
         customer_name=record.customer_name,
         phone_number=record.phone_number,
         activity_date=record.activity_date,

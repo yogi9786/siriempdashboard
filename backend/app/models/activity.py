@@ -15,10 +15,12 @@ class CustomerActivity(Base):
     id = Column(Integer, primary_key=True, index=True)
     branch_id = Column(Integer, ForeignKey("branches.id"), index=True, nullable=False)
     employee_id = Column(Integer, ForeignKey("employees.id"), index=True, nullable=False)
-    customer_name = Column(String(150), nullable=False)
-    phone_number = Column(String(20), nullable=False)
+    customer_name = Column(String(150), default="Customer Walk-in", nullable=True)
+    phone_number = Column(String(50), default="", nullable=True)
+    customers_count = Column(Integer, default=1, nullable=False)
+    breakdown = Column(Text, nullable=True)  # JSON or text of per-customer status
     activity_date = Column(Date, default=date.today, index=True, nullable=False)
-    status = Column(String(50), default="Attended", nullable=False)  # Attended, Closed, Follow-up, Lost
+    status = Column(String(100), default="Attended", nullable=False)  # Attended, Closed, In Hold Jewellery, Follow Up Needed
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utcnow, nullable=False)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
@@ -39,7 +41,8 @@ class SchemeRecord(Base):
     id = Column(Integer, primary_key=True, index=True)
     branch_id = Column(Integer, ForeignKey("branches.id"), index=True, nullable=False)
     employee_id = Column(Integer, ForeignKey("employees.id"), index=True, nullable=False)
-    customer_name = Column(String(150), nullable=False)
+    customer_name = Column(String(150), default="Customer", nullable=True)
+    customers_count = Column(Integer, default=1, nullable=False)
     scheme_name = Column(String(150), nullable=False)
     amount = Column(Float, default=0.0, nullable=False)
     record_date = Column(Date, default=date.today, index=True, nullable=False)
@@ -80,7 +83,8 @@ class GoogleReview(Base):
     id = Column(Integer, primary_key=True, index=True)
     branch_id = Column(Integer, ForeignKey("branches.id"), index=True, nullable=False)
     employee_id = Column(Integer, ForeignKey("employees.id"), index=True, nullable=True)
-    customer_name = Column(String(150), nullable=False)
+    customer_name = Column(String(150), default="Google Customer", nullable=True)
+    customers_count = Column(Integer, default=1, nullable=False)
     review_date = Column(Date, default=date.today, index=True, nullable=False)
     rating = Column(Integer, default=5, nullable=False)  # 1 to 5
     review_text = Column(Text, nullable=False)

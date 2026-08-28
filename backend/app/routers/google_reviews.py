@@ -57,7 +57,8 @@ def list_google_reviews(
             branch_id=r.branch_id,
             employee_id=r.employee_id,
             employee_name=emp_name,
-            customer_name=r.customer_name,
+            customers_count=getattr(r, 'customers_count', 1) or 1,
+            customer_name=r.customer_name or "Google Customer",
             review_date=r.review_date,
             rating=r.rating,
             review_text=r.review_text,
@@ -93,7 +94,8 @@ def create_google_review(
     record = GoogleReview(
         branch_id=current_user.branch_id,
         employee_id=review_data.employee_id,
-        customer_name=review_data.customer_name.strip(),
+        customers_count=review_data.customers_count or 1,
+        customer_name=(review_data.customer_name or "Google Customer").strip(),
         review_date=review_data.review_date or date.today(),
         rating=review_data.rating,
         review_text=review_data.review_text.strip(),
@@ -110,6 +112,7 @@ def create_google_review(
         branch_id=record.branch_id,
         employee_id=record.employee_id,
         employee_name=emp_name,
+        customers_count=record.customers_count,
         customer_name=record.customer_name,
         review_date=record.review_date,
         rating=record.rating,
@@ -122,6 +125,7 @@ def create_google_review(
 
 
 @router.put("/{record_id}", response_model=GoogleReviewResponse, summary="Update Google review")
+@router.patch("/{record_id}", response_model=GoogleReviewResponse, summary="Patch Google review")
 def update_google_review(
     record_id: int,
     update_data: GoogleReviewUpdate,
@@ -142,11 +146,16 @@ def update_google_review(
                 Employee.branch_id == current_user.branch_id,
             ).first()
             if not employee:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found in your showroom branch.")
-            record.employee_id = employee.id
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Employee not found in your branch.",
+                )
+            record.employee_id = update_data.employee_id
         else:
             record.employee_id = None
 
+    if update_data.customers_count is not None:
+        record.customers_count = update_data.customers_count
     if update_data.customer_name is not None:
         record.customer_name = update_data.customer_name.strip()
     if update_data.review_date is not None:
@@ -171,6 +180,7 @@ def update_google_review(
         branch_id=record.branch_id,
         employee_id=record.employee_id,
         employee_name=emp_name,
+        customers_count=getattr(record, 'customers_count', 1) or 1,
         customer_name=record.customer_name,
         review_date=record.review_date,
         rating=record.rating,

@@ -10,7 +10,7 @@ from backend.app.core.database import get_db
 from backend.app.models.branch import User
 from backend.app.models.employee import Employee
 from backend.app.models.activity import EmployeeFormMedia
-from backend.app.schemas.activity import FormMediaResponse
+from backend.app.schemas.activity import FormMediaResponse, FormMediaUpdate
 from backend.app.dependencies.auth import get_current_manager
 
 router = APIRouter(prefix="/api/v1", tags=["Forms & Gallery"])
@@ -55,16 +55,16 @@ async def upload_form_media(
             detail=f"Invalid file type '{file.content_type}'. Only JPEG, PNG, and WebP images are permitted.",
         )
 
-    # 3. Validate file size and read content
+    # 3. Validate file size and read content (Max 2.5 MB)
     ensure_media_dir()
     contents = await file.read()
     file_size = len(contents)
-    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    max_bytes = int(2.5 * 1024 * 1024)  # 2.5 MB (2,621,440 bytes)
 
     if file_size > max_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File exceeds maximum allowed size of {settings.MAX_UPLOAD_SIZE_MB}MB.",
+            detail="File size exceeds maximum allowed limit of 2.5 MB. Please select or capture an image under 2.5 MB.",
         )
 
     if file_size == 0:
@@ -172,7 +172,56 @@ def get_gallery_media(
     return result
 
 
+@router.put("/gallery/{media_id}", response_model=FormMediaResponse, summary="Update form media item")
+@router.patch("/gallery/{media_id}", response_model=FormMediaResponse, summary="Patch form media item")
+@router.put("/forms/{media_id}", response_model=FormMediaResponse, summary="Update form media item")
+@router.patch("/forms/{media_id}", response_model=FormMediaResponse, summary="Patch form media item")
+def update_gallery_media(
+    media_id: int,
+    update_data: FormMediaUpdate,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    media = (
+        db.query(EmployeeFormMedia)
+        .join(Employee, EmployeeFormMedia.employee_id == Employee.id)
+        .filter(
+            EmployeeFormMedia.id == media_id,
+            EmployeeFormMedia.branch_id == current_user.branch_id,
+        )
+        .first()
+    )
+
+    if not media:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media item not found.")
+
+    if update_data.form_type is not None:
+        media.form_type = update_data.form_type.strip()
+    if update_data.notes is not None:
+        media.notes = update_data.notes.strip() if update_data.notes else None
+
+    db.commit()
+    db.refresh(media)
+
+    emp_name = media.employee.full_name if media.employee else None
+    return FormMediaResponse(
+        id=media.id,
+        branch_id=media.branch_id,
+        employee_id=media.employee_id,
+        employee_name=emp_name,
+        form_type=media.form_type,
+        file_path=media.file_path,
+        file_url=media.file_url,
+        mime_type=media.mime_type,
+        file_size=media.file_size,
+        notes=media.notes,
+        upload_date=media.upload_date,
+        created_at=media.created_at,
+    )
+
+
 @router.delete("/gallery/{media_id}", status_code=status.HTTP_200_OK, summary="Delete form media item")
+@router.delete("/forms/{media_id}", status_code=status.HTTP_200_OK, summary="Delete form media item")
 def delete_gallery_media(
     media_id: int,
     current_user: User = Depends(get_current_manager),

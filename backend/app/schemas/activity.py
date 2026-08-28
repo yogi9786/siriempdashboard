@@ -8,18 +8,22 @@ from pydantic import BaseModel, Field
 # ----------------------------------------------------
 class CustomerActivityCreate(BaseModel):
     employee_id: int
-    customer_name: str = Field(..., min_length=2, max_length=150)
-    phone_number: str = Field(..., min_length=7, max_length=20)
+    customers_count: int = Field(default=1, ge=1)
+    customer_name: Optional[str] = "Customer Interaction"
+    phone_number: Optional[str] = ""
     activity_date: Optional[date] = None
-    status: str = Field(default="Attended", pattern="^(Attended|Closed|Follow-up|Lost)$")
+    status: str = Field(default="Attended")  # Attended, Closed, In Hold Jewellery, Follow Up Needed
+    breakdown: Optional[str] = None
     notes: Optional[str] = None
 
 
 class CustomerActivityUpdate(BaseModel):
+    customers_count: Optional[int] = Field(default=None, ge=1)
     customer_name: Optional[str] = None
     phone_number: Optional[str] = None
     activity_date: Optional[date] = None
-    status: Optional[str] = Field(default=None, pattern="^(Attended|Closed|Follow-up|Lost)$")
+    status: Optional[str] = None
+    breakdown: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -28,8 +32,10 @@ class CustomerActivityResponse(BaseModel):
     branch_id: int
     employee_id: int
     employee_name: Optional[str] = None
-    customer_name: str
-    phone_number: str
+    customers_count: int = 1
+    breakdown: Optional[str] = None
+    customer_name: Optional[str] = "Customer Interaction"
+    phone_number: Optional[str] = ""
     activity_date: date
     status: str
     notes: Optional[str] = None
@@ -45,16 +51,18 @@ class CustomerActivityResponse(BaseModel):
 # ----------------------------------------------------
 class SchemeRecordCreate(BaseModel):
     employee_id: int
-    customer_name: str = Field(..., min_length=2, max_length=150)
     scheme_name: str = Field(..., min_length=2, max_length=150)
+    customers_count: int = Field(default=1, ge=1)
+    customer_name: Optional[str] = "Customer"
     amount: float = Field(default=0.0, ge=0)
     record_date: Optional[date] = None
     notes: Optional[str] = None
 
 
 class SchemeRecordUpdate(BaseModel):
-    customer_name: Optional[str] = None
     scheme_name: Optional[str] = None
+    customers_count: Optional[int] = Field(default=None, ge=1)
+    customer_name: Optional[str] = None
     amount: Optional[float] = Field(default=None, ge=0)
     record_date: Optional[date] = None
     notes: Optional[str] = None
@@ -65,7 +73,8 @@ class SchemeRecordResponse(BaseModel):
     branch_id: int
     employee_id: int
     employee_name: Optional[str] = None
-    customer_name: str
+    customers_count: int = 1
+    customer_name: Optional[str] = "Customer"
     scheme_name: str
     amount: float
     record_date: date
@@ -80,6 +89,11 @@ class SchemeRecordResponse(BaseModel):
 # ----------------------------------------------------
 # Employee Form Media Schemas
 # ----------------------------------------------------
+class FormMediaUpdate(BaseModel):
+    form_type: Optional[str] = None
+    notes: Optional[str] = None
+
+
 class FormMediaResponse(BaseModel):
     id: int
     branch_id: int
@@ -102,25 +116,27 @@ class FormMediaResponse(BaseModel):
 # Google Review Schemas
 # ----------------------------------------------------
 class GoogleReviewCreate(BaseModel):
-    customer_name: str = Field(..., min_length=2, max_length=150)
+    employee_id: Optional[int] = None
+    customers_count: int = Field(default=1, ge=1)
+    customer_name: Optional[str] = "Google Customer"
     review_date: Optional[date] = None
     rating: int = Field(default=5, ge=1, le=5)
-    review_text: str = Field(..., min_length=3)
-    employee_id: Optional[int] = None
+    review_text: str = Field(..., min_length=1)
     notes: Optional[str] = None
     screenshot_url: Optional[str] = None
-    status: str = Field(default="Published", pattern="^(Published|Pending|Verified)$")
+    status: str = Field(default="Published")
 
 
 class GoogleReviewUpdate(BaseModel):
+    employee_id: Optional[int] = None
+    customers_count: Optional[int] = Field(default=None, ge=1)
     customer_name: Optional[str] = None
     review_date: Optional[date] = None
     rating: Optional[int] = Field(default=None, ge=1, le=5)
     review_text: Optional[str] = None
-    employee_id: Optional[int] = None
     notes: Optional[str] = None
     screenshot_url: Optional[str] = None
-    status: Optional[str] = Field(default=None, pattern="^(Published|Pending|Verified)$")
+    status: Optional[str] = None
 
 
 class GoogleReviewResponse(BaseModel):
@@ -128,7 +144,8 @@ class GoogleReviewResponse(BaseModel):
     branch_id: int
     employee_id: Optional[int] = None
     employee_name: Optional[str] = None
-    customer_name: str
+    customers_count: int = 1
+    customer_name: Optional[str] = "Google Customer"
     review_date: date
     rating: int
     review_text: str

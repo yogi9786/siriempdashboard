@@ -7,6 +7,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  icon?: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -16,10 +17,12 @@ export const Button: React.FC<ButtonProps> = ({
   isLoading = false,
   leftIcon,
   rightIcon,
+  icon,
   className = '',
   disabled,
   ...props
 }) => {
+  const effectiveLeftIcon = leftIcon || icon;
   const baseStyles =
     'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 disabled:opacity-40 disabled:cursor-not-allowed select-none cursor-pointer active:scale-[0.98]';
 
@@ -63,7 +66,7 @@ export const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />}
-      {!isLoading && leftIcon && <span className="shrink-0">{leftIcon}</span>}
+      {!isLoading && effectiveLeftIcon && <span className="shrink-0">{effectiveLeftIcon}</span>}
       <span>{children}</span>
       {!isLoading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
     </button>

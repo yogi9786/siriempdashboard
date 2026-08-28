@@ -24,6 +24,7 @@ from backend.app.core.logging import setup_logging, logger
 from backend.app.core.database import engine, Base, auto_migrate_db_schema
 from backend.app.seed.seed_data import seed_database
 from backend.app.routers import (
+    admin,
     auth,
     dashboard,
     employees,
@@ -94,6 +95,29 @@ os.makedirs(settings.MEDIA_DIR, exist_ok=True)
 app.mount("/media", StaticFiles(directory=settings.MEDIA_DIR), name="media")
 
 
+import time
+
+# HTTP Request Logging & Security Headers Middleware
+@app.middleware("http")
+async def log_and_secure_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration_ms = round((time.time() - start_time) * 1000, 1)
+
+    # Log incoming API requests with status codes
+    path = request.url.path
+    if not path.startswith("/media") and path != "/favicon.ico":
+        status_code = response.status_code
+        logger.info(f"[HTTP] {request.method} {path} -> {status_code} ({duration_ms}ms)")
+
+    # Enforce Security Headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+    return response
+
+
 # Global Exception Handlers
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -141,6 +165,7 @@ def health_check():
 
 
 # Include all modular API routers
+app.include_router(admin.router)
 app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(employees.router)

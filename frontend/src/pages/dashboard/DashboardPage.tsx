@@ -81,11 +81,32 @@ export const DashboardPage: React.FC = () => {
     overview?.outdoor_marketing_employees ??
     employees.filter((e) => e.is_outdoor_marketing_employee || e.department === 'Outdoor Marketing').length;
 
-  const totalCustomersAttended = customerActivities.length;
-  const totalCustomersClosed = customerActivities.filter((c) => c.status === 'Closed').length;
-  const totalSchemesClosed = schemes.length;
+  const getClosedCount = (act: CustomerActivity): number => {
+    if (act.breakdown) {
+      const parts = act.breakdown.split('|');
+      const closedInBreakdown = parts.filter(
+        (p) => p.toLowerCase().includes(': closed') || p.trim().toLowerCase() === 'closed'
+      ).length;
+      if (closedInBreakdown > 0) return closedInBreakdown;
+    }
+    return act.status === 'Closed' ? (act.customers_count || 1) : 0;
+  };
+
+  const totalCustomersAttended = customerActivities.reduce((sum, c) => sum + (c.customers_count || 1), 0);
+  const totalCustomersClosed = customerActivities.reduce((sum, c) => sum + getClosedCount(c), 0);
+  const totalFollowUps = customerActivities.reduce((sum, c) => {
+    if (c.breakdown) {
+      const parts = c.breakdown.split('|');
+      const fuCount = parts.filter(
+        (p) => p.toLowerCase().includes('follow up') || p.toLowerCase().includes('follow-up')
+      ).length;
+      if (fuCount > 0) return sum + fuCount;
+    }
+    return sum + (c.status === 'Follow-up' || c.status === 'Follow Up Needed' ? (c.customers_count || 1) : 0);
+  }, 0);
+  const totalSchemesClosed = schemes.reduce((sum, s) => sum + (s.customers_count || 1), 0);
   const totalSchemesAmount = schemes.reduce((sum, s) => sum + (s.amount || 0), 0);
-  const totalReviewsCount = googleReviews.length;
+  const totalReviewsCount = googleReviews.reduce((sum, r) => sum + (r.customers_count || 1), 0);
   const avgRating =
     googleReviews.length > 0
       ? googleReviews.reduce((sum, r) => sum + r.rating, 0) / googleReviews.length
@@ -371,13 +392,13 @@ export const DashboardPage: React.FC = () => {
       {/* -------------------------------------------------------------
           3. MIDDLE SECTION: CUSTOMER PIPELINE (2 COLS) + ONE DARK PREMIUM CARD (1 COL)
       ------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">
         {/* Left 2 Cols: Customer Activity Pipeline (White Card) */}
-        <div className="lg:col-span-2 bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-7 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col justify-between space-y-6">
-          <div>
-            <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 bg-white border border-[#E4DFD4] rounded-3xl p-5 sm:p-6 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base sm:text-lg font-bold text-[#1D1D1B] tracking-tight">
+                <h3 className="text-base font-bold text-[#1D1D1B] tracking-tight">
                   Customer Engagement Pipeline
                 </h3>
                 <p className="text-xs text-[#8A8479] font-medium mt-0.5">
@@ -393,37 +414,35 @@ export const DashboardPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Pipeline Stage Funnel with Refined Progression: Lavender/Purple -> Muted Plum -> Sage Green */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Pipeline Stage Funnel with Compact Gaps: Lavender/Purple -> Muted Plum -> Sage Green */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {/* Stage 1: Interest (Purple & Lavender #7E22CE) */}
-              <div className="p-4 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] space-y-2">
+              <div className="p-3.5 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] space-y-1">
                 <div className="flex items-center justify-between text-xs font-bold text-[#7E22CE]">
                   <span>1. Initial Inquiries</span>
                   <span className="w-2 h-2 rounded-full bg-[#7E22CE]" />
                 </div>
-                <div className="text-2xl font-bold text-[#1D1D1B]">{totalCustomersAttended}</div>
+                <div className="text-2xl font-bold text-[#1D1D1B] leading-none pt-0.5">{totalCustomersAttended}</div>
                 <span className="text-[11px] text-[#8A8479] block">Registered Walk-ins</span>
               </div>
 
               {/* Stage 2: Qualified (Muted Plum #765568) */}
-              <div className="p-4 rounded-2xl bg-[#F5EDF1] border border-[#E8D5D2] space-y-2">
+              <div className="p-3.5 rounded-2xl bg-[#F5EDF1] border border-[#E8D5D2] space-y-1">
                 <div className="flex items-center justify-between text-xs font-bold text-[#765568]">
                   <span>2. In Follow-up</span>
                   <span className="w-2 h-2 rounded-full bg-[#765568]" />
                 </div>
-                <div className="text-2xl font-bold text-[#1D1D1B]">
-                  {customerActivities.filter((c) => c.status === 'Follow-up').length}
-                </div>
+                <div className="text-2xl font-bold text-[#1D1D1B] leading-none pt-0.5">{totalFollowUps}</div>
                 <span className="text-[11px] text-[#8A8479] block">Active Follow-ups</span>
               </div>
 
               {/* Stage 3: Converted (Sage Green #21845F) */}
-              <div className="p-4 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] space-y-2">
+              <div className="p-3.5 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] space-y-1">
                 <div className="flex items-center justify-between text-xs font-bold text-[#21845F]">
                   <span>3. Closed Sales</span>
                   <span className="w-2 h-2 rounded-full bg-[#21845F]" />
                 </div>
-                <div className="text-2xl font-bold text-[#21845F]">{totalCustomersClosed}</div>
+                <div className="text-2xl font-bold text-[#21845F] leading-none pt-0.5">{totalCustomersClosed}</div>
                 <span className="text-[11px] text-[#21845F] font-semibold block">
                   {conversionPercentage}% Conversion
                 </span>
@@ -431,75 +450,73 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#EBE6DC]">
-            <div className="p-3 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-center">
+          {/* Quick Metrics Bar - Compact Height & Clean Margin */}
+          <div className="grid grid-cols-3 gap-2.5 pt-3 mt-3 border-t border-[#EBE6DC]">
+            <div className="py-2 px-3 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-center">
               <span className="text-[10px] font-bold text-[#8A8479] uppercase block">Follow-ups</span>
-              <span className="text-base font-bold text-[#1D1D1B]">
-                {customerActivities.filter((c) => c.status === 'Follow-up').length}
-              </span>
+              <span className="text-sm font-bold text-[#1D1D1B]">{totalFollowUps}</span>
             </div>
-            <div className="p-3 bg-[#F3E8FF] border border-[#D8B4FE] rounded-xl text-center">
+            <div className="py-2 px-3 bg-[#F3E8FF] border border-[#D8B4FE] rounded-xl text-center">
               <span className="text-[10px] font-bold text-[#7E22CE] uppercase block">Gold Plans</span>
-              <span className="text-base font-bold text-[#7E22CE]">{totalSchemesClosed}</span>
+              <span className="text-sm font-bold text-[#7E22CE]">{totalSchemesClosed}</span>
             </div>
-            <div className="p-3 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-center">
+            <div className="py-2 px-3 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-center">
               <span className="text-[10px] font-bold text-[#8A8479] uppercase block">Daily Sheets</span>
-              <span className="text-base font-bold text-[#1D1D1B]">{totalFormMediaCount}</span>
+              <span className="text-sm font-bold text-[#1D1D1B]">{totalFormMediaCount}</span>
             </div>
           </div>
         </div>
 
         {/* Right 1 Col: ONE DARK PREMIUM FEATURE CARD (#1D1D1B) */}
-        <div className="bg-[#1D1D1B] border border-[#3A3A38] rounded-3xl p-6 sm:p-7 shadow-md text-white flex flex-col justify-between space-y-5 relative overflow-hidden">
+        <div className="bg-[#1D1D1B] border border-[#3A3A38] rounded-3xl p-5 sm:p-6 shadow-md text-white flex flex-col justify-between space-y-3.5 relative overflow-hidden">
           {/* Subtle Purple Ambient Corner Accent */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#9333EA]/15 to-transparent rounded-bl-full pointer-events-none" />
 
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#D8B4FE] flex items-center gap-1.5 bg-[#2E1065] px-2.5 py-1 rounded-full border border-[#581C87]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#D8B4FE] flex items-center gap-1.5 bg-[#2E1065] px-2.5 py-0.5 rounded-full border border-[#581C87]">
                 <Sparkles className="w-3 h-3 text-[#C084FC]" />
                 <span>Showroom Command</span>
               </span>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Live Status
               </span>
             </div>
 
-            <h3 className="text-xl font-bold text-white tracking-tight">
+            <h3 className="text-lg font-bold text-white tracking-tight">
               Operational Performance
             </h3>
-            <p className="text-xs text-[#B5B0A7] font-medium mt-1 leading-relaxed">
+            <p className="text-xs text-[#B5B0A7] font-medium mt-0.5 leading-relaxed">
               Showroom metrics show high customer conversion and active staff discipline.
             </p>
           </div>
 
-          <div className="space-y-2.5 py-1">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+          <div className="space-y-2 py-0.5">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold shrink-0">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold shrink-0">
+                  <CheckCircle2 className="w-3 h-3" />
                 </div>
                 <span className="text-xs font-semibold text-white/90">Staff Attendance</span>
               </div>
               <span className="text-xs font-bold text-emerald-300">{activeEmployees} / {totalEmployees} Present</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-[#D8B4FE] flex items-center justify-center font-bold shrink-0">
-                  <Award className="w-3.5 h-3.5 text-[#C084FC]" />
+                <div className="w-6 h-6 rounded-lg bg-purple-500/20 text-[#D8B4FE] flex items-center justify-center font-bold shrink-0">
+                  <Award className="w-3 h-3 text-[#C084FC]" />
                 </div>
                 <span className="text-xs font-semibold text-white/90">Gold Schemes Enrolled</span>
               </div>
               <span className="text-xs font-bold text-[#D8B4FE]">{totalSchemesClosed} Plans</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold shrink-0">
-                  <Star className="w-3.5 h-3.5 fill-emerald-300" />
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold shrink-0">
+                  <Star className="w-3 h-3 fill-emerald-300" />
                 </div>
                 <span className="text-xs font-semibold text-white/90">Customer Satisfaction</span>
               </div>
@@ -509,10 +526,10 @@ export const DashboardPage: React.FC = () => {
 
           <button
             onClick={() => navigate('/employees')}
-            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.01]"
+            className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.01]"
           >
             <span>View Showroom Directory</span>
-            <ArrowRight className="w-4 h-4 text-[#7E22CE]" />
+            <ArrowRight className="w-3.5 h-3.5 text-[#7E22CE]" />
           </button>
         </div>
       </div>
@@ -688,8 +705,8 @@ export const DashboardPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-[#8A8479]">
-                        <span className="px-2 py-0.5 rounded-md bg-[#FAF8F3] border border-[#E4DFD4] text-[#1D1D1B] font-semibold">
+                      <td className="px-4 py-3 font-mono text-xs text-[#8A8479] whitespace-nowrap">
+                        <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-[#FAF8F3] border border-[#E4DFD4] text-[#1D1D1B] font-semibold text-[10px] sm:text-xs whitespace-nowrap inline-flex items-center shrink-0">
                           {emp.employee_code}
                         </span>
                       </td>
@@ -733,46 +750,87 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#D8B4FE]">
-              {customerActivities.slice(0, 2).map((act, i) => (
-                <div key={`act-${i}`} className="flex items-start gap-3 relative pl-6">
-                  <div className="absolute left-1.5 top-1 w-3 h-3 rounded-full bg-[#7E22CE] border-2 border-white shadow-2xs" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-[#1D1D1B]">Customer Interaction</p>
-                    <p className="text-[11px] text-[#5E5A52]">{act.customer_name} attended at showroom</p>
-                    <span className="text-[10px] text-[#8A8479] font-medium">{act.activity_date}</span>
-                  </div>
-                </div>
-              ))}
+              {(() => {
+                const feedItems = [
+                  ...customerActivities.map((act) => {
+                    const count = act.customers_count || 1;
+                    const t = act.created_at ? new Date(act.created_at).getTime() : new Date(act.activity_date).getTime();
+                    return {
+                      id: `act-${act.id}`,
+                      title: `Customer Activity (${count} Cust)`,
+                      subtitle: act.breakdown || `${count} Customer${count > 1 ? 's' : ''} attended (${act.status})`,
+                      date: act.activity_date,
+                      timestamp: t,
+                      color: '#7E22CE',
+                    };
+                  }),
+                  ...schemes.map((sch) => {
+                    const count = sch.customers_count || 1;
+                    const t = sch.created_at ? new Date(sch.created_at).getTime() : new Date(sch.record_date).getTime();
+                    return {
+                      id: `sch-${sch.id}`,
+                      title: `Gold Scheme (${count} Enrolled)`,
+                      subtitle: `${sch.scheme_name} (₹${(sch.amount || 0).toLocaleString('en-IN')})`,
+                      date: sch.record_date,
+                      timestamp: t,
+                      color: '#21845F',
+                    };
+                  }),
+                  ...googleReviews.map((rev) => {
+                    const count = rev.customers_count || 1;
+                    const t = rev.created_at ? new Date(rev.created_at).getTime() : new Date(rev.review_date).getTime();
+                    return {
+                      id: `rev-${rev.id}`,
+                      title: `${rev.rating}★ Review (${count} Cust)`,
+                      subtitle: rev.review_text ? `"${rev.review_text.substring(0, 38)}..."` : '5-Star Google Review',
+                      date: rev.review_date,
+                      timestamp: t,
+                      color: '#B97855',
+                    };
+                  }),
+                  ...formMediaList.map((form) => {
+                    const t = form.created_at ? new Date(form.created_at).getTime() : 0;
+                    return {
+                      id: `form-${form.id}`,
+                      title: 'Closing Form Uploaded',
+                      subtitle: `${form.form_type || 'Store Form'} verified`,
+                      date: form.created_at ? new Date(form.created_at).toISOString().split('T')[0] : 'Today',
+                      timestamp: t,
+                      color: '#526F91',
+                    };
+                  }),
+                ]
+                  .sort((a, b) => b.timestamp - a.timestamp)
+                  .slice(0, 5);
 
-              {schemes.slice(0, 2).map((sch, i) => (
-                <div key={`sch-${i}`} className="flex items-start gap-3 relative pl-6">
-                  <div className="absolute left-1.5 top-1 w-3 h-3 rounded-full bg-[#21845F] border-2 border-white shadow-2xs" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-[#1D1D1B]">Gold Scheme Enrolled</p>
-                    <p className="text-[11px] text-[#5E5A52]">{sch.scheme_name} (₹{sch.amount.toLocaleString('en-IN')})</p>
-                    <span className="text-[10px] text-[#8A8479] font-medium">{sch.record_date}</span>
-                  </div>
-                </div>
-              ))}
+                if (feedItems.length === 0) {
+                  return (
+                    <p className="text-xs text-[#8A8479] italic pl-6 py-2">No showroom activities logged yet.</p>
+                  );
+                }
 
-              {googleReviews.slice(0, 1).map((rev, i) => (
-                <div key={`rev-${i}`} className="flex items-start gap-3 relative pl-6">
-                  <div className="absolute left-1.5 top-1 w-3 h-3 rounded-full bg-[#B97855] border-2 border-white shadow-2xs" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-[#1D1D1B]">5-Star Review Logged</p>
-                    <p className="text-[11px] text-[#5E5A52]">"{rev.review_text.substring(0, 38)}..."</p>
-                    <span className="text-[10px] text-[#8A8479] font-medium">{rev.review_date}</span>
+                return feedItems.map((item) => (
+                  <div key={item.id} className="flex items-start gap-3 relative pl-6">
+                    <div
+                      className="absolute left-1.5 top-1 w-3 h-3 rounded-full border-2 border-white shadow-2xs"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-[#1D1D1B]">{item.title}</p>
+                      <p className="text-[11px] text-[#5E5A52] line-clamp-2">{item.subtitle}</p>
+                      <span className="text-[10px] text-[#8A8479] font-medium">{item.date}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
 
           <button
-            onClick={() => navigate('/gallery')}
+            onClick={() => navigate('/employees')}
             className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#FAF5FF] border border-[#D8B4FE] text-[#7E22CE] text-xs font-bold shadow-2xs transition-all cursor-pointer mt-4"
           >
-            <span>View All Daily Records</span>
+            <span>View Showroom Directory</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

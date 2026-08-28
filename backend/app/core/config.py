@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import List, Union, Optional
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,10 +20,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/siridashboard"
     SQLITE_FALLBACK_URL: str = f"sqlite:///{os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'database.db').replace('\\', '/')}"
 
-    # JWT Authentication
+    # JWT Authentication & Token Security
     JWT_SECRET_KEY: str = "siri_samruddhi_super_secret_jwt_key_gold_palace_2026_change_in_prod"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # Short-lived access token (15 mins)
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7    # Long-lived refresh token (7 days)
 
     # CORS Configuration
     CORS_ORIGINS: Union[str, List[str]] = (
@@ -49,6 +51,13 @@ class Settings(BaseSettings):
     # Media / File Uploads
     MEDIA_DIR: str = "uploads"
     MAX_UPLOAD_SIZE_MB: int = 10
+
+    # =========================================================================
+    # Super Admin Authentication (ENV-Configured Identity — ZERO Database Storage)
+    # =========================================================================
+    ADMIN_EMAIL: str = "admin@sirisamruddhigold.com"
+    ADMIN_PASSWORD_HASH: str = "$2b$12$27XfFp20Muke1gaOhT3Cnu2VaImTwDGQOev9zVdR8PcjlhdnwB9Sm"
+    ADMIN_NAME: str = "Super Administrator"
 
     # Yelahanka Manager Accounts (Unique Names & Strong Passwords)
     MANAGER_1_NAME: str = "ADARSHA"
@@ -94,4 +103,27 @@ class Settings(BaseSettings):
     UDUPI_MANAGER_2_PASSWORD: str = "PRITHVIRAJ@siri1234"
 
 
+def validate_security_configuration(s: Settings) -> None:
+    """
+    Validate that critical security environment variables exist and are properly configured.
+    Never outputs or leaks the raw values.
+    """
+    errors = []
+    if not s.ADMIN_EMAIL or not s.ADMIN_EMAIL.strip():
+        errors.append("ADMIN_EMAIL is missing or empty in .env.")
+    if not s.ADMIN_PASSWORD_HASH or not s.ADMIN_PASSWORD_HASH.strip():
+        errors.append("ADMIN_PASSWORD_HASH is missing or empty in .env.")
+    if not s.JWT_SECRET_KEY or len(s.JWT_SECRET_KEY.strip()) < 16:
+        errors.append("JWT_SECRET_KEY is missing or too short in .env.")
+
+    if errors:
+        sys.stderr.write("\n=======================================================\n")
+        sys.stderr.write(" [FATAL CONFIGURATION ERROR] Security Startup Failed:\n")
+        for err in errors:
+            sys.stderr.write(f"  - {err}\n")
+        sys.stderr.write("=======================================================\n\n")
+        raise RuntimeError("Security configuration validation failed. Check server-side .env.")
+
+
 settings = Settings()
+validate_security_configuration(settings)

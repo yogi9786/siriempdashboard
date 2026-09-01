@@ -21,6 +21,7 @@ from backend.app.models.activity import (
 )
 from backend.app.models.outdoor_marketing import (
     OutdoorMarketingArea,
+    OutdoorMarketingDuty,
     OutdoorMarketingCustomer,
     OutdoorMarketingScheme,
     OutdoorMarketingActivity,
@@ -53,6 +54,7 @@ from backend.app.schemas.admin import (
     AdminAuditLogItem,
     AdminAuditLogResponse,
     AdminSettingsResponse,
+    AdminEmployeeDetailResponse,
 )
 from pydantic import BaseModel
 from backend.app.services.auth_service import AuthService
@@ -63,6 +65,38 @@ router = APIRouter(prefix="/api/v1/admin", tags=["Super Admin"])
 
 def utcnow():
     return datetime.now(timezone.utc)
+
+
+def _format_clean_breakdown(breakdown_str: Optional[str], default_status: str = "Attended") -> str:
+    """Safely format breakdown string into human-readable text, preventing raw JSON display."""
+    if not breakdown_str or not breakdown_str.strip():
+        return default_status
+    text = breakdown_str.strip()
+    if text.startswith("[") or text.startswith("{"):
+        try:
+            import json
+            parsed = json.loads(text)
+            if isinstance(parsed, list):
+                names = []
+                for item in parsed:
+                    if isinstance(item, dict):
+                        n = item.get("name") or item.get("customer_name")
+                        st = item.get("status") or default_status
+                        if n and n.strip():
+                            names.append(f"{n.strip()} ({st})")
+                        else:
+                            names.append(st)
+                if names:
+                    return ", ".join(names[:3])
+            elif isinstance(parsed, dict):
+                n = parsed.get("name") or parsed.get("customer_name")
+                st = parsed.get("status") or default_status
+                return f"{n.strip()} ({st})" if n and n.strip() else st
+        except Exception:
+            return default_status
+    if "{" in text or "[" in text:
+        return default_status
+    return text
 
 
 class RefreshTokenRequest(BaseModel):
@@ -115,6 +149,51 @@ def admin_logout(
         db.rollback()
 
     return MessageResponse(message="Super Admin successfully logged out.")
+
+
+# =========================================================================
+# 1.1 Showroom Managers Directory (Read-Only Overview)
+# =========================================================================
+@router.get("/managers", summary="List all showroom branch managers")
+def get_admin_managers(
+    search: Optional[str] = None,
+    branch_id: Optional[int] = None,
+    is_active: Optional[bool] = None,
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    query = db.query(User).filter(User.role == "MANAGER")
+    if branch_id:
+        query = query.filter(User.branch_id == branch_id)
+    if is_active is not None:
+        query = query.filter(User.is_active == is_active)
+    if search:
+        s = f"%{search.strip().lower()}%"
+        query = query.filter(
+            (func.lower(User.full_name).like(s))
+            | (func.lower(User.username).like(s))
+            | (func.lower(User.email).like(s))
+        )
+
+    users = query.order_by(User.branch_id, User.id).all()
+    results = []
+    for u in users:
+        branch = db.query(Branch).filter(Branch.id == u.branch_id).first()
+        results.append({
+            "id": u.id,
+            "branch_id": u.branch_id,
+            "branch_code": branch.code if branch else "MAIN",
+            "branch_name": branch.name if branch else "Showroom",
+            "full_name": u.full_name,
+            "username": u.username,
+            "manager_code": getattr(u, "manager_code", None),
+            "email": u.email,
+            "role": u.role,
+            "is_active": u.is_active,
+            "last_login": u.last_login.isoformat() if u.last_login else None,
+            "created_at": u.created_at.isoformat() if u.created_at else utcnow().isoformat(),
+        })
+    return results
 
 
 # =========================================================================
@@ -202,8 +281,31 @@ def get_admin_dashboard_overview(
         form_q = form_q.filter(EmployeeFormMedia.branch_id == branch_id)
     daily_forms_count = form_q.count()
 
-    # 7-Day Sparkline Generation
+    # Today's Live Operational Metrics (Synced across Showrooms)
     today = date.today()
+    today_cust_q = db.query(CustomerActivity).filter(CustomerActivity.activity_date == today)
+    today_sch_q = db.query(SchemeRecord).filter(SchemeRecord.record_date == today)
+    today_rev_q = db.query(GoogleReview).filter(GoogleReview.review_date == today)
+    today_out_q = db.query(OutdoorMarketingCustomer).filter(func.date(OutdoorMarketingCustomer.created_at) == today)
+
+    if branch_id:
+        today_cust_q = today_cust_q.filter(CustomerActivity.branch_id == branch_id)
+        today_sch_q = today_sch_q.filter(SchemeRecord.branch_id == branch_id)
+        today_rev_q = today_rev_q.filter(GoogleReview.branch_id == branch_id)
+        today_out_q = today_out_q.filter(OutdoorMarketingCustomer.branch_id == branch_id)
+
+    today_cust_all = today_cust_q.all()
+    today_footfall = sum(c.customers_count or 1 for c in today_cust_all)
+    today_customers_closed = sum(_get_cust_closed_count(c) for c in today_cust_all)
+
+    today_sch_all = today_sch_q.all()
+    today_schemes_count = sum(s.customers_count or 1 for s in today_sch_all)
+    today_schemes_value = sum(s.amount for s in today_sch_all)
+
+    today_outdoor_leads = today_out_q.count()
+    today_reviews_count = sum(r.customers_count or 1 for r in today_rev_q.all())
+
+    # 7-Day Sparkline Generation
     sparkline_days: List[SparklineDay] = []
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
@@ -296,7 +398,8 @@ def get_admin_dashboard_overview(
         emp_name = db.query(Employee.full_name).filter(Employee.id == c.employee_id).scalar() if c.employee_id else None
         c_count = c.customers_count or 1
         title_txt = f"Customer Activity: {c_count} Customer{'s' if c_count > 1 else ''} Attended"
-        desc_txt = f"{c.breakdown or c.status} at {b_name} showroom"
+        clean_bd = _format_clean_breakdown(c.breakdown, c.status)
+        desc_txt = f"{clean_bd} at {b_name} showroom"
         if emp_name:
             desc_txt = f"Attended by {emp_name} ({desc_txt})"
         raw_activities.append((
@@ -398,6 +501,12 @@ def get_admin_dashboard_overview(
         outdoor_staff_count=outdoor_staff_count,
         attire_compliance_pct=attire_compliance_pct,
         daily_forms_count=daily_forms_count,
+        today_footfall=today_footfall,
+        today_customers_closed=today_customers_closed,
+        today_schemes_count=today_schemes_count,
+        today_schemes_value=today_schemes_value,
+        today_outdoor_leads=today_outdoor_leads,
+        today_reviews_count=today_reviews_count,
         sparkline_days=sparkline_days,
         branch_comparison=branch_comparison,
         recent_activity=recent_activity,
@@ -1159,11 +1268,190 @@ def reassign_employee_branch(
     return list_admin_employees(branch_id=new_branch.id, search=emp.employee_code, current_admin=current_admin, db=db)[0]
 
 
+@router.get("/employees/{employee_id}", response_model=AdminEmployeeDetailResponse, summary="Get 360 employee details and activity history for admin")
+def get_admin_employee_detail(
+    employee_id: int,
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    emp = db.query(Employee).filter(Employee.id == employee_id).first()
+    if not emp:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
+
+    branch = db.query(Branch).filter(Branch.id == emp.branch_id).first()
+    manager = db.query(User).filter(User.id == emp.manager_id).first() if emp.manager_id else None
+
+    # Aggregated stats
+    cust_acts = db.query(CustomerActivity).filter(CustomerActivity.employee_id == emp.id).order_by(CustomerActivity.activity_date.desc(), CustomerActivity.id.desc()).all()
+    cust_attended = sum(c.customers_count or 1 for c in cust_acts)
+    cust_closed = sum(_get_cust_closed_count(c) for c in cust_acts)
+
+    schemes = db.query(SchemeRecord).filter(SchemeRecord.employee_id == emp.id).order_by(SchemeRecord.record_date.desc(), SchemeRecord.id.desc()).all()
+    schemes_count = sum(s.customers_count or 1 for s in schemes)
+    schemes_amt = sum(s.amount for s in schemes)
+
+    reviews = db.query(GoogleReview).filter(GoogleReview.employee_id == emp.id).order_by(GoogleReview.review_date.desc(), GoogleReview.id.desc()).all()
+    rev_count = sum(r.customers_count or 1 for r in reviews)
+    avg_rat = round(sum(r.rating for r in reviews) / len(reviews), 1) if len(reviews) > 0 else 5.0
+
+    attire = db.query(AttireRecord).filter(AttireRecord.employee_id == emp.id).order_by(AttireRecord.check_date.desc(), AttireRecord.id.desc()).all()
+    proper_att = sum(1 for a in attire if a.status == "Proper")
+    att_pct = round((proper_att / len(attire) * 100), 1) if attire else 100.0
+
+    form_media = db.query(EmployeeFormMedia).filter(EmployeeFormMedia.employee_id == emp.id).order_by(EmployeeFormMedia.created_at.desc(), EmployeeFormMedia.id.desc()).all()
+
+    outdoor_areas = db.query(OutdoorMarketingArea).filter(OutdoorMarketingArea.assigned_employee_id == emp.id).order_by(OutdoorMarketingArea.created_at.desc()).all()
+    outdoor_cust = db.query(OutdoorMarketingCustomer).filter(OutdoorMarketingCustomer.marketing_employee_id == emp.id).order_by(OutdoorMarketingCustomer.created_at.desc()).all()
+    outdoor_sch = db.query(OutdoorMarketingScheme).filter(OutdoorMarketingScheme.employee_id == emp.id).order_by(OutdoorMarketingScheme.created_at.desc()).all()
+
+    emp_resp = AdminEmployeeResponse(
+        id=emp.id,
+        branch_id=emp.branch_id,
+        branch_code=branch.code if branch else "N/A",
+        branch_name=branch.name if branch else "Showroom",
+        manager_id=emp.manager_id,
+        manager_name=manager.full_name if manager else None,
+        employee_code=emp.employee_code,
+        full_name=emp.full_name,
+        phone=emp.phone or "",
+        email=emp.email,
+        designation=emp.designation or "Sales Executive",
+        department=emp.department or "Sales Department",
+        date_of_joining=emp.date_of_joining,
+        status=emp.status,
+        is_outdoor_marketing_employee=emp.is_outdoor_marketing_employee,
+        profile_photo_url=emp.profile_photo_url,
+        notes=emp.notes,
+        customers_attended_count=cust_attended,
+        customers_closed_count=cust_closed,
+        schemes_closed_count=schemes_count,
+        schemes_total_amount=schemes_amt,
+        reviews_count=rev_count,
+        average_rating=avg_rat,
+        attire_compliance_pct=att_pct,
+        created_at=emp.created_at,
+    )
+
+    cust_list = [
+        {
+            "id": c.id,
+            "activity_date": c.activity_date.strftime("%Y-%m-%d"),
+            "customer_name": c.customer_name,
+            "phone_number": c.phone_number,
+            "status": c.status,
+            "customers_count": c.customers_count or 1,
+            "breakdown": _format_clean_breakdown(c.breakdown, c.status),
+            "notes": _format_clean_breakdown(c.notes, "") if c.notes and ("{" in c.notes or "[" in c.notes) else c.notes,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        }
+        for c in cust_acts
+    ]
+
+    sch_list = [
+        {
+            "id": s.id,
+            "record_date": s.record_date.strftime("%Y-%m-%d"),
+            "customer_name": s.customer_name,
+            "scheme_name": s.scheme_name,
+            "amount": s.amount,
+            "customers_count": s.customers_count or 1,
+            "notes": s.notes,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+        }
+        for s in schemes
+    ]
+
+    rev_list = [
+        {
+            "id": r.id,
+            "review_date": r.review_date.strftime("%Y-%m-%d"),
+            "customer_name": r.customer_name,
+            "rating": r.rating,
+            "review_text": r.review_text,
+            "screenshot_url": r.screenshot_url,
+            "customers_count": r.customers_count or 1,
+            "notes": r.notes,
+        }
+        for r in reviews
+    ]
+
+    att_list = [
+        {
+            "id": a.id,
+            "record_date": a.check_date.strftime("%Y-%m-%d"),
+            "status": a.status,
+            "notes": a.notes,
+            "photo_url": a.image_url,
+        }
+        for a in attire
+    ]
+
+    media_list = [
+        {
+            "id": m.id,
+            "form_type": m.form_type,
+            "file_url": m.file_url,
+            "notes": m.notes,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+        for m in form_media
+    ]
+
+    out_areas_list = [
+        {
+            "id": oa.id,
+            "area_name": oa.area_name,
+            "landmark": oa.location,
+            "city": "",
+            "status": oa.status,
+            "notes": oa.notes,
+            "created_at": oa.created_at.isoformat() if oa.created_at else None,
+        }
+        for oa in outdoor_areas
+    ]
+
+    out_cust_list = [
+        {
+            "id": oc.id,
+            "customer_name": oc.customer_name,
+            "phone_number": oc.phone,
+            "area_name": oc.area_name,
+            "status": oc.status,
+            "notes": oc.notes,
+            "created_at": oc.created_at.isoformat() if oc.created_at else None,
+        }
+        for oc in outdoor_cust
+    ]
+
+    out_sch_list = [
+        {
+            "id": os.id,
+            "customer_name": os.customer_name,
+            "scheme_name": os.scheme_name,
+            "amount": os.amount,
+            "notes": os.notes,
+            "created_at": os.created_at.isoformat() if os.created_at else None,
+        }
+        for os in outdoor_sch
+    ]
+
+    return AdminEmployeeDetailResponse(
+        employee=emp_resp,
+        customer_activities=cust_list,
+        schemes=sch_list,
+        google_reviews=rev_list,
+        attire_records=att_list,
+        gallery_media=media_list,
+        outdoor_areas=out_areas_list,
+        outdoor_customers=out_cust_list,
+        outdoor_schemes=out_sch_list,
+    )
+
+
 # =========================================================================
 # 6. Performance Engine & Leaderboard Rankings
 # =========================================================================
 @router.get("/performance", response_model=List[AdminEmployeePerformance], summary="Calculated employee performance scoring & rankings")
-@router.get("/performance/leaderboard", response_model=List[AdminEmployeePerformance], summary="Performance Leaderboard Rankings")
 def get_admin_employee_performance(
     branch_id: Optional[int] = Query(None),
     department: Optional[str] = Query(None),
@@ -1172,14 +1460,24 @@ def get_admin_employee_performance(
     current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
     db: Session = Depends(get_db),
 ):
+    # Safely sanitize branch_id
+    clean_branch_id: Optional[int] = None
+    if branch_id is not None and isinstance(branch_id, (int, str)):
+        try:
+            clean_branch_id = int(branch_id)
+        except Exception:
+            clean_branch_id = None
+
     q = db.query(Employee).filter(Employee.status == "active")
-    if branch_id:
-        q = q.filter(Employee.branch_id == branch_id)
-    if department and department != "all":
-        q = q.filter(Employee.department == department)
-    if search:
+    if clean_branch_id:
+        q = q.filter(Employee.branch_id == clean_branch_id)
+    if department and isinstance(department, str) and department.strip() and department != "all":
+        q = q.filter(Employee.department == department.strip())
+    if search and isinstance(search, str) and search.strip():
         s = f"%{search.strip().lower()}%"
         q = q.filter(or_(func.lower(Employee.full_name).like(s), func.lower(Employee.employee_code).like(s)))
+
+    clean_sort_by = sort_by if isinstance(sort_by, str) and sort_by.strip() else "overall"
 
     employees = q.all()
     results: List[AdminEmployeePerformance] = []
@@ -1270,13 +1568,32 @@ def get_admin_employee_performance(
         "reviews": lambda x: x.google_reviews_score,
         "compliance": lambda x: x.compliance_score,
         "outdoor": lambda x: x.outdoor_marketing_score,
-    }.get(sort_by or "overall", lambda x: x.overall_score)
+    }.get(clean_sort_by, lambda x: x.overall_score)
 
     results.sort(key=sort_key, reverse=True)
     for idx, item in enumerate(results, start=1):
         item.rank = idx
 
     return results
+
+
+@router.get("/performance/leaderboard", response_model=List[AdminEmployeePerformance], summary="Performance Leaderboard Rankings")
+def get_admin_employee_performance_leaderboard(
+    branch_id: Optional[int] = Query(None),
+    department: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    sort_by: Optional[str] = Query("overall", description="Sort by: overall, customer, schemes, reviews, compliance, outdoor"),
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    return get_admin_employee_performance(
+        branch_id=branch_id,
+        department=department,
+        search=search,
+        sort_by=sort_by,
+        current_admin=current_admin,
+        db=db,
+    )
 
 
 # =========================================================================
@@ -1309,6 +1626,8 @@ def list_admin_customers(
         cust_schemes = db.query(SchemeRecord).filter(func.lower(SchemeRecord.customer_name) == func.lower(a.customer_name)).all()
         sch_val = sum(s.amount for s in cust_schemes)
 
+        clean_notes = _format_clean_breakdown(a.notes, "") if a.notes and ("{" in a.notes or "[" in a.notes) else a.notes
+        clean_bd = _format_clean_breakdown(a.breakdown, a.status)
         results.append(
             {
                 "id": a.id,
@@ -1320,9 +1639,9 @@ def list_admin_customers(
                 "employee_name": emp.full_name if emp else "Staff",
                 "activity_date": a.activity_date.strftime("%Y-%m-%d"),
                 "status": a.status,
-                "notes": a.notes,
+                "notes": clean_notes,
                 "customers_count": a.customers_count or 1,
-                "breakdown": a.breakdown,
+                "breakdown": clean_bd,
                 "schemes_count": len(cust_schemes),
                 "total_scheme_value": sch_val,
             }
@@ -1351,20 +1670,27 @@ def list_admin_customer_activities(
     for act in activities:
         b = db.query(Branch).filter(Branch.id == act.branch_id).first()
         emp = db.query(Employee).filter(Employee.id == act.employee_id).first()
+        clean_act_notes = _format_clean_breakdown(act.notes, "") if act.notes and ("{" in act.notes or "[" in act.notes) else act.notes
+        clean_act_bd = _format_clean_breakdown(act.breakdown, act.status)
         results.append(
             {
                 "id": act.id,
                 "branch_id": act.branch_id,
+                "branch_code": b.code if b else "",
                 "branch_name": b.name if b else "Showroom",
                 "employee_id": act.employee_id,
                 "employee_name": emp.full_name if emp else "Staff",
+                "employee_code": emp.employee_code if emp else "",
                 "customer_name": act.customer_name,
                 "phone_number": act.phone_number,
+                "dob": act.dob.strftime("%Y-%m-%d") if getattr(act, "dob", None) else None,
+                "anniversary": act.anniversary.strftime("%Y-%m-%d") if getattr(act, "anniversary", None) else None,
+                "product_value": getattr(act, "product_value", 0.0) or 0.0,
                 "activity_date": act.activity_date.strftime("%Y-%m-%d"),
                 "status": act.status,
-                "notes": act.notes,
+                "notes": clean_act_notes,
                 "customers_count": act.customers_count or 1,
-                "breakdown": act.breakdown,
+                "breakdown": clean_act_bd,
             }
         )
     return results
@@ -1804,7 +2130,6 @@ def get_admin_gallery_media(
 # 13. Reporting & CSV Export Engine
 # =========================================================================
 @router.get("/reports", response_model=AdminReportResponse, summary="Executive Report Generator")
-@router.get("/reports/generate", response_model=AdminReportResponse, summary="Executive Report Generator")
 def generate_admin_report(
     report_type: str = Query("branch_performance", description="executive_summary, branch_performance, employee_performance, gold_schemes, customer_crm, customer_activity, google_reviews, outdoor_marketing, attire_compliance, daily_forms"),
     branch_id: Optional[int] = Query(None),
@@ -1813,9 +2138,20 @@ def generate_admin_report(
     current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
     db: Session = Depends(get_db),
 ):
+    b_id: Optional[int] = None
+    if branch_id is not None and isinstance(branch_id, (int, str)):
+        try:
+            b_id = int(branch_id)
+        except Exception:
+            b_id = None
+
+    clean_report_type = report_type if isinstance(report_type, str) and report_type.strip() else "branch_performance"
+    clean_date_from = date_from if isinstance(date_from, str) and date_from.strip() else None
+    clean_date_to = date_to if isinstance(date_to, str) and date_to.strip() else None
+
     branch_name = "All Branches"
-    if branch_id:
-        b = db.query(Branch).filter(Branch.id == branch_id).first()
+    if b_id:
+        b = db.query(Branch).filter(Branch.id == b_id).first()
         branch_name = b.name if b else "Branch"
 
     headers: List[str] = []
@@ -1828,7 +2164,7 @@ def generate_admin_report(
         headers = ["Branch Code", "Branch Name", "City", "Managers", "Staff", "Footfall", "Schemes Enrolled", "Scheme Total Value (₹)", "Reviews", "Rating", "Attire Compliance"]
         branches = db.query(Branch).filter(Branch.is_active == True).all()
         for b in branches:
-            if branch_id and b.id != branch_id:
+            if b_id and b.id != b_id:
                 continue
             mgrs = db.query(User).filter(User.branch_id == b.id, User.role == "MANAGER").count()
             emps = db.query(Employee).filter(Employee.branch_id == b.id).count()
@@ -1846,7 +2182,7 @@ def generate_admin_report(
     elif report_type == "employee_performance":
         title = "Staff Performance & Discipline Report"
         headers = ["Rank", "Code", "Employee Name", "Branch", "Designation", "Customers Attended", "Closed", "Conversion", "Schemes Count", "Scheme Value (₹)", "Reviews", "Attire Score", "Overall Performance"]
-        perfs = get_admin_employee_performance(branch_id=branch_id, sort_by="overall", current_admin=current_admin, db=db)
+        perfs = get_admin_employee_performance(branch_id=b_id, sort_by="overall", current_admin=current_admin, db=db)
         for p in perfs:
             rows.append([
                 p.rank,
@@ -1970,16 +2306,35 @@ def generate_admin_report(
         summary_metrics = {"total_submissions": len(rows)}
 
     return AdminReportResponse(
-        report_type=report_type,
+        report_type=clean_report_type,
         title=title,
         branch_filter=branch_name,
-        date_from=date_from,
-        date_to=date_to,
+        date_from=clean_date_from,
+        date_to=clean_date_to,
         generated_at=utcnow(),
         total_records=len(rows),
         summary_metrics=summary_metrics,
         headers=headers,
         rows=rows,
+    )
+
+
+@router.get("/reports/generate", response_model=AdminReportResponse, summary="Executive Report Generator Alias")
+def generate_admin_report_alias(
+    report_type: str = Query("branch_performance", description="executive_summary, branch_performance, employee_performance, gold_schemes, customer_crm, customer_activity, google_reviews, outdoor_marketing, attire_compliance, daily_forms"),
+    branch_id: Optional[int] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    return generate_admin_report(
+        report_type=report_type,
+        branch_id=branch_id,
+        date_from=date_from,
+        date_to=date_to,
+        current_admin=current_admin,
+        db=db,
     )
 
 
@@ -2098,3 +2453,318 @@ def get_admin_settings(
         max_upload_size_mb=settings.MAX_UPLOAD_SIZE_MB,
         server_time=utcnow(),
     )
+
+
+# =========================================================================
+# 16. Super Admin Outdoor Marketing & Field Intelligence APIs
+# =========================================================================
+@router.get("/outdoor/overview", summary="Super Admin Outdoor Marketing Overview & Branch KPI Breakdown")
+def get_admin_outdoor_overview(
+    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    query_duties = db.query(OutdoorMarketingDuty)
+    query_cust = db.query(OutdoorMarketingCustomer)
+
+    if branch_id:
+        query_duties = query_duties.filter(OutdoorMarketingDuty.branch_id == branch_id)
+        query_cust = query_cust.filter(OutdoorMarketingCustomer.branch_id == branch_id)
+
+    all_duties = query_duties.all()
+    all_cust = query_cust.all()
+
+    total_duties = len(all_duties)
+    total_attended = sum(d.customers_attended_count or 0 for d in all_duties)
+    total_converted = sum(d.converted_customers_count or 0 for d in all_duties)
+    total_google_ratings = sum(d.google_ratings_count or 0 for d in all_duties)
+    
+    total_photos = 0
+    for d in all_duties:
+        if d.photo_urls:
+            try:
+                import json
+                p_list = json.loads(d.photo_urls) if isinstance(d.photo_urls, str) else d.photo_urls
+                total_photos += len(p_list)
+            except Exception:
+                total_photos += 1
+        elif d.photo_url:
+            total_photos += 1
+
+    conversion_rate = round((total_converted / total_attended * 100), 1) if total_attended > 0 else 0.0
+
+    # Branch-by-branch metrics
+    branches = db.query(Branch).filter(Branch.is_active == True).all()
+    branch_metrics = []
+    for b in branches:
+        b_duties = [d for d in all_duties if d.branch_id == b.id]
+        b_attended = sum(d.customers_attended_count or 0 for d in b_duties)
+        b_converted = sum(d.converted_customers_count or 0 for d in b_duties)
+        b_ratings = sum(d.google_ratings_count or 0 for d in b_duties)
+        b_conv_rate = round((b_converted / b_attended * 100), 1) if b_attended > 0 else 0.0
+
+        branch_metrics.append({
+            "branch_id": b.id,
+            "branch_name": b.name,
+            "branch_code": b.code,
+            "duties_count": len(b_duties),
+            "attended_count": b_attended,
+            "converted_count": b_converted,
+            "google_ratings_count": b_ratings,
+            "conversion_rate": b_conv_rate,
+        })
+
+    return {
+        "total_duties": total_duties,
+        "total_attended": total_attended,
+        "total_converted": total_converted,
+        "total_google_ratings": total_google_ratings,
+        "total_photos": total_photos,
+        "conversion_rate": conversion_rate,
+        "branch_metrics": branch_metrics,
+    }
+
+
+@router.get("/outdoor/duties", summary="Super Admin List Outdoor Duties across branches")
+def get_admin_outdoor_duties(
+    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    date_filter: Optional[date] = Query(None, description="Filter by date YYYY-MM-DD"),
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    query = (
+        db.query(OutdoorMarketingDuty)
+        .join(Branch, OutdoorMarketingDuty.branch_id == Branch.id)
+        .join(Employee, OutdoorMarketingDuty.employee_id == Employee.id)
+    )
+
+    if branch_id:
+        query = query.filter(OutdoorMarketingDuty.branch_id == branch_id)
+    if date_filter:
+        query = query.filter(OutdoorMarketingDuty.date == date_filter)
+
+    duties = query.order_by(OutdoorMarketingDuty.date.desc(), OutdoorMarketingDuty.id.desc()).all()
+
+    import json
+    result = []
+    for d in duties:
+        p_urls = []
+        if d.photo_urls:
+            try:
+                p_urls = json.loads(d.photo_urls) if isinstance(d.photo_urls, str) else d.photo_urls
+            except Exception:
+                p_urls = [d.photo_url] if d.photo_url else []
+        elif d.photo_url:
+            p_urls = [d.photo_url]
+
+        cust_list = []
+        for c in d.customers:
+            cust_list.append({
+                "id": c.id,
+                "customer_name": c.customer_name,
+                "phone": c.phone,
+                "dob": c.dob,
+                "anniversary_date": c.anniversary_date,
+                "is_converted": c.is_converted,
+                "has_google_review": c.has_google_review,
+                "google_review_rating": c.google_review_rating,
+                "google_review_text": c.google_review_text,
+                "scheme_name": c.scheme_name,
+                "area_name": c.area_name,
+                "notes": c.notes,
+                "date": c.date,
+            })
+
+        emp = d.employee
+        branch = d.branch
+        result.append({
+            "id": d.id,
+            "branch_id": d.branch_id,
+            "branch_name": branch.name if branch else "Showroom",
+            "branch_code": branch.code if branch else "SR",
+            "employee_id": d.employee_id,
+            "employee_name": emp.full_name if emp else "Staff",
+            "employee_code": emp.employee_code if emp else "EMP",
+            "designation": emp.designation if emp else "Executive",
+            "department": emp.department if emp else "Sales",
+            "date": d.date,
+            "area": d.area,
+            "scheme_name": d.scheme_name,
+            "customers_attended_count": d.customers_attended_count,
+            "converted_customers_count": d.converted_customers_count,
+            "google_ratings_count": d.google_ratings_count,
+            "photo_url": d.photo_url,
+            "photo_urls": p_urls,
+            "notes": d.notes,
+            "status": d.status,
+            "customers": cust_list,
+            "created_at": d.created_at,
+            "updated_at": d.updated_at,
+        })
+
+    return result
+
+
+@router.get("/outdoor/customers", summary="Super Admin List Outdoor Customers Leads across branches")
+def get_admin_outdoor_customers(
+    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    date_filter: Optional[date] = Query(None, description="Filter by date YYYY-MM-DD"),
+    status: Optional[str] = Query(None, description="Filter by status: Converted, Attended, Lead, Closed"),
+    search: Optional[str] = Query(None, description="Search customer name, phone, or area"),
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    query = (
+        db.query(OutdoorMarketingCustomer)
+        .join(Branch, OutdoorMarketingCustomer.branch_id == Branch.id)
+        .join(Employee, OutdoorMarketingCustomer.marketing_employee_id == Employee.id)
+    )
+
+    if branch_id:
+        query = query.filter(OutdoorMarketingCustomer.branch_id == branch_id)
+    if date_filter:
+        query = query.filter(OutdoorMarketingCustomer.date == date_filter)
+    if status:
+        if status.lower() == "converted":
+            query = query.filter(OutdoorMarketingCustomer.is_converted == True)
+        elif status.lower() == "attended":
+            query = query.filter(OutdoorMarketingCustomer.is_converted == False)
+        else:
+            query = query.filter(OutdoorMarketingCustomer.status == status)
+
+    if search:
+        term = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                OutdoorMarketingCustomer.customer_name.ilike(term),
+                OutdoorMarketingCustomer.phone.ilike(term),
+                OutdoorMarketingCustomer.area_name.ilike(term),
+                OutdoorMarketingCustomer.scheme_name.ilike(term),
+            )
+        )
+
+    records = query.order_by(OutdoorMarketingCustomer.date.desc(), OutdoorMarketingCustomer.id.desc()).all()
+
+    result = []
+    for r in records:
+        branch = r.branch
+        emp = r.marketing_employee
+        result.append({
+            "id": r.id,
+            "branch_id": r.branch_id,
+            "branch_name": branch.name if branch else "Showroom",
+            "branch_code": branch.code if branch else "SR",
+            "marketing_employee_id": r.marketing_employee_id,
+            "marketing_employee_name": emp.full_name if emp else "Staff",
+            "marketing_employee_code": emp.employee_code if emp else "EMP",
+            "customer_name": r.customer_name,
+            "phone": r.phone,
+            "dob": r.dob,
+            "anniversary_date": r.anniversary_date,
+            "is_converted": r.is_converted,
+            "has_google_review": r.has_google_review,
+            "google_review_rating": r.google_review_rating,
+            "google_review_text": r.google_review_text,
+            "area_name": r.area_name,
+            "scheme_name": r.scheme_name,
+            "date": r.date,
+            "status": "Converted" if r.is_converted else (r.status or "Attended"),
+            "notes": r.notes,
+            "created_at": r.created_at,
+            "updated_at": r.updated_at,
+        })
+
+    return result
+
+
+@router.get("/outdoor/customers/export-csv", summary="Super Admin Export Outdoor Customers Leads to CSV")
+def export_admin_outdoor_customers_csv(
+    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    date_filter: Optional[date] = Query(None, description="Filter by date YYYY-MM-DD"),
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    query = (
+        db.query(OutdoorMarketingCustomer)
+        .join(Branch, OutdoorMarketingCustomer.branch_id == Branch.id)
+        .join(Employee, OutdoorMarketingCustomer.marketing_employee_id == Employee.id)
+    )
+
+    if branch_id:
+        query = query.filter(OutdoorMarketingCustomer.branch_id == branch_id)
+    if date_filter:
+        query = query.filter(OutdoorMarketingCustomer.date == date_filter)
+
+    records = query.order_by(OutdoorMarketingCustomer.date.desc(), OutdoorMarketingCustomer.id.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Branch",
+        "Branch Code",
+        "Customer Name",
+        "Phone Number",
+        "Date of Birth (DOB)",
+        "Wedding Anniversary",
+        "Status",
+        "Enrolled / Interested Scheme",
+        "Campaign Area",
+        "Staff Representative",
+        "Staff Code",
+        "Google Review Given",
+        "Google Rating (Stars)",
+        "Google Review Feedback",
+        "Date",
+        "Notes",
+    ])
+
+    for r in records:
+        branch = r.branch
+        emp = r.marketing_employee
+        writer.writerow([
+            branch.name if branch else "",
+            branch.code if branch else "",
+            r.customer_name or "",
+            r.phone or "",
+            str(r.dob) if r.dob else "",
+            str(r.anniversary_date) if r.anniversary_date else "",
+            "Converted" if r.is_converted else (r.status or "Attended"),
+            r.scheme_name or "",
+            r.area_name or "",
+            emp.full_name if emp else "",
+            emp.employee_code if emp else "",
+            "Yes" if r.has_google_review else "No",
+            r.google_review_rating if r.has_google_review else "",
+            r.google_review_text or "",
+            str(r.date) if r.date else "",
+            r.notes or "",
+        ])
+
+    csv_data = output.getvalue()
+    filename = f"admin_outdoor_customers_{date_filter or date.today()}.csv"
+
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+# Legacy Aliases
+@router.get("/outdoor/activities", summary="Legacy alias for outdoor duties")
+def get_admin_outdoor_activities_alias(
+    branch_id: Optional[int] = Query(None),
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    return get_admin_outdoor_duties(branch_id=branch_id, date_filter=None, current_admin=current_admin, db=db)
+
+
+@router.get("/outdoor/leads", summary="Legacy alias for outdoor leads")
+def get_admin_outdoor_leads_alias(
+    branch_id: Optional[int] = Query(None),
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    return get_admin_outdoor_customers(branch_id=branch_id, date_filter=None, status=None, search=None, current_admin=current_admin, db=db)
+

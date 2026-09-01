@@ -20,6 +20,14 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronRight,
+  Gift,
+  Heart,
+  IndianRupee,
+  ArrowUpDown,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  User,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -31,6 +39,8 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
 import { EmployeeFormModal } from './EmployeeFormModal';
+import { CustomerActivityModal } from '../../components/customers/CustomerActivityModal';
+import { parseCustomerBreakdown } from '../../utils/customerUtils';
 import {
   EmployeeDetail,
   CustomerActivity,
@@ -55,65 +65,19 @@ export const EmployeeDetailPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('customers');
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
 
-  // Helper: parse breakdown string into array of statuses
-  const parseBreakdown = (breakdownStr?: string | null, count: number = 1): string[] => {
-    if (!breakdownStr) {
-      return Array.from({ length: count }, () => 'Attended');
-    }
-    const parts = breakdownStr.split('|').map((s) => s.trim());
-    const statuses = parts.map((part) => {
-      const colonIdx = part.indexOf(':');
-      if (colonIdx !== -1) {
-        return part.substring(colonIdx + 1).trim();
-      }
-      return part;
-    });
-    while (statuses.length < count) {
-      statuses.push('Attended');
-    }
-    return statuses.slice(0, count);
-  };
-
-  // 1. Customer Activity State
+  // 1. Customer Activity State & Modal Handlers
   const [customerActivities, setCustomerActivities] = useState<CustomerActivity[]>([]);
-  const [showAddCustomerModal, setShowAddCustomerModal] = useState<boolean>(false);
-  const [customerCount, setCustomerCount] = useState<number>(1);
-  const [customerStatuses, setCustomerStatuses] = useState<string[]>(['Attended']);
-  const [customerActivityDate, setCustomerActivityDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
-  const [customerActivityNotes, setCustomerActivityNotes] = useState<string>('');
-
+  const [showCustomerModal, setShowCustomerModal] = useState<boolean>(false);
   const [editingCustomerActivity, setEditingCustomerActivity] = useState<CustomerActivity | null>(null);
-  const [showEditCustomerModal, setShowEditCustomerModal] = useState<boolean>(false);
 
-  const handleCustomerCountChange = (count: number) => {
-    setCustomerCount(count);
-    setCustomerStatuses((prev) => {
-      const updated = [...prev];
-      while (updated.length < count) {
-        updated.push('Attended');
-      }
-      return updated.slice(0, count);
-    });
-  };
-
-  const handleCustomerStatusItemChange = (index: number, newStatus: string) => {
-    setCustomerStatuses((prev) => {
-      const updated = [...prev];
-      updated[index] = newStatus;
-      return updated;
-    });
+  const openAddCustomerModal = () => {
+    setEditingCustomerActivity(null);
+    setShowCustomerModal(true);
   };
 
   const openEditCustomerModal = (act: CustomerActivity) => {
     setEditingCustomerActivity(act);
-    const count = act.customers_count || 1;
-    setCustomerCount(count);
-    setCustomerStatuses(parseBreakdown(act.breakdown, count));
-    setCustomerActivityDate(act.activity_date);
-    setCustomerActivityNotes(act.notes || '');
-    setShowEditCustomerModal(true);
+    setShowCustomerModal(true);
   };
 
   // 2. Schemes List & Modal State
@@ -294,47 +258,6 @@ export const EmployeeDetailPage: React.FC = () => {
   useEffect(() => {
     fetchTabContent();
   }, [id, activeTab]);
-
-  // Handler: Add Customer Activity
-  const handleAddCustomerActivity = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!id) return;
-
-    setSubmittingAction(true);
-    try {
-      const breakdownSummary = customerStatuses
-        .map((st, idx) => `Customer #${idx + 1}: ${st}`)
-        .join(' | ');
-      const counts = customerStatuses.reduce((acc: Record<string, number>, curr) => {
-        acc[curr] = (acc[curr] || 0) + 1;
-        return acc;
-      }, {});
-      const primaryStatus = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Attended';
-
-      await api.post('/api/v1/customers', {
-        employee_id: parseInt(id),
-        customers_count: customerCount,
-        status: primaryStatus,
-        breakdown: breakdownSummary,
-        customer_name: `Customer Interactions (${customerCount})`,
-        phone_number: '',
-        activity_date: customerActivityDate,
-        notes: customerActivityNotes.trim() || null,
-      });
-
-      success(`Recorded activity for ${customerCount} customer${customerCount > 1 ? 's' : ''}.`);
-      setShowAddCustomerModal(false);
-      setCustomerCount(1);
-      setCustomerStatuses(['Attended']);
-      setCustomerActivityNotes('');
-      fetchEmployeeData();
-      fetchTabContent();
-    } catch (err: any) {
-      toastError(err.response?.data?.detail || 'Failed to record customer activity.');
-    } finally {
-      setSubmittingAction(false);
-    }
-  };
 
   // Handler: Add Scheme Record
   const handleAddScheme = async (e: React.FormEvent) => {
@@ -597,42 +520,6 @@ export const EmployeeDetailPage: React.FC = () => {
     }
   };
 
-  // Handler: Update Customer Activity (PATCH / PUT)
-  const handleUpdateCustomerActivity = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCustomerActivity) return;
-    setSubmittingAction(true);
-    try {
-      const breakdownSummary = customerStatuses
-        .map((st, idx) => `Customer #${idx + 1}: ${st}`)
-        .join(' | ');
-      const counts = customerStatuses.reduce((acc: Record<string, number>, curr) => {
-        acc[curr] = (acc[curr] || 0) + 1;
-        return acc;
-      }, {});
-      const primaryStatus = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Attended';
-
-      await api.patch(`/api/v1/customers/${editingCustomerActivity.id}`, {
-        customers_count: customerCount,
-        status: primaryStatus,
-        breakdown: breakdownSummary,
-        customer_name: `Customer Interactions (${customerCount})`,
-        activity_date: customerActivityDate,
-        notes: customerActivityNotes.trim() || null,
-      });
-
-      success('Customer activity updated successfully.');
-      setShowEditCustomerModal(false);
-      setEditingCustomerActivity(null);
-      fetchEmployeeData();
-      fetchTabContent();
-    } catch (err: any) {
-      toastError(err.response?.data?.detail || 'Failed to update customer activity.');
-    } finally {
-      setSubmittingAction(false);
-    }
-  };
-
   // Handler: Update Scheme Record (PATCH / PUT)
   const handleUpdateScheme = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -777,9 +664,9 @@ export const EmployeeDetailPage: React.FC = () => {
       </div>
 
       {/* Employee Profile Header Card (Light Slate Sapphire Theme) */}
-      <div className="bg-gradient-to-br from-[#FAF8F3] via-white to-[#F0F4F8] border border-[#C5D5E6] rounded-3xl p-6 sm:p-7 shadow-sm text-[#1D1D1B] flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+      <div className="bg-linear-to-br from-[#FAF8F3] via-white to-[#F0F4F8] border border-[#C5D5E6] rounded-3xl p-6 sm:p-7 shadow-sm text-[#1D1D1B] flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
         {/* Subtle Ambient Shimmer */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#536B8A] to-transparent opacity-60 animate-pulse" />
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-[#536B8A] to-transparent opacity-60 animate-pulse" />
 
         <div className="relative z-10 flex items-start gap-4">
           <div className="w-16 h-16 rounded-2xl bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] flex items-center justify-center font-extrabold text-xl shrink-0 overflow-hidden shadow-2xs">
@@ -934,16 +821,60 @@ export const EmployeeDetailPage: React.FC = () => {
           CONTENT RENDERERS FOR EACH SECTION
       ========================================================= */}
       {(() => {
+        // Helper: status badge
+        const getCustomerStatusBadge = (status: string) => {
+          switch (status) {
+            case 'Sold':
+              return (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]">
+                  <CheckCircle2 className="w-3 h-3 text-[#21845F]" />
+                  <span>Sold</span>
+                </span>
+              );
+            case 'Exchange':
+              return (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]">
+                  <ArrowUpDown className="w-3 h-3 text-[#2563EB]" />
+                  <span>Exchange</span>
+                </span>
+              );
+            case 'In Hold / Follow Up':
+            case 'In Hold':
+            case 'Follow Up':
+              return (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
+                  <Clock className="w-3 h-3 text-[#D97706]" />
+                  <span>In Hold / Follow Up</span>
+                </span>
+              );
+            case 'Lost':
+              return (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA]">
+                  <XCircle className="w-3 h-3 text-[#DC2626]" />
+                  <span>Lost</span>
+                </span>
+              );
+            case 'Walkin':
+            default:
+              return (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F4F4F5] text-[#52525B] border border-[#E4E4E7]">
+                  <UserCheck className="w-3 h-3 text-[#71717A]" />
+                  <span>Walkin</span>
+                </span>
+              );
+          }
+        };
+
         // Content Renderer: Customer Activity
         const renderCustomersContent = () => (
           <div className="space-y-4">
             {customerActivities.length === 0 ? (
               <EmptyState
                 title="No customer interactions logged."
-                description={`Record showroom customer walk-ins and inquiries attended by ${employee.full_name}.`}
+                description={`Record showroom customer walk-ins, sales, and inquiries attended by ${employee.full_name}.`}
                 icon={UserCheck}
                 actionText="Log Customer Activity"
-                onAction={() => setShowAddCustomerModal(true)}
+                onAction={openAddCustomerModal}
               />
             ) : (
               <div className="bg-white border border-[#E8E6E1] rounded-2xl overflow-hidden shadow-2xs">
@@ -951,26 +882,30 @@ export const EmployeeDetailPage: React.FC = () => {
                 <div className="sm:hidden divide-y divide-[#F0EFEA]">
                   {customerActivities.map((act) => {
                     const count = act.customers_count || 1;
+                    const customerItems = parseCustomerBreakdown(
+                      act.breakdown,
+                      count,
+                      act.status,
+                      act.customer_name,
+                      act.phone_number,
+                      act.dob,
+                      act.anniversary,
+                      act.product_value
+                    );
+
                     return (
                       <div key={act.id} className="p-3.5 space-y-2 bg-white">
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-xs text-[#171717] flex items-center gap-1.5">
-                            <span>{count} Customer{count > 1 ? 's' : ''} Attended</span>
+                            <span>{act.customer_name || 'Walk-in Customer'}</span>
+                            {count > 1 && (
+                              <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-[#FAF5FF] text-[#7E22CE] border border-[#D8B4FE] font-bold">
+                                {count} Cust
+                              </span>
+                            )}
                           </span>
                           <div className="flex items-center gap-1">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                act.status === 'Closed'
-                                  ? 'bg-[#EAF7F1] text-[#16845B] border border-[#C1ECD9]'
-                                  : act.status === 'In Hold Jewellery'
-                                  ? 'bg-[#EEF2FF] text-[#4338CA] border border-[#C7D2FE]'
-                                  : act.status === 'Follow Up Needed'
-                                  ? 'bg-[#FFF1F2] text-[#BE123C] border border-[#FECDD3]'
-                                  : 'bg-[#FAF6EB] text-[#8B6D1B] border border-[#EEDFA8]'
-                              }`}
-                            >
-                              {act.status}
-                            </span>
+                            {getCustomerStatusBadge(act.status)}
                             <button
                               onClick={() => openEditCustomerModal(act)}
                               className="p-1 text-[#737373] hover:text-[#536B8A] hover:bg-[#F0F4F8] rounded-md transition-colors"
@@ -988,11 +923,30 @@ export const EmployeeDetailPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {act.breakdown && (
-                          <p className="text-[10px] text-[#536B8A] bg-[#F0F4F8] px-2.5 py-1 rounded-lg font-mono">
-                            {act.breakdown}
+                        {act.phone_number && (
+                          <p className="text-[11px] text-[#737373] font-mono flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-[#8A8479]" />
+                            <span>{act.phone_number}</span>
                           </p>
                         )}
+
+                        <div className="flex items-center gap-3 text-[11px] text-[#737373] flex-wrap">
+                          {act.dob && (
+                            <span className="text-[#D97706] flex items-center gap-1">
+                              <Gift className="w-3 h-3" /> DOB: {act.dob}
+                            </span>
+                          )}
+                          {act.anniversary && (
+                            <span className="text-[#E11D48] flex items-center gap-1">
+                              <Heart className="w-3 h-3" /> Anniv: {act.anniversary}
+                            </span>
+                          )}
+                          {act.product_value && act.product_value > 0 ? (
+                            <span className="text-[#21845F] font-bold font-mono">
+                              ₹{act.product_value.toLocaleString('en-IN')}
+                            </span>
+                          ) : null}
+                        </div>
 
                         <div className="flex items-center justify-between text-[11px] text-[#737373]">
                           <span>Date: {act.activity_date}</span>
@@ -1014,57 +968,110 @@ export const EmployeeDetailPage: React.FC = () => {
                     <thead className="bg-[#FAF9F6] border-b border-[#E8E6E1] text-[#737373] font-bold uppercase tracking-wider text-[11px]">
                       <tr>
                         <th className="px-5 py-3.5">Date</th>
-                        <th className="px-5 py-3.5">Customers Attended</th>
-                        <th className="px-5 py-3.5">Interaction Status / Breakdown</th>
-                        <th className="px-5 py-3.5">Customer Details & Notes</th>
+                        <th className="px-5 py-3.5">Customer Details</th>
+                        <th className="px-5 py-3.5">DOB & Anniversary</th>
+                        <th className="px-5 py-3.5">Outcome Status</th>
+                        <th className="px-5 py-3.5">Product Value (₹)</th>
+                        <th className="px-5 py-3.5">Inquiries / Notes</th>
                         <th className="px-5 py-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F0EFEA] font-medium">
                       {customerActivities.map((act) => {
                         const count = act.customers_count || 1;
+                        const customerItems = parseCustomerBreakdown(
+                          act.breakdown,
+                          count,
+                          act.status,
+                          act.customer_name,
+                          act.phone_number,
+                          act.dob,
+                          act.anniversary,
+                          act.product_value
+                        );
+
                         return (
                           <tr key={act.id} className="hover:bg-[#FAF9F6] transition-colors">
-                            <td className="px-5 py-3.5 font-semibold text-[#171717]">{act.activity_date}</td>
+                            <td className="px-5 py-3.5 font-semibold text-[#171717] whitespace-nowrap">
+                              {act.activity_date}
+                            </td>
                             <td className="px-5 py-3.5">
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#EDF2F7] text-[#536B8A] border border-[#C5D5E6]">
-                                <UserCheck className="w-3.5 h-3.5 text-[#536B8A]" />
-                                <span>{count} Customer{count > 1 ? 's' : ''}</span>
-                              </span>
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-[#1D1D1B]">
+                                    {act.customer_name || 'Walk-in Customer'}
+                                  </span>
+                                  {count > 1 && (
+                                    <span className="px-1.5 py-0.2 rounded-md bg-[#FAF5FF] text-[#7E22CE] border border-[#D8B4FE] text-[10px] font-bold">
+                                      {count} Cust
+                                    </span>
+                                  )}
+                                </div>
+                                {act.phone_number ? (
+                                  <p className="text-[11px] text-[#737373] font-mono flex items-center gap-1">
+                                    <Phone className="w-3 h-3 text-[#8A8479]" />
+                                    <span>{act.phone_number}</span>
+                                  </p>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className="px-5 py-3.5">
+                              <div className="space-y-0.5 text-[11px]">
+                                {act.dob && (
+                                  <span className="text-[#D97706] flex items-center gap-1 font-semibold">
+                                    <Gift className="w-3 h-3" /> {act.dob}
+                                  </span>
+                                )}
+                                {act.anniversary && (
+                                  <span className="text-[#E11D48] flex items-center gap-1 font-semibold">
+                                    <Heart className="w-3 h-3" /> {act.anniversary}
+                                  </span>
+                                )}
+                                {!act.dob && !act.anniversary && (
+                                  <span className="text-[#A1A1AA]">—</span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-5 py-3.5 space-y-1">
-                              <div>
-                                <span
-                                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                                    act.status === 'Closed'
-                                      ? 'bg-[#EAF7F1] text-[#16845B] border border-[#C1ECD9]'
-                                      : act.status === 'In Hold Jewellery'
-                                      ? 'bg-[#EEF2FF] text-[#4338CA] border border-[#C7D2FE]'
-                                      : act.status === 'Follow Up Needed'
-                                      ? 'bg-[#FFF1F2] text-[#BE123C] border border-[#FECDD3]'
-                                      : 'bg-[#FAF6EB] text-[#8B6D1B] border border-[#EEDFA8]'
-                                  }`}
-                                >
-                                  {act.status}
-                                </span>
-                              </div>
-                              {act.breakdown && (
-                                <p className="text-[11px] text-[#737373] font-mono">{act.breakdown}</p>
+                              <div>{getCustomerStatusBadge(act.status)}</div>
+                              {customerItems.length > 1 && (
+                                <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                                  {customerItems.map((item, i) => (
+                                    <span
+                                      key={i}
+                                      className="text-[9px] font-bold px-1.5 py-0.2 rounded-sm bg-[#FAF8F3] border border-[#E4DFD4] text-[#5E5A52]"
+                                      title={`${item.name || `Cust #${i + 1}`}: ${item.status}`}
+                                    >
+                                      #{i + 1}: {item.status}
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                             </td>
-                            <td className="px-5 py-3.5 text-[#525252] max-w-xs">{act.notes || '—'}</td>
+                            <td className="px-5 py-3.5 font-mono font-bold text-[#1D1D1B]">
+                              {act.product_value && act.product_value > 0 ? (
+                                <span className="text-[#21845F]">
+                                  ₹{act.product_value.toLocaleString('en-IN')}
+                                </span>
+                              ) : (
+                                <span className="text-[#A1A1AA] font-normal">—</span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3.5 text-[#525252] max-w-xs truncate">
+                              {act.notes || '—'}
+                            </td>
                             <td className="px-5 py-3.5 text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   onClick={() => openEditCustomerModal(act)}
-                                  className="p-1 text-[#737373] hover:text-[#536B8A] hover:bg-[#F0F4F8] rounded-md transition-colors"
+                                  className="p-1 text-[#737373] hover:text-[#536B8A] hover:bg-[#F0F4F8] rounded-md transition-colors cursor-pointer"
                                   title="Edit Activity"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => setDeleteTarget({ type: 'customer', id: act.id, title: `${act.activity_date} (${count} Customers)` })}
-                                  className="p-1 text-[#A3A3A3] hover:text-[#C24141] hover:bg-[#FDECEC] rounded-md transition-colors"
+                                  className="p-1 text-[#A3A3A3] hover:text-[#C24141] hover:bg-[#FDECEC] rounded-md transition-colors cursor-pointer"
                                   title="Delete Activity"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -1231,7 +1238,7 @@ export const EmployeeDetailPage: React.FC = () => {
                       <span className="font-semibold text-[#536B8A] bg-[#F0F4F8] px-2 py-0.5 rounded-full">
                         {rev.customers_count || 1} Customer{(rev.customers_count || 1) > 1 ? 's' : ''} Review
                       </span>
-                      {rev.notes && <span className="truncate max-w-[160px]">Note: {rev.notes}</span>}
+                      {rev.notes && <span className="truncate max-w-40">Note: {rev.notes}</span>}
                     </div>
                   </div>
                 ))}
@@ -1529,7 +1536,7 @@ export const EmployeeDetailPage: React.FC = () => {
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => setShowAddCustomerModal(true)}
+                onClick={openAddCustomerModal}
                 leftIcon={<Plus className="w-3.5 h-3.5" />}
                 className="text-xs shadow-2xs w-full sm:w-auto"
               >
@@ -1842,91 +1849,23 @@ export const EmployeeDetailPage: React.FC = () => {
           MODALS
       ========================================================= */}
 
-      {/* Modal: Add Customer Activity */}
-      <Modal
-        isOpen={showAddCustomerModal}
-        onClose={() => setShowAddCustomerModal(false)}
-        title="Log Customer Activity"
-        subtitle={`Record customer walk-ins & inquiry interactions attended by ${employee.full_name}`}
-        footer={
-          <>
-            <Button variant="outline" size="sm" onClick={() => setShowAddCustomerModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" size="sm" onClick={handleAddCustomerActivity} isLoading={submittingAction}>
-              Save Activity
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleAddCustomerActivity} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Numbers Dropdown: How many customers attended */}
-            <Select
-              label="How many customers attended? *"
-              value={customerCount.toString()}
-              onChange={(e) => handleCustomerCountChange(parseInt(e.target.value))}
-              options={Array.from({ length: 15 }, (_, i) => ({
-                value: (i + 1).toString(),
-                label: `${i + 1} Customer${i > 0 ? 's' : ''}`,
-              }))}
-            />
-
-            {/* Interaction Date */}
-            <Input
-              label="Interaction Date *"
-              type="date"
-              value={customerActivityDate}
-              onChange={(e) => setCustomerActivityDate(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Dynamic Status Dropdowns for Each Number of Customer */}
-          <div className="space-y-2.5 bg-[#FAF9F6] p-3.5 rounded-2xl border border-[#E8E6E1]">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#1D1D1B]">
-                Status for Each Customer ({customerCount})
-              </label>
-              <span className="text-[11px] text-[#737373]">Select individual result</span>
-            </div>
-
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              {customerStatuses.map((statusVal, idx) => (
-                <div key={idx} className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-[#E8E6E1]">
-                  <span className="text-xs font-bold text-[#536B8A] shrink-0 w-24">
-                    Customer #{idx + 1}:
-                  </span>
-                  <select
-                    value={statusVal}
-                    onChange={(e) => handleCustomerStatusItemChange(idx, e.target.value)}
-                    className="flex-1 text-xs font-semibold bg-[#FAF9F6] border border-[#E8E6E1] rounded-lg px-2.5 py-1.5 text-[#1D1D1B] focus:outline-none focus:border-[#536B8A]"
-                  >
-                    <option value="Attended">Attended (Inquiry / Walk-in)</option>
-                    <option value="Closed">Closed (Purchased / Sold)</option>
-                    <option value="In Hold Jewellery">In Hold Jewellery (Item on Hold)</option>
-                    <option value="Follow Up Needed">Follow Up Needed</option>
-                  </select>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Notes: Customer Details and Inquiries */}
-          <div>
-            <label className="block text-xs font-semibold text-[#1D1D1B] mb-1.5">
-              Customer Details & Remarks (Optional)
-            </label>
-            <textarea
-              rows={3}
-              value={customerActivityNotes}
-              onChange={(e) => setCustomerActivityNotes(e.target.value)}
-              placeholder="e.g. Customer #1: Ramesh looked at gold bangles; Customer #2: Geetha booked 22kt bridal set on hold"
-              className="w-full text-xs bg-white border border-[#E8E6E1] rounded-xl p-2.5 text-[#1D1D1B] placeholder:text-[#8A8479] focus:outline-none focus:border-[#536B8A] focus:ring-2 focus:ring-[#536B8A]/10 font-medium"
-            />
-          </div>
-        </form>
-      </Modal>
+      {/* Modal: Customer Activity (Add / Edit) */}
+      {showCustomerModal && (
+        <CustomerActivityModal
+          isOpen={showCustomerModal}
+          onClose={() => {
+            setShowCustomerModal(false);
+            setEditingCustomerActivity(null);
+          }}
+          onSaved={() => {
+            fetchEmployeeData();
+            fetchTabContent();
+          }}
+          employeeId={parseInt(id || '0')}
+          employeeName={employee.full_name}
+          initialData={editingCustomerActivity}
+        />
+      )}
 
       {/* Modal: Add Scheme Record */}
       <Modal
@@ -1953,7 +1892,7 @@ export const EmployeeDetailPage: React.FC = () => {
               <select
                 value={schemeName}
                 onChange={(e) => setSchemeName(e.target.value)}
-                className="w-full text-xs font-semibold bg-[#FAF9F6] border border-[#E8E6E1] rounded-xl p-2.5 text-[#1D1D1B] focus:outline-none focus:border-[#536B8A]"
+                className="w-full text-xs font-semibold select-luxury-beige rounded-xl p-2.5"
               >
                 <option value="Siri Samruddhi Gold Monthly Scheme">Siri Samruddhi Gold Monthly Scheme</option>
                 <option value="Swarna Nidhi 11-Month Gold Plan">Swarna Nidhi 11-Month Gold Plan</option>
@@ -2109,13 +2048,13 @@ export const EmployeeDetailPage: React.FC = () => {
               accept="image/*"
               capture="environment"
               onChange={handleFileChange}
-              className="w-full text-xs text-[#525252] file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#FAF6EB] file:text-[#8B6D1B] hover:file:bg-[#F3E7B3] file:cursor-pointer border border-[#E8E6E1] rounded-xl p-2 bg-[#FAF9F6]"
+              className="w-full text-xs file-input-upload rounded-xl p-2"
               required
             />
           </div>
 
           {previewUrl && (
-            <div className="rounded-xl border border-[#E8E6E1] overflow-hidden aspect-16/9 max-h-48 bg-[#FAF9F6] flex items-center justify-center">
+            <div className="rounded-xl border border-[#E8E6E1] overflow-hidden aspect-video max-h-48 bg-[#FAF9F6] flex items-center justify-center">
               <img src={previewUrl} alt="Preview" className="h-full w-full object-contain" />
             </div>
           )}
@@ -2174,102 +2113,6 @@ export const EmployeeDetailPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Modal: Edit Customer Activity */}
-      <Modal
-        isOpen={showEditCustomerModal}
-        onClose={() => {
-          setShowEditCustomerModal(false);
-          setEditingCustomerActivity(null);
-        }}
-        title="Edit Customer Activity"
-        subtitle={`Update customer count, status breakdown, date or remarks for ${employee.full_name}`}
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowEditCustomerModal(false);
-                setEditingCustomerActivity(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button variant="primary" size="sm" onClick={handleUpdateCustomerActivity} isLoading={submittingAction}>
-              Save Changes
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleUpdateCustomerActivity} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Numbers Dropdown: How many customers attended */}
-            <Select
-              label="How many customers attended? *"
-              value={customerCount.toString()}
-              onChange={(e) => handleCustomerCountChange(parseInt(e.target.value))}
-              options={Array.from({ length: 15 }, (_, i) => ({
-                value: (i + 1).toString(),
-                label: `${i + 1} Customer${i > 0 ? 's' : ''}`,
-              }))}
-            />
-
-            {/* Interaction Date */}
-            <Input
-              label="Interaction Date *"
-              type="date"
-              value={customerActivityDate}
-              onChange={(e) => setCustomerActivityDate(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Dynamic Status Dropdowns for Each Number of Customer */}
-          <div className="space-y-2.5 bg-[#FAF9F6] p-3.5 rounded-2xl border border-[#E8E6E1]">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#1D1D1B]">
-                Status for Each Customer ({customerCount})
-              </label>
-              <span className="text-[11px] text-[#737373]">Select individual result</span>
-            </div>
-
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              {customerStatuses.map((statusVal, idx) => (
-                <div key={idx} className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-[#E8E6E1]">
-                  <span className="text-xs font-bold text-[#536B8A] shrink-0 w-24">
-                    Customer #{idx + 1}:
-                  </span>
-                  <select
-                    value={statusVal}
-                    onChange={(e) => handleCustomerStatusItemChange(idx, e.target.value)}
-                    className="flex-1 text-xs font-semibold bg-[#FAF9F6] border border-[#E8E6E1] rounded-lg px-2.5 py-1.5 text-[#1D1D1B] focus:outline-none focus:border-[#536B8A]"
-                  >
-                    <option value="Attended">Attended (Inquiry / Walk-in)</option>
-                    <option value="Closed">Closed (Purchased / Sold)</option>
-                    <option value="In Hold Jewellery">In Hold Jewellery (Item on Hold)</option>
-                    <option value="Follow Up Needed">Follow Up Needed</option>
-                  </select>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Notes: Customer Details and Inquiries */}
-          <div>
-            <label className="block text-xs font-semibold text-[#1D1D1B] mb-1.5">
-              Customer Details & Remarks (Optional)
-            </label>
-            <textarea
-              rows={3}
-              value={customerActivityNotes}
-              onChange={(e) => setCustomerActivityNotes(e.target.value)}
-              placeholder="e.g. Customer #1: Ramesh looked at gold bangles; Customer #2: Geetha booked 22kt bridal set on hold"
-              className="w-full text-xs bg-white border border-[#E8E6E1] rounded-xl p-2.5 text-[#1D1D1B] placeholder:text-[#8A8479] focus:outline-none focus:border-[#536B8A] focus:ring-2 focus:ring-[#536B8A]/10 font-medium"
-            />
-          </div>
-        </form>
-      </Modal>
-
       {/* Modal: Edit Scheme Record */}
       <Modal
         isOpen={showEditSchemeModal}
@@ -2305,7 +2148,7 @@ export const EmployeeDetailPage: React.FC = () => {
               <select
                 value={schemeName}
                 onChange={(e) => setSchemeName(e.target.value)}
-                className="w-full text-xs font-semibold bg-[#FAF9F6] border border-[#E8E6E1] rounded-xl p-2.5 text-[#1D1D1B] focus:outline-none focus:border-[#536B8A]"
+                className="w-full text-xs font-semibold select-luxury-beige rounded-xl p-2.5"
               >
                 <option value="Siri Samruddhi Gold Monthly Scheme">Siri Samruddhi Gold Monthly Scheme</option>
                 <option value="Swarna Nidhi 11-Month Gold Plan">Swarna Nidhi 11-Month Gold Plan</option>

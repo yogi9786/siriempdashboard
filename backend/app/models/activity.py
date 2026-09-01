@@ -17,10 +17,13 @@ class CustomerActivity(Base):
     employee_id = Column(Integer, ForeignKey("employees.id"), index=True, nullable=False)
     customer_name = Column(String(150), default="Customer Walk-in", nullable=True)
     phone_number = Column(String(50), default="", nullable=True)
+    dob = Column(Date, nullable=True)
+    anniversary = Column(Date, nullable=True)
+    product_value = Column(Float, default=0.0, nullable=True)
     customers_count = Column(Integer, default=1, nullable=False)
-    breakdown = Column(Text, nullable=True)  # JSON or text of per-customer status
+    breakdown = Column(Text, nullable=True)  # JSON or text of per-customer status/details
     activity_date = Column(Date, default=date.today, index=True, nullable=False)
-    status = Column(String(100), default="Attended", nullable=False)  # Attended, Closed, In Hold Jewellery, Follow Up Needed
+    status = Column(String(100), default="Walkin", nullable=False)  # Sold, Exchange, Lost, Walkin, In Hold / Follow Up
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utcnow, nullable=False)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)

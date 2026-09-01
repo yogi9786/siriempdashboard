@@ -6,21 +6,37 @@ from pydantic import BaseModel, Field
 # ----------------------------------------------------
 # Customer Activity Schemas
 # ----------------------------------------------------
+class CustomerDetailItem(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    dob: Optional[date] = None
+    anniversary: Optional[date] = None
+    status: Optional[str] = "Walkin"  # Sold, Exchange, Lost, Walkin, In Hold / Follow Up
+    product_value: Optional[float] = 0.0
+    notes: Optional[str] = None
+
+
 class CustomerActivityCreate(BaseModel):
     employee_id: int
-    customers_count: int = Field(default=1, ge=1)
+    customers_count: int = Field(default=1, ge=0)
     customer_name: Optional[str] = "Customer Interaction"
     phone_number: Optional[str] = ""
+    dob: Optional[date] = None
+    anniversary: Optional[date] = None
+    product_value: Optional[float] = 0.0
     activity_date: Optional[date] = None
-    status: str = Field(default="Attended")  # Attended, Closed, In Hold Jewellery, Follow Up Needed
+    status: str = Field(default="Walkin")  # Sold, Exchange, Lost, Walkin, In Hold / Follow Up
     breakdown: Optional[str] = None
     notes: Optional[str] = None
 
 
 class CustomerActivityUpdate(BaseModel):
-    customers_count: Optional[int] = Field(default=None, ge=1)
+    customers_count: Optional[int] = Field(default=None, ge=0)
     customer_name: Optional[str] = None
     phone_number: Optional[str] = None
+    dob: Optional[date] = None
+    anniversary: Optional[date] = None
+    product_value: Optional[float] = None
     activity_date: Optional[date] = None
     status: Optional[str] = None
     breakdown: Optional[str] = None
@@ -30,12 +46,18 @@ class CustomerActivityUpdate(BaseModel):
 class CustomerActivityResponse(BaseModel):
     id: int
     branch_id: int
+    branch_code: Optional[str] = None
+    branch_name: Optional[str] = None
     employee_id: int
     employee_name: Optional[str] = None
+    employee_code: Optional[str] = None
     customers_count: int = 1
     breakdown: Optional[str] = None
     customer_name: Optional[str] = "Customer Interaction"
     phone_number: Optional[str] = ""
+    dob: Optional[date] = None
+    anniversary: Optional[date] = None
+    product_value: Optional[float] = 0.0
     activity_date: date
     status: str
     notes: Optional[str] = None

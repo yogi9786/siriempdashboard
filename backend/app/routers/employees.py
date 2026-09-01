@@ -103,10 +103,17 @@ def create_employee(
         profile_photo_url=emp_data.profile_photo_url,
         notes=emp_data.notes,
     )
-    db.add(employee)
-    db.commit()
-    db.refresh(employee)
-    return employee
+    try:
+        db.add(employee)
+        db.commit()
+        db.refresh(employee)
+        return employee
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create employee: {str(e)}",
+        )
 
 
 @router.get("/{employee_id}", response_model=EmployeeDetailResponse, summary="Get employee details and calculated activity metrics")
@@ -251,9 +258,16 @@ def update_employee(
     if update_data.notes is not None:
         employee.notes = update_data.notes
 
-    db.commit()
-    db.refresh(employee)
-    return employee
+    try:
+        db.commit()
+        db.refresh(employee)
+        return employee
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update employee: {str(e)}",
+        )
 
 
 @router.delete("/{employee_id}", status_code=status.HTTP_200_OK, summary="Delete employee")
@@ -273,6 +287,13 @@ def delete_employee(
             detail="Employee not found in your showroom branch.",
         )
 
-    db.delete(employee)
-    db.commit()
-    return {"message": "Employee deleted successfully."}
+    try:
+        db.delete(employee)
+        db.commit()
+        return {"message": "Employee deleted successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete employee: {str(e)}",
+        )

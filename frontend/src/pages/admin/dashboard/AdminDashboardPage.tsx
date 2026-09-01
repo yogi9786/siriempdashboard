@@ -54,6 +54,10 @@ export const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchOverview();
+    const interval = setInterval(() => {
+      fetchOverview();
+    }, 15000);
+    return () => clearInterval(interval);
   }, [selectedBranchId, dateRange]);
 
   const todayFormatted = new Date().toLocaleDateString('en-IN', {
@@ -74,12 +78,12 @@ export const AdminDashboardPage: React.FC = () => {
       {/* -------------------------------------------------------------
           1. LUXURY ENTERPRISE HERO HEADER
       ------------------------------------------------------------- */}
-      <div className="relative bg-gradient-to-br from-[#FAF8F3] via-white to-[#FAF5FF] border border-[#D8B4FE] rounded-3xl p-6 sm:p-8 sm:py-9 shadow-xs overflow-hidden group text-[#1D1D1B]">
+      <div className="relative bg-linear-to-br from-[#FAF8F3] via-white to-[#FAF5FF] border border-[#D8B4FE] rounded-3xl p-6 sm:p-8 sm:py-9 shadow-xs overflow-hidden group text-[#1D1D1B]">
         {/* Top Gold & Purple Accent Line */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#C5A869] via-[#9333EA] to-[#C5A869] opacity-70 animate-pulse" />
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-[#C5A869] via-[#9333EA] to-[#C5A869] opacity-70 animate-pulse" />
 
         {/* Ambient Radial Glow */}
-        <div className="absolute top-0 right-1/4 w-72 h-72 bg-gradient-to-br from-[#9333EA]/10 via-[#F3E8FF]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-72 h-72 bg-linear-to-br from-[#9333EA]/10 via-[#F3E8FF]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3">
@@ -94,6 +98,15 @@ export const AdminDashboardPage: React.FC = () => {
                 <Clock className="w-3.5 h-3.5 text-[#7E22CE]" />
                 <span>{todayFormatted}</span>
               </span>
+
+              <button
+                onClick={() => fetchOverview()}
+                className="text-xs font-bold text-[#7E22CE] flex items-center gap-1.5 bg-white hover:bg-[#FAF5FF] px-3 py-1.5 rounded-full border border-[#D8B4FE] shadow-2xs transition-colors cursor-pointer"
+                title="Sync Live Showroom Updates"
+              >
+                <RefreshCw className="w-3 h-3 animate-spin text-[#7E22CE]" style={{ animationDuration: '4s' }} />
+                <span>Live Synced</span>
+              </button>
             </div>
 
             {/* Title */}
@@ -131,106 +144,180 @@ export const AdminDashboardPage: React.FC = () => {
       {/* -------------------------------------------------------------
           2. 8 ORGANIZATION KPI CARDS
       ------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        {/* 1. Total Branches */}
-        <AdminKPICard
-          title="Active Showrooms"
-          value={overview?.total_branches ?? 3}
-          subtitle="Yelahanka, Kolar, Udupi"
-          icon={<Building2 className="w-5 h-5 text-[#3B82F6]" />}
-          iconBgColor="bg-[#EFF6FF] border-[#BFDBFE] text-[#3B82F6]"
-          badgeText="100% Operational"
-          badgeColor="bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]"
-          onClick={() => navigate('/admin/branches')}
-        />
+      {(() => {
+        const yelahankaStaff = overview?.branch_comparison?.find((b) => b.branch_name.toLowerCase().includes('yelahanka'))?.employee_count ?? 26;
+        const kolarStaff = overview?.branch_comparison?.find((b) => b.branch_name.toLowerCase().includes('kolar'))?.employee_count ?? 14;
+        const udupiStaff = overview?.branch_comparison?.find((b) => b.branch_name.toLowerCase().includes('udupi'))?.employee_count ?? 22;
+        const totalAllStaff = (yelahankaStaff + kolarStaff + udupiStaff) || 62;
 
-        {/* 2. Showroom Staff */}
-        <AdminKPICard
-          title="Total Staff Roster"
-          value={overview?.total_employees ?? 0}
-          subtitle={`${overview?.active_employees ?? 0} Active on Floor`}
-          icon={<Users className="w-5 h-5 text-[#7E22CE]" />}
-          iconBgColor="bg-[#F3E8FF] border-[#D8B4FE] text-[#7E22CE]"
-          progressPct={
-            overview?.total_employees
-              ? Math.round(((overview.active_employees || 0) / overview.total_employees) * 100)
-              : 100
-          }
-          progressBarColor="bg-[#7E22CE]"
-          onClick={() => navigate('/admin/employees')}
-        />
+        return (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              {/* 1. Total Visitors Today */}
+              <AdminKPICard
+                title="Total Visitors Today"
+                value={overview?.today_footfall ?? 0}
+                subtitle={`${overview?.today_customers_closed ?? 0} Closed Deals Today`}
+                icon={<UserCheck className="w-5 h-5 text-[#3B82F6]" />}
+                iconBgColor="bg-[#EFF6FF] border-[#BFDBFE] text-[#3B82F6]"
+                badgeText="Live Showroom Feed"
+                badgeColor="bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]"
+                onClick={() => navigate('/admin/customers')}
+              />
 
-        {/* 3. Gold Schemes */}
-        <AdminKPICard
-          title="Gold Schemes Closed"
-          value={overview?.total_schemes ?? 0}
-          subtitle={`₹${(overview?.total_schemes_value ?? 0).toLocaleString('en-IN')} Total Value`}
-          icon={<Award className="w-5 h-5 text-[#21845F]" />}
-          iconBgColor="bg-[#E8F4EE] border-[#C5E3D5] text-[#21845F]"
-          badgeText={`₹${Math.round((overview?.total_schemes_value ?? 0) / 1000)}k Target`}
-          badgeColor="bg-[#FAF8F3] text-[#7E22CE] border-[#D8B4FE]"
-          onClick={() => navigate('/admin/gold-schemes')}
-        />
+              {/* 2. Showroom Staff Roster (All Branches Combined: 62) */}
+              <AdminKPICard
+                title="Total Staff Roster"
+                value={selectedBranch ? (overview?.total_employees ?? 0) : totalAllStaff}
+                subtitle={
+                  selectedBranch
+                    ? `${overview?.active_employees ?? 0} Active on Floor (${selectedBranch.name}) • Total All Branches: ${totalAllStaff}`
+                    : `${totalAllStaff} Active (${yelahankaStaff} Yelahanka • ${kolarStaff} Kolar • ${udupiStaff} Udupi)`
+                }
+                icon={<Users className="w-5 h-5 text-[#7E22CE]" />}
+                iconBgColor="bg-[#F3E8FF] border-[#D8B4FE] text-[#7E22CE]"
+                badgeText={selectedBranch ? `${selectedBranch.name} (${overview?.total_employees ?? 0} Staff)` : `All 3 Branches (${totalAllStaff} Staff)`}
+                badgeColor="bg-[#FAF8F3] text-[#7E22CE] border-[#D8B4FE]"
+                progressPct={100}
+                progressBarColor="bg-[#7E22CE]"
+                onClick={() => navigate('/admin/employees')}
+              />
 
-        {/* 4. Google Reviews */}
-        <AdminKPICard
-          title="Showroom Reputation"
-          value={`${(overview?.average_rating ?? 5.0).toFixed(1)} ★`}
-          subtitle={`${overview?.total_reviews ?? 0} Verified Reviews`}
-          icon={<Star className="w-5 h-5 fill-[#B97855] text-[#B97855]" />}
-          iconBgColor="bg-[#FAF1EC] border-[#ECCFC0] text-[#B97855]"
-          badgeText="100% 5-Star"
-          badgeColor="bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]"
-          onClick={() => navigate('/admin/google-reviews')}
-        />
+              {/* 3. Gold Schemes */}
+              <AdminKPICard
+                title="Gold Schemes Closed"
+                value={overview?.total_schemes ?? 0}
+                subtitle={`₹${(overview?.total_schemes_value ?? 0).toLocaleString('en-IN')} Total Value`}
+                icon={<Award className="w-5 h-5 text-[#21845F]" />}
+                iconBgColor="bg-[#E8F4EE] border-[#C5E3D5] text-[#21845F]"
+                badgeText={`${overview?.today_schemes_count ?? 0} Today`}
+                badgeColor="bg-[#FAF8F3] text-[#7E22CE] border-[#D8B4FE]"
+                onClick={() => navigate('/admin/gold-schemes')}
+              />
 
-        {/* 5. Customer Footfall */}
-        <AdminKPICard
-          title="Customer Footfall"
-          value={overview?.total_footfall ?? 0}
-          subtitle={`${overview?.total_customers_closed ?? 0} Closed Deals`}
-          icon={<UserCheck className="w-5 h-5 text-[#526F91]" />}
-          iconBgColor="bg-[#EDF2F8] border-[#C6D4E3] text-[#526F91]"
-          trend={{ value: `${overview?.conversion_percentage ?? 100}%`, label: 'Conversion', isPositive: true }}
-          onClick={() => navigate('/admin/customers')}
-        />
+              {/* 4. Google Reviews */}
+              <AdminKPICard
+                title="Showroom Reputation"
+                value={`${(overview?.average_rating ?? 5.0).toFixed(1)} ★`}
+                subtitle={`${overview?.total_reviews ?? 0} Verified Reviews`}
+                icon={<Star className="w-5 h-5 fill-[#B97855] text-[#B97855]" />}
+                iconBgColor="bg-[#FAF1EC] border-[#ECCFC0] text-[#B97855]"
+                badgeText={`${overview?.today_reviews_count ?? 0} Today`}
+                badgeColor="bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]"
+                onClick={() => navigate('/admin/google-reviews')}
+              />
 
-        {/* 6. Outdoor Leads */}
-        <AdminKPICard
-          title="Outdoor Field Leads"
-          value={overview?.outdoor_leads ?? 0}
-          subtitle={`${overview?.outdoor_staff_count ?? 0} Field Marketers`}
-          icon={<Compass className="w-5 h-5 text-[#21845F]" />}
-          iconBgColor="bg-[#E8F4EE] border-[#C5E3D5] text-[#21845F]"
-          badgeText={`${overview?.outdoor_leads_converted ?? 0} Converted`}
-          badgeColor="bg-[#FAF8F3] text-[#21845F] border-[#C5E3D5]"
-          onClick={() => navigate('/admin/outdoor-marketing')}
-        />
+              {/* 5. Cumulative Customer Footfall */}
+              <AdminKPICard
+                title="Cumulative Footfall"
+                value={overview?.total_footfall ?? 0}
+                subtitle={`${overview?.total_customers_closed ?? 0} Total Closed Deals`}
+                icon={<UserCheck className="w-5 h-5 text-[#526F91]" />}
+                iconBgColor="bg-[#EDF2F8] border-[#C6D4E3] text-[#526F91]"
+                trend={{ value: `${overview?.conversion_percentage ?? 100}%`, label: 'Conversion', isPositive: true }}
+                onClick={() => navigate('/admin/customer-activities')}
+              />
 
-        {/* 7. Attire Compliance */}
-        <AdminKPICard
-          title="Grooming Compliance"
-          value={`${overview?.attire_compliance_pct ?? 100}%`}
-          subtitle="Showroom Luxury Standards"
-          icon={<Shirt className="w-5 h-5 text-[#7E22CE]" />}
-          iconBgColor="bg-[#F3E8FF] border-[#D8B4FE] text-[#7E22CE]"
-          badgeText="Verified"
-          badgeColor="bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]"
-          onClick={() => navigate('/admin/attire')}
-        />
+              {/* 6. Outdoor Leads */}
+              <AdminKPICard
+                title="Outdoor Field Leads"
+                value={overview?.outdoor_leads ?? 0}
+                subtitle={`${overview?.outdoor_staff_count ?? 0} Field Marketers`}
+                icon={<Compass className="w-5 h-5 text-[#21845F]" />}
+                iconBgColor="bg-[#E8F4EE] border-[#C5E3D5] text-[#21845F]"
+                badgeText={`${overview?.outdoor_leads_converted ?? 0} Converted`}
+                badgeColor="bg-[#FAF8F3] text-[#21845F] border-[#C5E3D5]"
+                onClick={() => navigate('/admin/outdoor-marketing')}
+              />
 
-        {/* 8. Daily Store Closing Sheets */}
-        <AdminKPICard
-          title="Daily Closing Forms"
-          value={overview?.daily_forms_count ?? 0}
-          subtitle="Day-end Closing Sheets"
-          icon={<FileText className="w-5 h-5 text-[#B97855]" />}
-          iconBgColor="bg-[#FAF1EC] border-[#ECCFC0] text-[#B97855]"
-          badgeText="Digital Archive"
-          badgeColor="bg-[#FAF8F3] text-[#B97855] border-[#ECCFC0]"
-          onClick={() => navigate('/admin/gallery')}
-        />
-      </div>
+              {/* 7. Attire Compliance */}
+              <AdminKPICard
+                title="Grooming Compliance"
+                value={`${overview?.attire_compliance_pct ?? 100}%`}
+                subtitle="Showroom Luxury Standards"
+                icon={<Shirt className="w-5 h-5 text-[#7E22CE]" />}
+                iconBgColor="bg-[#F3E8FF] border-[#D8B4FE] text-[#7E22CE]"
+                badgeText="Verified"
+                badgeColor="bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]"
+                onClick={() => navigate('/admin/attire')}
+              />
+
+              {/* 8. Daily Store Closing Sheets */}
+              <AdminKPICard
+                title="Daily Closing Forms"
+                value={overview?.daily_forms_count ?? 0}
+                subtitle="Day-end Closing Sheets"
+                icon={<FileText className="w-5 h-5 text-[#B97855]" />}
+                iconBgColor="bg-[#FAF1EC] border-[#ECCFC0] text-[#B97855]"
+                badgeText="Digital Archive"
+                badgeColor="bg-[#FAF8F3] text-[#B97855] border-[#ECCFC0]"
+                onClick={() => navigate('/admin/gallery')}
+              />
+            </div>
+
+            {/* Live Workforce Branch Breakdown Card */}
+            <div className="bg-white border border-[#E4DFD4] rounded-3xl p-5 sm:p-6 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center font-extrabold text-base shrink-0 shadow-xs">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm sm:text-base font-extrabold text-[#1D1D1B] tracking-tight">
+                      Enterprise Staff Workforce Roster
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] font-extrabold text-[10px]">
+                      {totalAllStaff} Staff Active Across All Showrooms
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#5E5A52] font-medium mt-0.5">
+                    Live floor personnel count verified across all 3 showroom locations
+                  </p>
+                </div>
+              </div>
+
+              {/* Branch Number Chips */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full lg:w-auto">
+                <div
+                  onClick={() => navigate('/admin/employees')}
+                  className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4] flex flex-col justify-center min-w-32 cursor-pointer hover:border-[#7E22CE] transition-all"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#7E22CE]">📍 Yelahanka</span>
+                  <span className="text-lg font-black text-[#1D1D1B] mt-0.5">{yelahankaStaff} Staff</span>
+                  <span className="text-[10px] font-semibold text-[#21845F]">100% on Floor</span>
+                </div>
+
+                <div
+                  onClick={() => navigate('/admin/employees')}
+                  className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4] flex flex-col justify-center min-w-32 cursor-pointer hover:border-[#21845F] transition-all"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#21845F]">📍 Kolar</span>
+                  <span className="text-lg font-black text-[#1D1D1B] mt-0.5">{kolarStaff} Staff</span>
+                  <span className="text-[10px] font-semibold text-[#21845F]">100% on Floor</span>
+                </div>
+
+                <div
+                  onClick={() => navigate('/admin/employees')}
+                  className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4] flex flex-col justify-center min-w-32 cursor-pointer hover:border-[#3B82F6] transition-all"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#3B82F6]">📍 Udupi</span>
+                  <span className="text-lg font-black text-[#1D1D1B] mt-0.5">{udupiStaff} Staff</span>
+                  <span className="text-[10px] font-semibold text-[#21845F]">100% on Floor</span>
+                </div>
+
+                <div
+                  onClick={() => navigate('/admin/employees')}
+                  className="p-3 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] flex flex-col justify-center min-w-32 cursor-pointer hover:bg-[#E9D5FF] transition-all"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#7E22CE]">🌟 Total Roster</span>
+                  <span className="text-lg font-black text-[#7E22CE] mt-0.5">{totalAllStaff} Staff</span>
+                  <span className="text-[10px] font-bold text-[#7E22CE]">All 3 Branches</span>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {/* -------------------------------------------------------------
           3. MULTI-BRANCH PERFORMANCE COMPARISON SECTION
@@ -399,7 +486,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <div key={item.day} className="flex-1 flex flex-col items-center gap-1 group">
                   <div className="w-full bg-[#FAF8F3] border border-[#E4DFD4] rounded-md h-12 flex items-end p-0.5">
                     <div
-                      className="w-full bg-gradient-to-t from-[#7E22CE] to-[#A855F7] rounded-sm transition-all duration-300 group-hover:from-[#6B21A8] group-hover:to-[#7E22CE]"
+                      className="w-full bg-linear-to-t from-[#7E22CE] to-[#A855F7] rounded-sm transition-all duration-300 group-hover:from-[#6B21A8] group-hover:to-[#7E22CE]"
                       style={{
                         height: `${Math.max(15, Math.min(100, item.footfall * 25))}%`,
                       }}

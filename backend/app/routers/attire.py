@@ -94,9 +94,16 @@ def create_attire_record(
         notes=attire_data.notes,
         image_url=attire_data.image_url,
     )
-    db.add(record)
-    db.commit()
-    db.refresh(record)
+    try:
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create attire record: {str(e)}",
+        )
 
     return AttireRecordResponse(
         id=record.id,
@@ -139,8 +146,15 @@ def update_attire_record(
     if update_data.image_url is not None:
         record.image_url = update_data.image_url
 
-    db.commit()
-    db.refresh(record)
+    try:
+        db.commit()
+        db.refresh(record)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update attire record: {str(e)}",
+        )
 
     emp_name = record.employee.full_name if record.employee else None
     return AttireRecordResponse(
@@ -174,6 +188,13 @@ def delete_attire_record(
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Record not found.")
 
-    db.delete(record)
-    db.commit()
-    return {"message": "Attire record deleted successfully."}
+    try:
+        db.delete(record)
+        db.commit()
+        return {"message": "Attire record deleted successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete attire record: {str(e)}",
+        )

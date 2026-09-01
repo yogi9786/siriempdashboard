@@ -28,9 +28,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <select
             id={selectId}
             ref={ref}
-            className={`w-full bg-white text-[#171717] border rounded-xl pl-3.5 pr-9 py-2.5 text-xs sm:text-sm appearance-none transition-all focus:outline-none focus:ring-2 focus:ring-[#171717]/5 focus:border-[#171717] disabled:bg-[#FAF9F6] disabled:text-[#A3A3A3] disabled:cursor-not-allowed cursor-pointer ${
-              error ? 'border-[#C24141] focus:border-[#C24141]' : 'border-[#E8E6E1] hover:border-[#D8D6D0]'
-            } ${className}`}
+            className={`ui-select-base ${error ? 'select-error' : ''} ${className}`}
             {...props}
           >
             {options

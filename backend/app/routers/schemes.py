@@ -95,9 +95,16 @@ def create_scheme(
         record_date=scheme_data.record_date or date.today(),
         notes=scheme_data.notes,
     )
-    db.add(record)
-    db.commit()
-    db.refresh(record)
+    try:
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create scheme record: {str(e)}"
+        )
 
     return SchemeRecordResponse(
         id=record.id,
@@ -148,8 +155,15 @@ def update_scheme(
     if update_data.notes is not None:
         record.notes = update_data.notes
 
-    db.commit()
-    db.refresh(record)
+    try:
+        db.commit()
+        db.refresh(record)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update scheme record: {str(e)}"
+        )
 
     emp_name = record.employee.full_name if record.employee else None
     return SchemeRecordResponse(
@@ -186,6 +200,13 @@ def delete_scheme(
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Record not found.")
 
-    db.delete(record)
-    db.commit()
-    return {"message": "Scheme record deleted successfully."}
+    try:
+        db.delete(record)
+        db.commit()
+        return {"message": "Scheme record deleted successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete scheme record: {str(e)}"
+        )

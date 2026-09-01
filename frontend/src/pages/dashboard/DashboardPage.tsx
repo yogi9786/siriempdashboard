@@ -14,6 +14,7 @@ import {
   Clock,
   ChevronRight,
   Layers,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -146,9 +147,9 @@ export const DashboardPage: React.FC = () => {
       {/* -------------------------------------------------------------
           1. DASHBOARD LUXURY HERO SECTION (LIGHT CANVAS WITH PURPLE BORDER & DESIGN ACCENTS)
       ------------------------------------------------------------- */}
-      <div className="relative bg-gradient-to-br from-[#FAF8F3] via-white to-[#FAF5FF] border border-[#D8B4FE] rounded-3xl p-6 sm:p-8 sm:py-9 shadow-xs overflow-hidden group text-[#1D1D1B]">
+      <div className="relative bg-linear-to-br from-[#FAF8F3] via-white to-[#FAF5FF] border border-[#D8B4FE] rounded-3xl p-6 sm:p-8 sm:py-9 shadow-xs overflow-hidden group text-[#1D1D1B]">
         {/* Top Purple Shimmer Border Line */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#9333EA] to-transparent opacity-60 animate-pulse" />
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-[#9333EA] to-transparent opacity-60 animate-pulse" />
 
         {/* Corner Filigree Luxury Brackets in Purple */}
         <div className="absolute top-3 left-3 w-4 h-4 border-t-2 border-l-2 border-[#7E22CE]/40 rounded-tl-sm pointer-events-none" />
@@ -171,7 +172,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Ambient Subtle Purple Radial Glow */}
-        <div className="absolute top-0 right-1/4 w-72 h-72 bg-gradient-to-br from-[#9333EA]/10 via-[#F3E8FF]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-72 h-72 bg-linear-to-br from-[#9333EA]/10 via-[#F3E8FF]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         {/* Floating Luxury Sparkles in Purple */}
         <div className="absolute top-6 right-1/3 text-[#7E22CE]/40 animate-float-slow pointer-events-none text-base">
@@ -210,6 +211,15 @@ export const DashboardPage: React.FC = () => {
 
           {/* Quick Hero Actions */}
           <div className="flex items-center gap-3 self-start md:self-auto shrink-0 flex-wrap">
+            <button
+              onClick={fetchDashboardData}
+              title="Refresh all dashboard statistics and latest metrics"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"
+            >
+              <RotateCcw className={`w-4 h-4 text-[#7E22CE] ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+
             <button
               onClick={() => navigate('/employees')}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"
@@ -344,7 +354,7 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div className="w-full h-1.5 bg-[#F3E8FF] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#9333EA] to-[#7E22CE] rounded-full"
+                  className="h-full bg-linear-to-r from-[#9333EA] to-[#7E22CE] rounded-full"
                   style={{ width: `${Math.min(100, Math.max(25, totalSchemesClosed * 15))}%` }}
                 />
               </div>
@@ -470,7 +480,7 @@ export const DashboardPage: React.FC = () => {
         {/* Right 1 Col: ONE DARK PREMIUM FEATURE CARD (#1D1D1B) */}
         <div className="bg-[#1D1D1B] border border-[#3A3A38] rounded-3xl p-5 sm:p-6 shadow-md text-white flex flex-col justify-between space-y-3.5 relative overflow-hidden">
           {/* Subtle Purple Ambient Corner Accent */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#9333EA]/15 to-transparent rounded-bl-full pointer-events-none" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-bl from-[#9333EA]/15 to-transparent rounded-bl-full pointer-events-none" />
 
           <div>
             <div className="flex items-center justify-between mb-2">

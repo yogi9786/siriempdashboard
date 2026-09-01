@@ -95,9 +95,16 @@ async def upload_form_media(
         notes=notes.strip() if notes else None,
         upload_date=datetime.now(timezone.utc),
     )
-    db.add(media_record)
-    db.commit()
-    db.refresh(media_record)
+    try:
+        db.add(media_record)
+        db.commit()
+        db.refresh(media_record)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save form record: {str(e)}"
+        )
 
     return FormMediaResponse(
         id=media_record.id,
@@ -200,8 +207,15 @@ def update_gallery_media(
     if update_data.notes is not None:
         media.notes = update_data.notes.strip() if update_data.notes else None
 
-    db.commit()
-    db.refresh(media)
+    try:
+        db.commit()
+        db.refresh(media)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update form: {str(e)}"
+        )
 
     emp_name = media.employee.full_name if media.employee else None
     return FormMediaResponse(
@@ -246,6 +260,13 @@ def delete_gallery_media(
     except Exception:
         pass
 
-    db.delete(media)
-    db.commit()
-    return {"message": "Form media deleted successfully."}
+    try:
+        db.delete(media)
+        db.commit()
+        return {"message": "Form media deleted successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete form media: {str(e)}"
+        )

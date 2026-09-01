@@ -153,12 +153,6 @@ export const AdminBranchListPage: React.FC = () => {
                 <p className="text-xs text-[#8A8479] font-medium font-mono mt-0.5">
                   {b.code} • {b.city}
                 </p>
-                {b.address && (
-                  <p className="text-[11px] text-[#5E5A52] flex items-center gap-1.5 mt-2 line-clamp-1">
-                    <MapPin className="w-3.5 h-3.5 text-[#8A8479] shrink-0" />
-                    <span className="truncate">{b.address}</span>
-                  </p>
-                )}
               </div>
 
               {/* Manager Badges */}

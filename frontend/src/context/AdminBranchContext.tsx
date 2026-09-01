@@ -18,7 +18,9 @@ const AdminBranchContext = createContext<AdminBranchContextType | undefined>(und
 export const AdminBranchProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(() => {
     const saved = localStorage.getItem('siri_admin_branch_id');
-    return saved !== null && saved !== 'all' ? parseInt(saved, 10) : null;
+    if (!saved || saved === 'all' || saved === 'null' || saved === 'undefined') return null;
+    const parsed = parseInt(saved, 10);
+    return isNaN(parsed) ? null : parsed;
   });
   const [dateRange, setDateRange] = useState<string>(() => {
     return localStorage.getItem('siri_admin_date_range') || 'all';

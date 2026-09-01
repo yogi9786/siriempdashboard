@@ -34,21 +34,21 @@ def get_env_manager_by_username(username: str) -> Optional[dict]:
     settings = get_live_env_settings()
     cleaned = username.strip().lower()
 
-    # Directory of all managers from .env
+    # Directory of all managers from .env (identified by branch_code, username, password, full_name)
     managers_map = [
         # Yelahanka
-        {"id": 1, "branch_id": 1, "branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_1_USERNAME, "password": settings.MANAGER_1_PASSWORD, "full_name": settings.MANAGER_1_NAME},
-        {"id": 2, "branch_id": 1, "branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_2_USERNAME, "password": settings.MANAGER_2_PASSWORD, "full_name": settings.MANAGER_2_NAME},
-        {"id": 3, "branch_id": 1, "branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_3_USERNAME, "password": settings.MANAGER_3_PASSWORD, "full_name": settings.MANAGER_3_NAME},
-        {"id": 4, "branch_id": 1, "branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_4_USERNAME, "password": settings.MANAGER_4_PASSWORD, "full_name": settings.MANAGER_4_NAME},
-        {"id": 5, "branch_id": 1, "branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_5_USERNAME, "password": settings.MANAGER_5_PASSWORD, "full_name": settings.MANAGER_5_NAME},
+        {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_1_USERNAME, "password": settings.MANAGER_1_PASSWORD, "full_name": settings.MANAGER_1_NAME},
+        {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_2_USERNAME, "password": settings.MANAGER_2_PASSWORD, "full_name": settings.MANAGER_2_NAME},
+        {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_3_USERNAME, "password": settings.MANAGER_3_PASSWORD, "full_name": settings.MANAGER_3_NAME},
+        {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_4_USERNAME, "password": settings.MANAGER_4_PASSWORD, "full_name": settings.MANAGER_4_NAME},
+        {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_5_USERNAME, "password": settings.MANAGER_5_PASSWORD, "full_name": settings.MANAGER_5_NAME},
         # Kolar
-        {"id": 6, "branch_id": 2, "branch_code": "KOLAR", "branch_name": "Kolar", "username": settings.KOLAR_MANAGER_1_USERNAME, "password": settings.KOLAR_MANAGER_1_PASSWORD, "full_name": settings.KOLAR_MANAGER_1_NAME},
-        {"id": 7, "branch_id": 2, "branch_code": "KOLAR", "branch_name": "Kolar", "username": settings.KOLAR_MANAGER_2_USERNAME, "password": settings.KOLAR_MANAGER_2_PASSWORD, "full_name": settings.KOLAR_MANAGER_2_NAME},
-        {"id": 8, "branch_id": 2, "branch_code": "KOLAR", "branch_name": "Kolar", "username": settings.KOLAR_MANAGER_3_USERNAME, "password": settings.KOLAR_MANAGER_3_PASSWORD, "full_name": settings.KOLAR_MANAGER_3_NAME},
+        {"branch_code": "KOLAR", "branch_name": "Kolar", "username": settings.KOLAR_MANAGER_1_USERNAME, "password": settings.KOLAR_MANAGER_1_PASSWORD, "full_name": settings.KOLAR_MANAGER_1_NAME},
+        {"branch_code": "KOLAR", "branch_name": "Kolar", "username": settings.KOLAR_MANAGER_2_USERNAME, "password": settings.KOLAR_MANAGER_2_PASSWORD, "full_name": settings.KOLAR_MANAGER_2_NAME},
+        {"branch_code": "KOLAR", "branch_name": "Kolar", "username": settings.KOLAR_MANAGER_3_USERNAME, "password": settings.KOLAR_MANAGER_3_PASSWORD, "full_name": settings.KOLAR_MANAGER_3_NAME},
         # Udupi
-        {"id": 9, "branch_id": 3, "branch_code": "UDUPI", "branch_name": "Udupi", "username": settings.UDUPI_MANAGER_1_USERNAME, "password": settings.UDUPI_MANAGER_1_PASSWORD, "full_name": settings.UDUPI_MANAGER_1_NAME},
-        {"id": 10, "branch_id": 3, "branch_code": "UDUPI", "branch_name": "Udupi", "username": settings.UDUPI_MANAGER_2_USERNAME, "password": settings.UDUPI_MANAGER_2_PASSWORD, "full_name": settings.UDUPI_MANAGER_2_NAME},
+        {"branch_code": "UDUPI", "branch_name": "Udupi", "username": settings.UDUPI_MANAGER_1_USERNAME, "password": settings.UDUPI_MANAGER_1_PASSWORD, "full_name": settings.UDUPI_MANAGER_1_NAME},
+        {"branch_code": "UDUPI", "branch_name": "Udupi", "username": settings.UDUPI_MANAGER_2_USERNAME, "password": settings.UDUPI_MANAGER_2_PASSWORD, "full_name": settings.UDUPI_MANAGER_2_NAME},
     ]
 
     for m in managers_map:
@@ -176,7 +176,8 @@ class AuthService:
     def authenticate_manager(self, login_data: LoginRequest, ip_address: Optional[str] = None) -> TokenResponse:
         """
         Authenticate showroom branch manager directly against server-side .env credentials
-        with instant sub-millisecond response time and brute-force protection.
+        with instant sub-millisecond response time, automatic database synchronization,
+        and brute-force protection.
         """
         username_cleaned = login_data.username.strip()
         password_cleaned = login_data.password.strip()
@@ -203,54 +204,49 @@ class AuthService:
                 detail="Super Administrator access must be performed at /admin/login.",
             )
 
-        # 3. Direct Fast .env Manager Directory Lookup
-        env_mgr = get_env_manager_by_username(username_cleaned)
+        # 3. Direct DB User Check First (Supports Custom Passwords Changed by Managers)
+        db_user = (
+            self.db.query(User)
+            .filter(
+                (func.lower(User.username) == username_cleaned.lower())
+                | (func.lower(User.email) == username_cleaned.lower())
+            )
+            .first()
+        )
 
         is_valid = False
-        branch_id = 1
         branch_code = "YELAHANKA"
         branch_name = "Yelahanka"
         full_name = username_cleaned
+        mgr_code = getattr(db_user, "manager_code", None) if db_user else None
         email_val = f"{username_cleaned.lower()}@sirisamruddhigold.com"
-        user_id = 1
 
-        if env_mgr:
-            # Fast constant-time comparison against .env password
-            expected_pwd = env_mgr["password"]
-            if expected_pwd and hmac.compare_digest(password_cleaned.encode("utf-8"), expected_pwd.encode("utf-8")):
-                is_valid = True
-                branch_code = env_mgr["branch_code"]
-                branch_name = env_mgr["branch_name"]
-                branch_id = env_mgr["branch_id"]
-                full_name = env_mgr["full_name"]
-                user_id = env_mgr["id"]
+        if db_user and db_user.hashed_password and verify_password(password_cleaned, db_user.hashed_password):
+            is_valid = True
+            full_name = db_user.full_name
+            email_val = db_user.email or email_val
+            mgr_code = getattr(db_user, "manager_code", None)
+            branch = self.db.query(Branch).filter(Branch.id == db_user.branch_id).first()
+            if branch:
+                branch_code = branch.code
+                branch_name = branch.name
         else:
-            # Fallback to database user if custom manager exists in DB
-            user = (
-                self.db.query(User)
-                .filter(
-                    (func.lower(User.username) == func.lower(username_cleaned))
-                    | (func.lower(User.email) == func.lower(username_cleaned))
-                )
-                .first()
-            )
-            if user and verify_password(password_cleaned, user.hashed_password):
-                is_valid = True
-                user_id = user.id
-                branch_id = user.branch_id
-                full_name = user.full_name
-                email_val = user.email or email_val
-                branch = self.db.query(Branch).filter(Branch.id == user.branch_id).first()
-                if branch:
-                    branch_code = branch.code
-                    branch_name = branch.name
+            # Fallback to .env initial configuration
+            env_mgr = get_env_manager_by_username(username_cleaned)
+            if env_mgr:
+                expected_pwd = env_mgr["password"]
+                if expected_pwd and hmac.compare_digest(password_cleaned.encode("utf-8"), expected_pwd.encode("utf-8")):
+                    is_valid = True
+                    branch_code = env_mgr["branch_code"]
+                    branch_name = env_mgr["branch_name"]
+                    full_name = env_mgr["full_name"]
 
         if not is_valid:
             record_failed_login(client_key)
             record_failed_login(user_key)
             try:
                 audit = AuditLog(
-                    branch_id=branch_id,
+                    branch_id=1,
                     admin_username=username_cleaned,
                     action="Manager Login Failed",
                     entity="Auth",
@@ -278,39 +274,95 @@ class AuthService:
                     detail=f"Manager {full_name} is assigned to {branch_name} Showroom, not {login_data.branch_code}.",
                 )
 
-        # 5. Success - Clear failed attempts
+        # 5. Success - Clear all failed attempts permutations
         reset_failed_login(client_key)
         reset_failed_login(user_key)
+        reset_failed_login(username_cleaned)
 
+        # 6. Database Synchronization: Ensure Branch and User exist with exact real DB IDs
+        branch = self.db.query(Branch).filter(Branch.code == branch_code.upper()).first()
+        if not branch:
+            branch = Branch(
+                name=branch_name,
+                code=branch_code.upper(),
+                city=branch_name,
+                is_active=True,
+            )
+            self.db.add(branch)
+            self.db.commit()
+            self.db.refresh(branch)
+
+        user = (
+            self.db.query(User)
+            .filter(
+                (func.lower(User.username) == username_cleaned.lower())
+                | (func.lower(User.email) == email_val.lower())
+            )
+            .first()
+        )
+
+        hashed_pwd = get_password_hash(password_cleaned)
+
+        if not user:
+            user = User(
+                branch_id=branch.id,
+                full_name=full_name,
+                username=username_cleaned,
+                email=email_val,
+                hashed_password=hashed_pwd,
+                role="MANAGER",
+                is_active=True,
+            )
+            self.db.add(user)
+            self.db.commit()
+            self.db.refresh(user)
+        else:
+            # Sync user attributes
+            user.branch_id = branch.id
+            user.full_name = full_name
+            user.username = username_cleaned
+            user.email = email_val
+            user.role = "MANAGER"
+            user.is_active = True
+            user.last_login = datetime.now(timezone.utc)
+            self.db.commit()
+            self.db.refresh(user)
+
+        # 7. Generate JWT Access Token with at least 2 Days (48 Hours = 2880 Minutes) duration
+        expire_mins = max(2880, live_settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         expires_delta = (
             timedelta(days=7)
             if login_data.remember_me
-            else timedelta(minutes=live_settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            else timedelta(minutes=expire_mins)
         )
+
         token = create_access_token(
-            subject=user_id,
-            branch_id=branch_id,
-            branch_code=branch_code,
+            subject=user.id,
+            branch_id=branch.id,
+            branch_code=branch.code,
             role="MANAGER",
             user_type="db_user",
             expires_delta=expires_delta,
             extra_claims={
-                "branch_name": branch_name,
-                "full_name": full_name,
-                "username": username_cleaned,
-                "email": email_val,
+                "branch_name": branch.name,
+                "branch_code": branch.code,
+                "full_name": user.full_name,
+                "username": user.username,
+                "email": user.email,
+                "role": "MANAGER",
             },
         )
 
+        # 8. Audit Log Event
         try:
             audit = AuditLog(
-                branch_id=branch_id,
-                admin_id=user_id,
-                admin_username=username_cleaned,
+                branch_id=branch.id,
+                admin_id=user.id,
+                admin_username=user.username,
                 action="Manager Login",
                 entity="Auth",
                 ip_address=ip_address,
-                details=f"Manager {full_name} logged into {branch_name}",
+                details=f"Manager {user.full_name} logged into {branch.name}",
             )
             self.db.add(audit)
             self.db.commit()
@@ -321,63 +373,16 @@ class AuthService:
             access_token=token,
             token_type="bearer",
             expires_in=int(expires_delta.total_seconds()),
-            user_id=user_id,
-            username=username_cleaned,
-            full_name=full_name,
-            email=email_val,
-            role="MANAGER",
-            user_type="db_user",
-            branch_id=branch_id,
-            branch_code=branch_code,
-            branch_name=f"{branch_name} Showroom",
-        )
-
-        user.last_login = datetime.now(timezone.utc)
-        self.db.commit()
-
-        expires_delta = (
-            timedelta(days=7)
-            if login_data.remember_me
-            else timedelta(minutes=live_settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        )
-        token = create_access_token(
-            subject=user.id,
-            branch_id=branch.id,
-            branch_code=branch.code,
-            role=user.role,
-            user_type="db_user",
-            expires_delta=expires_delta,
-            extra_claims={
-                "username": user.username,
-                "email": user.email,
-                "full_name": user.full_name,
-            },
-        )
-
-        audit = AuditLog(
-            branch_id=branch.id,
-            admin_id=user.id,
-            admin_username=user.username,
-            action="Manager Login",
-            entity="Auth",
-            ip_address=ip_address,
-            details=f"Manager {user.full_name} logged into {branch.name}",
-        )
-        self.db.add(audit)
-        self.db.commit()
-
-        return TokenResponse(
-            access_token=token,
-            token_type="bearer",
-            expires_in=int(expires_delta.total_seconds()),
             user_id=user.id,
             username=user.username,
             full_name=user.full_name,
+            manager_code=getattr(user, "manager_code", None),
             email=user.email,
-            role=user.role,
+            role="MANAGER",
+            user_type="db_user",
             branch_id=branch.id,
             branch_code=branch.code,
-            branch_name=branch.name,
+            branch_name=f"{branch.name} Showroom",
         )
 
     def authenticate_super_admin(self, login_data: LoginRequest, ip_address: Optional[str] = None) -> TokenResponse:
@@ -442,8 +447,8 @@ class AuthService:
         reset_failed_login(client_key)
         reset_failed_login(email_or_user_clean)
 
-        # 4. Generate Short-Lived Access JWT (15 Minutes)
-        access_delta = timedelta(minutes=live_settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        # 4. Generate Access JWT (At least 2 Days / 2880 Mins)
+        access_delta = timedelta(minutes=max(2880, live_settings.ACCESS_TOKEN_EXPIRE_MINUTES))
         access_token = create_access_token(
             subject="env-super-admin",
             branch_id=None,
@@ -579,11 +584,109 @@ class AuthService:
         branch = self.db.query(Branch).filter(Branch.id == branch_id).first()
         return ManagerProfile(
             id=user.id,
-            branch_id=branch.id,
-            branch_code=branch.code,
-            branch_name=branch.name,
+            branch_id=branch.id if branch else 1,
+            branch_code=branch.code if branch else "YELAHANKA",
+            branch_name=branch.name if branch else "Yelahanka",
             username=user.username,
             full_name=user.full_name,
+            manager_code=getattr(user, "manager_code", None),
+            email=user.email,
+            role=user.role,
+            is_active=user.is_active,
+        )
+
+    def change_manager_password(
+        self,
+        user_id: int,
+        current_password: str,
+        new_password: str,
+        ip_address: Optional[str] = None,
+    ) -> dict:
+        """
+        Allow showroom managers to change their password themselves securely.
+        """
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Manager account not found.")
+
+        # 1. Verify current password
+        is_current_valid = False
+        if user.hashed_password and verify_password(current_password.strip(), user.hashed_password):
+            is_current_valid = True
+        else:
+            env_mgr = get_env_manager_by_username(user.username)
+            if env_mgr and env_mgr.get("password"):
+                if hmac.compare_digest(current_password.strip().encode("utf-8"), env_mgr["password"].encode("utf-8")):
+                    is_current_valid = True
+
+        if not is_current_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect. Please verify and try again.",
+            )
+
+        # 2. Validate new password
+        cleaned_new_pwd = new_password.strip()
+        if len(cleaned_new_pwd) < 6:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New password must be at least 6 characters long.",
+            )
+
+        # 3. Hash and store new password
+        user.hashed_password = get_password_hash(cleaned_new_pwd)
+        user.updated_at = datetime.now(timezone.utc)
+        self.db.commit()
+
+        # 4. Audit Log
+        try:
+            audit = AuditLog(
+                branch_id=user.branch_id,
+                admin_id=user.id,
+                admin_username=user.username,
+                action="Manager Password Changed",
+                entity="Manager Account",
+                ip_address=ip_address,
+                details=f"Manager {user.full_name} ({user.username}) successfully changed their password.",
+            )
+            self.db.add(audit)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+
+        return {"message": "Password changed successfully.", "success": True}
+
+    def update_manager_profile(
+        self,
+        user_id: int,
+        full_name: Optional[str] = None,
+        email: Optional[str] = None,
+    ) -> ManagerProfile:
+        """
+        Allow showroom managers to update their profile info.
+        """
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Manager account not found.")
+
+        if full_name and full_name.strip():
+            user.full_name = full_name.strip()
+        if email and email.strip():
+            user.email = email.strip()
+
+        user.updated_at = datetime.now(timezone.utc)
+        self.db.commit()
+        self.db.refresh(user)
+
+        branch = self.db.query(Branch).filter(Branch.id == user.branch_id).first()
+        return ManagerProfile(
+            id=user.id,
+            branch_id=branch.id if branch else 1,
+            branch_code=branch.code if branch else "YELAHANKA",
+            branch_name=branch.name if branch else "Yelahanka",
+            username=user.username,
+            full_name=user.full_name,
+            manager_code=getattr(user, "manager_code", None),
             email=user.email,
             role=user.role,
             is_active=user.is_active,
@@ -599,6 +702,7 @@ class AuthService:
             branch_name="All Branches (Enterprise HQ)",
             username="superadmin",
             full_name=live_settings.ADMIN_NAME,
+            manager_code=None,
             email=live_settings.ADMIN_EMAIL,
             role="SUPER_ADMIN",
             is_active=True,

@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
+  UserCheck,
   UserPlus,
   Compass,
   ChevronDown,
@@ -10,6 +11,7 @@ import {
   LogOut,
   FileText,
   Sparkles,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SignOutConfirmModal } from '../auth/SignOutConfirmModal';
@@ -33,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       {/* Brand Header with Divider below logo */}
       <div className="h-18 px-4 bg-[#18181B] flex items-center border-b border-[#27272A]">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#27272A] to-[#1F1F23] border border-[#3F3F46] p-1 flex items-center justify-center shrink-0 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#27272A] to-[#1F1F23] border border-[#3F3F46] p-1 flex items-center justify-center shrink-0 shadow-xs">
             <img
               src={logoImg}
               alt="Siri Samruddhi Gold Palace"
@@ -202,27 +204,83 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             </>
           )}
         </NavLink>
+
+        {/* 5. Customers Section (Royal Cyan/Blue on Dark Grey - At the very last position) */}
+        <NavLink
+          to="/customers"
+          onClick={onCloseMobile}
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 relative group ${isActive
+              ? 'bg-[#0369A1]/60 text-[#E0F2FE] font-bold border-l-[3px] border-l-[#38BDF8] border border-[#0284C7]/40 shadow-xs pl-2.5'
+              : 'text-[#D4D4D8] hover:text-white hover:bg-white/5'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isActive
+                  ? 'bg-[#0284C7] text-[#BAE6FD] border border-[#38BDF8]/50 shadow-2xs'
+                  : 'bg-[#27272A] text-[#38BDF8] group-hover:bg-[#3F3F46]'
+                }`}>
+                <UserCheck className="w-3.5 h-3.5" />
+              </div>
+              <span>Customers</span>
+              {isActive && (
+                <div className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] ml-auto" />
+              )}
+            </>
+          )}
+        </NavLink>
       </nav>
 
       {/* Manager User Footer on Dark Grey */}
       <div className="p-3 border-t border-[#27272A] bg-[#18181B]">
         <div className="flex items-center justify-between px-2.5 py-2 bg-[#222226] rounded-xl border border-[#2E2E33] shadow-xs">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#3B0764] to-[#7E22CE] text-[#F3E8FF] flex items-center justify-center font-extrabold text-xs shrink-0 shadow-xs border border-[#A855F7]/60">
+          <NavLink
+            to="/account"
+            onClick={onCloseMobile}
+            title="Manager Account & Password Settings"
+            className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity group cursor-pointer"
+          >
+            <div className="w-8 h-8 rounded-xl bg-linear-to-br from-[#3B0764] to-[#7E22CE] text-[#F3E8FF] flex items-center justify-center font-extrabold text-xs shrink-0 shadow-xs border border-[#A855F7]/60 group-hover:scale-105 transition-transform">
               {user?.full_name?.charAt(0) || 'M'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-white truncate">{user?.full_name || 'Manager'}</p>
-              <p className="text-[10px] text-[#A1A1AA] font-medium truncate">Showroom Manager</p>
+              <p className="text-xs font-bold text-white truncate group-hover:text-[#A855F7] transition-colors">
+                {user?.full_name || 'Manager'}
+              </p>
+              <p className="text-[10px] text-[#A1A1AA] font-medium truncate flex items-center gap-1">
+                <span>Mgr {user?.manager_code ? `#${user.manager_code}` : ''}</span>
+                <span className="text-[#71717A]">•</span>
+                <span className="text-[#A855F7] group-hover:underline">Settings</span>
+              </p>
             </div>
+          </NavLink>
+
+          <div className="flex items-center gap-1 shrink-0 ml-1">
+            <NavLink
+              to="/account"
+              onClick={onCloseMobile}
+              title="Account & Password Settings"
+              className={({ isActive }) =>
+                `p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  isActive
+                    ? 'text-[#A855F7] bg-white/10'
+                    : 'text-[#A1A1AA] hover:text-white hover:bg-white/10'
+                }`
+              }
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </NavLink>
+
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              title="Sign out"
+              className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-[#F87171] hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            title="Sign out"
-            className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-[#F87171] hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
       </div>
 

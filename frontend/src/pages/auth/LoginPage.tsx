@@ -176,14 +176,14 @@ export const LoginPage: React.FC = () => {
       <div className="absolute top-1/2 -left-20 w-80 h-80 bg-[#7E22CE]/8 rounded-full blur-3xl pointer-events-none" />
 
       {/* Subtle Geometric Jewellery Watermark Lattice */}
-      <div className="absolute inset-0 opacity-[0.025] pointer-events-none bg-[radial-gradient(#7E22CE_1px,transparent_1px)] [background-size:24px_24px]" />
+      <div className="absolute inset-0 opacity-[0.025] pointer-events-none bg-[radial-gradient(#7E22CE_1px,transparent_1px)] bg-size-[24px_24px]" />
 
       {/* -------------------------------------------------------------
           2. MAIN LUXURY LOGIN CARD
       ------------------------------------------------------------- */}
       <div className="w-full max-w-lg bg-white/95 backdrop-blur-xl border border-[#E4DFD4] rounded-3xl shadow-[0_20px_60px_rgba(40,35,25,0.08)] p-6 sm:p-9 relative z-10 space-y-6 transition-all duration-300 hover:shadow-[0_25px_70px_rgba(126,34,206,0.12)]">
         {/* Subtle Top Purple Accent Line */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-[#7E22CE] to-transparent rounded-t-3xl opacity-80" />
+        <div className="absolute top-0 left-0 right-0 h-0.75 bg-linear-to-r from-transparent via-[#7E22CE] to-transparent rounded-t-3xl opacity-80" />
 
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center">
@@ -320,7 +320,7 @@ export const LoginPage: React.FC = () => {
               <select
                 value={selectedManagerUsername}
                 onChange={(e) => handleManagerChange(e.target.value)}
-                className="w-full bg-[#FAF8F3] border border-[#E4DFD4] rounded-2xl pl-9 pr-9 py-2.5 text-xs sm:text-sm text-[#1D1D1B] appearance-none focus:outline-none focus:border-[#7E22CE] focus:ring-2 focus:ring-[#7E22CE]/15 transition-all font-semibold cursor-pointer shadow-2xs"
+                className="w-full select-luxury-purple rounded-2xl pl-9 pr-9 py-2.5 text-xs sm:text-sm appearance-none transition-all font-semibold cursor-pointer shadow-2xs"
                 required
               >
                 {managers.length === 0 ? (
@@ -349,7 +349,7 @@ export const LoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter showroom manager password"
-                className="w-full bg-[#FAF8F3] border border-[#E4DFD4] rounded-2xl pl-9 pr-10 py-2.5 text-xs sm:text-sm text-[#1D1D1B] placeholder:text-[#8A8479] focus:outline-none focus:border-[#7E22CE] focus:ring-2 focus:ring-[#7E22CE]/15 transition-all font-semibold shadow-2xs"
+                className="w-full input-luxury-purple rounded-2xl pl-9 pr-10 py-2.5 text-xs sm:text-sm transition-all font-semibold shadow-2xs"
                 required
               />
               <button
@@ -384,7 +384,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#7E22CE] via-[#6B21A8] to-[#581C87] hover:from-[#6B21A8] hover:to-[#4C1D95] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full py-3.5 rounded-2xl bg-linear-to-r from-[#7E22CE] via-[#6B21A8] to-[#581C87] hover:from-[#6B21A8] hover:to-[#4C1D95] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 btn-login-purple flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>

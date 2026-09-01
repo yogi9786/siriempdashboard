@@ -60,8 +60,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         id: data.user_id,
         username: data.username,
         full_name: data.full_name,
+        manager_code: data.manager_code,
         email: data.email,
-        role: data.role,
+        role: data.role || 'MANAGER',
         branch_id: data.branch_id,
         branch_code: data.branch_code,
         branch_name: data.branch_name,
@@ -76,6 +77,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         is_active: true,
       };
 
+      // Calculate cache lifetime: minimum 2 days (172,800 seconds)
+      const durationSeconds = data.expires_in || (2 * 24 * 60 * 60);
+      const expiresAt = Date.now() + durationSeconds * 1000;
+
       setToken(data.access_token);
       setUser(userProfile);
       setSelectedBranch(branchObj);
@@ -83,6 +88,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem('siri_auth_token', data.access_token);
       localStorage.setItem('siri_auth_user', JSON.stringify(userProfile));
       localStorage.setItem('siri_selected_branch', JSON.stringify(branchObj));
+      localStorage.setItem('siri_auth_expires_at', expiresAt.toString());
+      localStorage.setItem('siri_auth_timestamp', Date.now().toString());
 
       return true;
     } catch (err: any) {
@@ -105,14 +112,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const data = response.data;
       const userProfile: User = {
-        id: data.user_id,
-        username: data.username,
-        full_name: data.full_name,
-        email: data.email,
-        role: "SUPER_ADMIN",
+        id: data.user_id || 0,
+        username: data.username || 'superadmin',
+        full_name: data.full_name || 'Super Administrator',
+        email: data.email || 'admin@sirisamruddhigold.com',
+        role: 'SUPER_ADMIN',
         branch_id: 0,
-        branch_code: "ALL",
-        branch_name: "All Branches (Enterprise)",
+        branch_code: 'ALL',
+        branch_name: 'All Branches (Enterprise HQ)',
         is_active: true,
       };
 
@@ -124,6 +131,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         is_active: true,
       };
 
+      // Calculate cache lifetime: minimum 2 days
+      const durationSeconds = data.expires_in || (2 * 24 * 60 * 60);
+      const expiresAt = Date.now() + durationSeconds * 1000;
+
       setToken(data.access_token);
       setUser(userProfile);
       setSelectedBranch(branchObj);
@@ -134,6 +145,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       localStorage.setItem('siri_auth_user', JSON.stringify(userProfile));
       localStorage.setItem('siri_selected_branch', JSON.stringify(branchObj));
+      localStorage.setItem('siri_auth_expires_at', expiresAt.toString());
+      localStorage.setItem('siri_auth_timestamp', Date.now().toString());
 
       return true;
     } catch (err: any) {
@@ -154,6 +167,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('siri_auth_token');
     localStorage.removeItem('siri_admin_refresh_token');
     localStorage.removeItem('siri_auth_user');
+    localStorage.removeItem('siri_auth_expires_at');
+    localStorage.removeItem('siri_auth_timestamp');
   };
 
   const refreshProfile = async () => {
@@ -182,8 +197,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSelectedBranch(branchObj);
       }
       localStorage.setItem('siri_auth_user', JSON.stringify(res.data));
-    } catch (err) {
-      logout();
+    } catch (err: any) {
+      // Only force logout on genuine 401 token invalidation, not on temporary network glitch
+      if (err.response?.status === 401) {
+        logout();
+      }
     }
   };
 
@@ -191,31 +209,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const verifyInitialAuth = async () => {
       const storedToken = localStorage.getItem('siri_auth_token');
       const savedUser = localStorage.getItem('siri_auth_user');
-      if (storedToken) {
+      const expiresAtRaw = localStorage.getItem('siri_auth_expires_at');
+
+      if (storedToken && savedUser) {
+        // Check if cache has expired (default 2 days cache window)
+        const isExpired = expiresAtRaw ? Date.now() > parseInt(expiresAtRaw, 10) : false;
+
+        if (isExpired) {
+          logout();
+          setIsLoading(false);
+          return;
+        }
+
         try {
-          const parsed = savedUser ? JSON.parse(savedUser) : null;
-          const endpoint = parsed?.role === 'SUPER_ADMIN' ? '/api/v1/admin/auth/me' : '/api/v1/auth/me';
-          const res = await api.get<User>(endpoint);
-          setUser(res.data);
-          if (res.data.role === 'SUPER_ADMIN') {
-            const branchObj: Branch = {
-              id: 0,
-              code: 'ALL',
-              name: 'All Branches',
-              city: 'All Locations',
-              is_active: true,
-            };
-            setSelectedBranch(branchObj);
-          } else {
-            const branchObj: Branch = {
-              id: res.data.branch_id,
-              code: res.data.branch_code,
-              name: res.data.branch_name,
-              city: res.data.branch_name,
-              is_active: true,
-            };
-            setSelectedBranch(branchObj);
-          }
+          const parsedUser: User = JSON.parse(savedUser);
+          setUser(parsedUser);
+          setToken(storedToken);
+
+          // Non-blocking background sync
+          const endpoint = parsedUser.role === 'SUPER_ADMIN' ? '/api/v1/admin/auth/me' : '/api/v1/auth/me';
+          api.get<User>(endpoint)
+            .then((res) => {
+              if (res.data) {
+                setUser(res.data);
+                localStorage.setItem('siri_auth_user', JSON.stringify(res.data));
+              }
+            })
+            .catch((err) => {
+              if (err.response?.status === 401) {
+                logout();
+              }
+            });
         } catch {
           logout();
         }

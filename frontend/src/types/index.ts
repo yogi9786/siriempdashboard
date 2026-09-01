@@ -5,6 +5,7 @@ export interface User {
   branch_name: string;
   username: string;
   full_name: string;
+  manager_code?: string;
   email?: string;
   role: string; // "MANAGER"
   is_active: boolean;
@@ -16,6 +17,7 @@ export interface ManagerPublicOption {
   id: number;
   full_name: string;
   username: string;
+  manager_code?: string;
   email?: string;
   branch_id: number;
   branch_code: string;
@@ -74,6 +76,17 @@ export interface Customer {
   created_at?: string;
 }
 
+export interface CustomerDetailItem {
+  id?: number | string;
+  name?: string;
+  phone?: string;
+  dob?: string;
+  anniversary?: string;
+  status: 'Sold' | 'Exchange' | 'Lost' | 'Walkin' | 'In Hold / Follow Up' | 'In Hold' | 'Follow Up' | string;
+  product_value?: number | string;
+  notes?: string;
+}
+
 export interface CustomerActivity {
   id: number;
   branch_id: number;
@@ -81,12 +94,17 @@ export interface CustomerActivity {
   branch_name?: string;
   employee_id: number;
   employee_name?: string;
+  employee_code?: string;
   customers_count?: number;
   breakdown?: string;
+  customer_details?: CustomerDetailItem[];
   customer_name?: string;
   phone_number?: string;
+  dob?: string;
+  anniversary?: string;
+  product_value?: number;
   activity_date: string;
-  status: string; // 'Attended' | 'Closed' | 'In Hold Jewellery' | 'Follow Up Needed'
+  status: string; // 'Sold' | 'Exchange' | 'Lost' | 'Walkin' | 'In Hold / Follow Up' | 'Attended' | 'Closed'
   notes?: string;
   created_at?: string;
   updated_at?: string;
@@ -180,16 +198,80 @@ export interface OutdoorMarketingCustomer {
   branch_name?: string;
   marketing_employee_id: number;
   marketing_employee_name?: string;
+  duty_id?: number;
   customer_name: string;
-  phone: string;
-  area_name: string;
+  phone?: string;
+  dob?: string;
+  anniversary_date?: string;
+  area_name?: string;
   scheme_name?: string;
   date: string;
-  status: 'Lead' | 'Contacted' | 'Interested' | 'Closed' | 'Lost';
+  is_converted?: boolean;
+  has_google_review?: boolean;
+  google_review_rating?: number;
+  google_review_text?: string;
+  status: 'Lead' | 'Contacted' | 'Interested' | 'Converted' | 'Closed' | 'Lost' | string;
   notes?: string;
   created_at?: string;
   updated_at?: string;
 }
+
+export interface OutdoorCustomerDetail {
+  id?: number;
+  customer_name: string;
+  phone?: string;
+  dob?: string;
+  anniversary_date?: string;
+  is_converted: boolean;
+  has_google_review: boolean;
+  google_review_rating?: number;
+  google_review_text?: string;
+  scheme_name?: string;
+  area_name?: string;
+  notes?: string;
+}
+
+export interface OutdoorDuty {
+  id: number;
+  branch_id: number;
+  employee_id: number;
+  employee_name?: string;
+  employee_code?: string;
+  designation?: string;
+  department?: string;
+  date: string;
+  area?: string;
+  scheme_name?: string;
+  customers_attended_count: number;
+  converted_customers_count: number;
+  google_ratings_count: number;
+  photo_url?: string;
+  photo_urls?: string[];
+  notes?: string;
+  status: 'Assigned' | 'In Progress' | 'Completed' | string;
+  customers: OutdoorMarketingCustomer[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface OutdoorDutyAssignRequest {
+  date: string;
+  employee_ids: number[];
+}
+
+export interface OutdoorDutyUpdate {
+  area?: string;
+  scheme_name?: string;
+  customers_attended_count?: number;
+  converted_customers_count?: number;
+  google_ratings_count?: number;
+  photo_url?: string;
+  photo_urls?: string[];
+  notes?: string;
+  status?: string;
+  customers?: OutdoorCustomerDetail[];
+}
+
 
 export type OutdoorMarketingLead = OutdoorMarketingCustomer;
 
@@ -210,16 +292,22 @@ export interface OutdoorMarketingScheme {
 export interface OutdoorMarketingActivity {
   id: number;
   branch_id: number;
-  employee_id: number;
+  employee_id?: number;
   employee_name?: string;
+  participating_employee_ids?: string;
+  employee_names?: string;
   date: string;
   area: string;
-  schemes_promoted: number;
-  customers_generated: number;
+  scheme_name?: string;
+  schemes_promoted?: number;
+  customers_generated?: number;
   customers_attended: number;
-  customers_closed: number;
+  customers_closed?: number;
+  converted_customers: number;
+  google_ratings_count: number;
   notes?: string;
   image_url?: string;
+  photo_url?: string;
   created_at?: string;
 }
 
@@ -229,6 +317,10 @@ export interface OutdoorMarketingOverview {
   customers_generated: number;
   customers_closed: number;
   schemes_promoted: number;
+  total_customers_attended: number;
+  total_converted_customers: number;
+  total_google_ratings: number;
+  total_activities_count: number;
   recent_activities: OutdoorMarketingActivity[];
 }
 
@@ -304,6 +396,12 @@ export interface AdminDashboardOverview {
   outdoor_staff_count: number;
   attire_compliance_pct: number;
   daily_forms_count: number;
+  today_footfall?: number;
+  today_customers_closed?: number;
+  today_schemes_count?: number;
+  today_schemes_value?: number;
+  today_outdoor_leads?: number;
+  today_reviews_count?: number;
   sparkline_days: SparklineDay[];
   branch_comparison: AdminBranchMetric[];
   recent_activity: AdminActivityFeedItem[];
@@ -357,6 +455,7 @@ export interface AdminManager {
   branch_name?: string;
   full_name: string;
   username: string;
+  manager_code?: string;
   email?: string;
   role: string;
   is_active: boolean;
@@ -472,4 +571,81 @@ export interface AdminSettingsResponse {
   max_upload_size_mb: number;
   server_time: string;
 }
+
+export interface AdminEmployeeDetail {
+  employee: AdminEmployee;
+  customer_activities: Array<{
+    id: number;
+    activity_date: string;
+    customer_name?: string;
+    phone_number?: string;
+    status: string;
+    customers_count: number;
+    breakdown?: string;
+    notes?: string;
+    created_at?: string;
+  }>;
+  schemes: Array<{
+    id: number;
+    record_date: string;
+    customer_name?: string;
+    scheme_name: string;
+    amount: number;
+    customers_count: number;
+    notes?: string;
+    created_at?: string;
+  }>;
+  google_reviews: Array<{
+    id: number;
+    review_date: string;
+    customer_name?: string;
+    rating: number;
+    review_text?: string;
+    screenshot_url?: string;
+    customers_count: number;
+    notes?: string;
+  }>;
+  attire_records: Array<{
+    id: number;
+    record_date: string;
+    status: string;
+    notes?: string;
+    photo_url?: string;
+  }>;
+  gallery_media: Array<{
+    id: number;
+    form_type: string;
+    file_url: string;
+    notes?: string;
+    created_at?: string;
+  }>;
+  outdoor_areas: Array<{
+    id: number;
+    area_name: string;
+    landmark?: string;
+    city?: string;
+    status?: string;
+    notes?: string;
+    created_at?: string;
+  }>;
+  outdoor_customers: Array<{
+    id: number;
+    customer_name: string;
+    phone_number?: string;
+    area_name?: string;
+    status: string;
+    notes?: string;
+    created_at?: string;
+  }>;
+  outdoor_schemes: Array<{
+    id: number;
+    customer_name: string;
+    scheme_name: string;
+    amount: number;
+    notes?: string;
+    created_at?: string;
+  }>;
+  performance?: AdminEmployeePerformance;
+}
+
 

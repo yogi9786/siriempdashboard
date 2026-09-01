@@ -11,6 +11,7 @@ import {
   Calendar,
   Eye,
   Camera,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -225,7 +226,7 @@ export const GoogleReviewsPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-12">
       {/* 1. Plum Wine Hero Banner (Matching Sidebar Theme) */}
-      <div className="relative bg-gradient-to-br from-[#6B4657] via-[#5C3B4A] to-[#482D3A] border border-[#523341] rounded-3xl p-6 sm:p-8 shadow-sm text-white overflow-hidden">
+      <div className="relative bg-linear-to-br from-[#6B4657] via-[#5C3B4A] to-[#482D3A] border border-[#523341] rounded-3xl p-6 sm:p-8 shadow-sm text-white overflow-hidden">
         {/* Ambient Radial Lighting */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-2xl pointer-events-none" />
 
@@ -279,7 +280,7 @@ export const GoogleReviewsPage: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search review text or customer..."
-            className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF9F6] border border-[#E8E6E1] rounded-xl text-xs text-[#171717] placeholder:text-[#A3A3A3] focus:outline-none focus:border-[#171717] focus:ring-2 focus:ring-[#171717]/5 transition-all font-medium"
+            className="w-full pl-9 pr-3.5 py-2.5 input-luxury-review rounded-xl text-xs transition-all font-medium"
           />
         </form>
 
@@ -293,7 +294,7 @@ export const GoogleReviewsPage: React.FC = () => {
           <select
             value={ratingFilter}
             onChange={(e) => setRatingFilter(e.target.value)}
-            className="bg-[#FAF9F6] border border-[#E8E6E1] rounded-xl px-3 py-2.5 text-xs text-[#171717] focus:outline-none focus:border-[#171717] font-medium cursor-pointer"
+            className="select-luxury-neutral rounded-xl px-3 py-2.5 text-xs font-medium cursor-pointer"
           >
             <option value="all">All Star Ratings</option>
             <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
@@ -304,7 +305,7 @@ export const GoogleReviewsPage: React.FC = () => {
           <select
             value={employeeFilter}
             onChange={(e) => setEmployeeFilter(e.target.value)}
-            className="bg-[#FAF9F6] border border-[#E8E6E1] rounded-xl px-3 py-2.5 text-xs text-[#171717] focus:outline-none focus:border-[#171717] font-medium cursor-pointer"
+            className="select-luxury-neutral rounded-xl px-3 py-2.5 text-xs font-medium cursor-pointer"
           >
             <option value="all">All Staff Members</option>
             {employees.map((emp) => (
@@ -313,6 +314,16 @@ export const GoogleReviewsPage: React.FC = () => {
               </option>
             ))}
           </select>
+
+          {/* Quick Refresh / Fetch Data Button */}
+          <button
+            onClick={fetchReviews}
+            title="Fetch and refresh reviews"
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#6B4657] bg-[#FAF4F8] border border-[#E8D4DF] hover:bg-[#F3E5ED] transition-colors cursor-pointer shrink-0"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Fetch / Refresh</span>
+          </button>
         </div>
       </div>
 

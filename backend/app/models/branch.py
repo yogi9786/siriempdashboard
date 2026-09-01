@@ -35,6 +35,8 @@ class Branch(Base):
     outdoor_customers = relationship("OutdoorMarketingCustomer", back_populates="branch", cascade="all, delete-orphan")
     outdoor_schemes = relationship("OutdoorMarketingScheme", back_populates="branch", cascade="all, delete-orphan")
     outdoor_activities = relationship("OutdoorMarketingActivity", back_populates="branch", cascade="all, delete-orphan")
+    outdoor_duties = relationship("OutdoorMarketingDuty", back_populates="branch", cascade="all, delete-orphan")
+
 
 
 class User(Base):
@@ -44,6 +46,7 @@ class User(Base):
     branch_id = Column(Integer, ForeignKey("branches.id"), index=True, nullable=True)  # Nullable for SUPER_ADMIN
     email = Column(String(100), unique=True, index=True, nullable=True)
     username = Column(String(100), unique=True, index=True, nullable=False)
+    manager_code = Column(String(50), nullable=True)  # e.g. MGR-037, 37
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(100), nullable=False)
     role = Column(String(50), default="MANAGER", nullable=False)  # SUPER_ADMIN, MANAGER

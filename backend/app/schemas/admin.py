@@ -66,6 +66,12 @@ class AdminDashboardOverview(BaseModel):
     outdoor_staff_count: int
     attire_compliance_pct: float
     daily_forms_count: int
+    today_footfall: int = 0
+    today_customers_closed: int = 0
+    today_schemes_count: int = 0
+    today_schemes_value: float = 0.0
+    today_outdoor_leads: int = 0
+    today_reviews_count: int = 0
     sparkline_days: List[SparklineDay]
     branch_comparison: List[AdminBranchMetric]
     recent_activity: List[AdminActivityFeedItem]
@@ -373,3 +379,20 @@ class AdminSettingsResponse(BaseModel):
     media_dir: str
     max_upload_size_mb: int
     server_time: datetime
+
+
+# ---------------------------------------------------------
+# Admin 360 Employee Detail Schema
+# ---------------------------------------------------------
+class AdminEmployeeDetailResponse(BaseModel):
+    employee: AdminEmployeeResponse
+    customer_activities: List[Dict[str, Any]] = []
+    schemes: List[Dict[str, Any]] = []
+    google_reviews: List[Dict[str, Any]] = []
+    attire_records: List[Dict[str, Any]] = []
+    gallery_media: List[Dict[str, Any]] = []
+    outdoor_areas: List[Dict[str, Any]] = []
+    outdoor_customers: List[Dict[str, Any]] = []
+    outdoor_schemes: List[Dict[str, Any]] = []
+    performance: Optional[AdminEmployeePerformance] = None
+

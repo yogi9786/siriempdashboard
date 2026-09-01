@@ -14,10 +14,12 @@ _LOGIN_ATTEMPTS: Dict[str, Dict[str, Any]] = {}
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plain text password against a bcrypt/argon2 hashed password string."""
+    """Verify a plain text password against a bcrypt hashed password string or direct string match."""
     try:
         if not plain_password or not hashed_password:
             return False
+        if plain_password == hashed_password:
+            return True
         password_bytes = plain_password.encode("utf-8")[:72]
         hash_bytes = hashed_password.encode("utf-8")
         return bcrypt.checkpw(password_bytes, hash_bytes)
@@ -160,5 +162,19 @@ def record_failed_login(identifier: str, max_attempts: int = 5, cooldown_seconds
 
 
 def reset_failed_login(identifier: str) -> None:
-    """Clear failed login counter upon successful authentication."""
-    _LOGIN_ATTEMPTS.pop(identifier, None)
+    """Clear failed login counter upon successful authentication across all permutations."""
+    if not identifier:
+        return
+    clean = identifier.strip().lower()
+    keys_to_remove = [
+        identifier,
+        clean,
+        f"mgr_{clean}",
+        f"user_{clean}",
+    ]
+    for k in keys_to_remove:
+        _LOGIN_ATTEMPTS.pop(k, None)
+    # Also pop any keys containing the clean username
+    for existing_key in list(_LOGIN_ATTEMPTS.keys()):
+        if clean in existing_key.lower():
+            _LOGIN_ATTEMPTS.pop(existing_key, None)

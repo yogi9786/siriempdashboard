@@ -83,7 +83,7 @@ export const AdminPerformancePage: React.FC = () => {
       </div>
 
       {/* Evaluation Weights Notice */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-[#FAF5FF] via-white to-[#FAF8F3] border border-[#D8B4FE] flex items-start gap-3 shadow-2xs">
+      <div className="p-4 rounded-2xl bg-linear-to-r from-[#FAF5FF] via-white to-[#FAF8F3] border border-[#D8B4FE] flex items-start gap-3 shadow-2xs">
         <div className="w-8 h-8 rounded-xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 mt-0.5">
           <Info className="w-4 h-4" />
         </div>
@@ -114,7 +114,7 @@ export const AdminPerformancePage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Rank 2 (Silver) */}
           <div
-            onClick={() => navigate(`/employees/${top2.employee_id}`)}
+            onClick={() => navigate(`/admin/employees/${top2.employee_id}`)}
             className="bg-white border border-[#E4DFD4] hover:border-[#94A3B8] rounded-3xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between order-2 md:order-1"
           >
             <div className="space-y-3">
@@ -139,13 +139,13 @@ export const AdminPerformancePage: React.FC = () => {
 
           {/* Rank 1 (Gold Crown - Featured) */}
           <div
-            onClick={() => navigate(`/employees/${top1.employee_id}`)}
-            className="bg-gradient-to-br from-[#FEF3C7] via-white to-[#FDE68A]/30 border-2 border-[#F59E0B] rounded-3xl p-6 shadow-md hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between order-1 md:order-2 relative overflow-hidden -translate-y-1"
+            onClick={() => navigate(`/admin/employees/${top1.employee_id}`)}
+            className="bg-linear-to-br from-[#FEF3C7] via-white to-[#FDE68A]/30 border-2 border-[#F59E0B] rounded-3xl p-6 shadow-md hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between order-1 md:order-2 relative overflow-hidden -translate-y-1"
           >
             <div className="absolute top-0 right-0 w-24 h-24 bg-[#F59E0B]/10 rounded-full blur-2xl pointer-events-none" />
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#F59E0B] to-[#D97706] text-white font-extrabold text-base flex items-center justify-center shadow-md">
+                <span className="w-10 h-10 rounded-2xl bg-linear-to-br from-[#F59E0B] to-[#D97706] text-white font-extrabold text-base flex items-center justify-center shadow-md">
                   #1
                 </span>
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] font-extrabold text-xs">
@@ -173,7 +173,7 @@ export const AdminPerformancePage: React.FC = () => {
 
           {/* Rank 3 (Bronze) */}
           <div
-            onClick={() => navigate(`/employees/${top3.employee_id}`)}
+            onClick={() => navigate(`/admin/employees/${top3.employee_id}`)}
             className="bg-white border border-[#E4DFD4] hover:border-[#D97706] rounded-3xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between order-3"
           >
             <div className="space-y-3">
@@ -207,7 +207,7 @@ export const AdminPerformancePage: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search leaderboard by staff name or code..."
-            className="w-full pl-10 pr-4 py-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-none focus:border-[#7E22CE]"
+            className="w-full pl-10 pr-4 py-2 input-luxury-purple rounded-xl text-xs"
           />
         </div>
 
@@ -268,7 +268,7 @@ export const AdminPerformancePage: React.FC = () => {
                 {leaderboard.map((emp) => (
                   <tr
                     key={emp.employee_id}
-                    onClick={() => navigate(`/employees/${emp.employee_id}`)}
+                    onClick={() => navigate(`/admin/employees/${emp.employee_id}`)}
                     className="hover:bg-[#FAF5FF] transition-colors cursor-pointer group"
                   >
                     <td className="px-4 py-3.5">

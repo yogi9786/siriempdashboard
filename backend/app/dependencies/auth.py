@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from backend.app.core.security import decode_access_token
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
@@ -51,27 +52,64 @@ def get_current_manager(
             detail="Super Administrator must access through the /admin portal.",
         )
 
-    user_id: Optional[str] = payload.get("sub")
+    user_id_raw: Optional[str] = payload.get("sub")
     token_branch_id: Optional[int] = payload.get("branch_id")
+    token_branch_code: Optional[str] = payload.get("branch_code")
+    token_username: Optional[str] = payload.get("username")
 
-    if user_id is None or token_branch_id is None:
+    if not user_id_raw and not token_username:
         raise credentials_exception
 
-    try:
-        user_id_int = int(user_id)
-    except ValueError:
-        raise credentials_exception
+    user: Optional[User] = None
 
-    user = db.query(User).filter(User.id == user_id_int).first()
+    # Strategy 1: Lookup by database User ID
+    if user_id_raw:
+        try:
+            user_id_int = int(user_id_raw)
+            user = db.query(User).filter(User.id == user_id_int).first()
+        except (ValueError, TypeError):
+            user = None
+
+    # Strategy 2: Fallback lookup by username if ID shifted or reseeded
+    if user is None and token_username:
+        user = db.query(User).filter(
+            func.lower(User.username) == token_username.strip().lower()
+        ).first()
+
+    # Strategy 3: Auto-heal/sync if manager is defined in live environment
+    if user is None and token_username:
+        from backend.app.services.auth_service import get_env_manager_by_username
+        from backend.app.core.security import get_password_hash
+
+        env_mgr = get_env_manager_by_username(token_username)
+        if env_mgr:
+            branch = db.query(Branch).filter(Branch.code == env_mgr["branch_code"].upper()).first()
+            if not branch:
+                branch = Branch(
+                    name=env_mgr["branch_name"],
+                    code=env_mgr["branch_code"].upper(),
+                    city=env_mgr["branch_name"],
+                    is_active=True,
+                )
+                db.add(branch)
+                db.commit()
+                db.refresh(branch)
+
+            user = User(
+                branch_id=branch.id,
+                full_name=env_mgr["full_name"],
+                username=env_mgr["username"].strip(),
+                email=f"{env_mgr['username'].strip().lower()}@sirisamruddhigold.com",
+                hashed_password=get_password_hash(env_mgr["password"]),
+                role="MANAGER",
+                is_active=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
     if user is None or not user.is_active:
         raise credentials_exception
-
-    # Critical Security Check: Ensure user's real database branch matches the token branch
-    if user.branch_id != token_branch_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Security violation: User branch mismatch.",
-        )
 
     # Enforce Manager role
     if user.role != "MANAGER":
@@ -79,6 +117,18 @@ def get_current_manager(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Only Managers can access this portal.",
         )
+
+    # Branch Boundary Check: Validate that user's branch matches the requested branch
+    if token_branch_id is not None and user.branch_id != token_branch_id:
+        branch = db.query(Branch).filter(Branch.id == user.branch_id).first()
+        if branch and token_branch_code and branch.code.upper() == token_branch_code.upper():
+            # Same branch by code despite ID variation
+            pass
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Security violation: User branch mismatch.",
+            )
 
     return user
 

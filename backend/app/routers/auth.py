@@ -9,6 +9,8 @@ from backend.app.schemas.auth import (
     LoginRequest,
     TokenResponse,
     ManagerProfile,
+    ChangePasswordRequest,
+    UpdateProfileRequest,
     MessageResponse,
     BranchPublicResponse,
     ManagerPublicOption,
@@ -19,86 +21,111 @@ from backend.app.dependencies.auth import get_current_manager
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
 
-def get_env_branches_and_managers() -> List[BranchPublicResponse]:
+def get_env_branches_and_managers(db: Optional[Session] = None) -> List[BranchPublicResponse]:
     """
-    Directly construct public branch and manager directory from server-side .env configuration.
-    Delivers sub-millisecond response times without database latency.
+    Construct public branch and manager directory from server-side .env and database.
+    Ensures manager IDs match actual database user records.
     """
     settings = get_live_env_settings()
 
     branches_data = [
         {
-            "id": 1,
             "code": "YELAHANKA",
             "name": "Yelahanka",
             "city": "Bangalore",
-            "address": "BB Road, Near Police Station, Yelahanka, Bangalore - 560064",
-            "phone": "+91 80 2856 1122",
+            "address": "",
+            "phone": "",
             "description": "Main Showroom Portal, Bangalore North",
             "is_active": True,
             "managers": [
-                (1, settings.MANAGER_1_NAME, settings.MANAGER_1_USERNAME),
-                (2, settings.MANAGER_2_NAME, settings.MANAGER_2_USERNAME),
-                (3, settings.MANAGER_3_NAME, settings.MANAGER_3_USERNAME),
-                (4, settings.MANAGER_4_NAME, settings.MANAGER_4_USERNAME),
-                (5, settings.MANAGER_5_NAME, settings.MANAGER_5_USERNAME),
+                (settings.MANAGER_1_NAME, settings.MANAGER_1_USERNAME),
+                (settings.MANAGER_2_NAME, settings.MANAGER_2_USERNAME),
+                (settings.MANAGER_3_NAME, settings.MANAGER_3_USERNAME),
+                (settings.MANAGER_4_NAME, settings.MANAGER_4_USERNAME),
+                (settings.MANAGER_5_NAME, settings.MANAGER_5_USERNAME),
             ],
         },
         {
-            "id": 2,
             "code": "KOLAR",
             "name": "Kolar",
             "city": "Kolar",
-            "address": "Court Road, Near Clock Tower, Kolar - 563101",
-            "phone": "+91 81 5222 3344",
+            "address": "",
+            "phone": "",
             "description": "Showroom Management Portal, Kolar District",
             "is_active": True,
             "managers": [
-                (6, settings.KOLAR_MANAGER_1_NAME, settings.KOLAR_MANAGER_1_USERNAME),
-                (7, settings.KOLAR_MANAGER_2_NAME, settings.KOLAR_MANAGER_2_USERNAME),
-                (8, settings.KOLAR_MANAGER_3_NAME, settings.KOLAR_MANAGER_3_USERNAME),
+                (settings.KOLAR_MANAGER_1_NAME, settings.KOLAR_MANAGER_1_USERNAME),
+                (settings.KOLAR_MANAGER_2_NAME, settings.KOLAR_MANAGER_2_USERNAME),
+                (settings.KOLAR_MANAGER_3_NAME, settings.KOLAR_MANAGER_3_USERNAME),
             ],
         },
         {
-            "id": 3,
             "code": "UDUPI",
             "name": "Udupi",
             "city": "Udupi",
-            "address": "Car Street, Near Krishna Matha, Udupi - 576101",
-            "phone": "+91 82 0252 5566",
+            "address": "",
+            "phone": "",
             "description": "Showroom Management Portal, Coastal Karnataka",
             "is_active": True,
             "managers": [
-                (9, settings.UDUPI_MANAGER_1_NAME, settings.UDUPI_MANAGER_1_USERNAME),
-                (10, settings.UDUPI_MANAGER_2_NAME, settings.UDUPI_MANAGER_2_USERNAME),
+                (settings.UDUPI_MANAGER_1_NAME, settings.UDUPI_MANAGER_1_USERNAME),
+                (settings.UDUPI_MANAGER_2_NAME, settings.UDUPI_MANAGER_2_USERNAME),
             ],
         },
     ]
 
+    # Pre-fetch existing branches and users from DB if session provided
+    db_branches = {}
+    db_users = {}
+    if db:
+        try:
+            for b in db.query(Branch).all():
+                db_branches[b.code.upper()] = b
+            for u in db.query(User).all():
+                db_users[u.username.strip().lower()] = u
+        except Exception:
+            pass
+
     results = []
+    default_branch_id = 1
     for b in branches_data:
-        mgr_options = [
-            ManagerPublicOption(
-                id=m_id,
-                full_name=m_name.strip() if m_name else m_user.strip(),
-                username=m_user.strip(),
-                email=f"{m_user.strip().lower()}@sirisamruddhigold.com",
-                branch_id=b["id"],
-                branch_code=b["code"],
+        b_code = b["code"].upper()
+        real_branch = db_branches.get(b_code)
+        branch_id = real_branch.id if real_branch else default_branch_id
+        default_branch_id += 1
+
+        mgr_options = []
+        for idx, (m_name, m_user) in enumerate(b["managers"], start=1):
+            if not m_user or not m_user.strip():
+                continue
+            clean_user = m_user.strip()
+            clean_name = m_name.strip() if m_name else clean_user
+            db_u = db_users.get(clean_user.lower())
+            mgr_id = db_u.id if db_u else idx
+            mgr_code = getattr(db_u, "manager_code", None) if db_u else None
+
+            mgr_options.append(
+                ManagerPublicOption(
+                    id=mgr_id,
+                    full_name=clean_name,
+                    username=clean_user,
+                    manager_code=mgr_code,
+                    email=f"{clean_user.lower()}@sirisamruddhigold.com",
+                    branch_id=branch_id,
+                    branch_code=b_code,
+                )
             )
-            for m_id, m_name, m_user in b["managers"]
-            if m_user and m_user.strip()
-        ]
+
         results.append(
             BranchPublicResponse(
-                id=b["id"],
-                code=b["code"],
-                name=b["name"],
-                city=b["city"],
-                address=b["address"],
-                phone=b["phone"],
-                description=b["description"],
-                is_active=b["is_active"],
+                id=branch_id,
+                code=b_code,
+                name=real_branch.name if real_branch else b["name"],
+                city=real_branch.city if real_branch else b["city"],
+                address=real_branch.address if real_branch else b["address"],
+                phone=real_branch.phone if real_branch else b["phone"],
+                description=real_branch.description if real_branch else b["description"],
+                is_active=True,
                 managers=mgr_options,
             )
         )
@@ -107,14 +134,14 @@ def get_env_branches_and_managers() -> List[BranchPublicResponse]:
 
 @router.get("/branches", response_model=List[BranchPublicResponse], summary="List all showroom branches with their manager names from .env")
 def get_branches(db: Session = Depends(get_db)):
-    """Fetch all showroom branches and their respective managers directly from live .env."""
-    return get_env_branches_and_managers()
+    """Fetch all showroom branches and their respective managers directly from live .env & DB."""
+    return get_env_branches_and_managers(db)
 
 
 @router.get("/branches/{branch_code}/managers", response_model=List[ManagerPublicOption], summary="List managers for a specific branch directly from .env")
 def get_branch_managers(branch_code: str, db: Session = Depends(get_db)):
-    """Instantly return managers configured in .env for the specified branch code."""
-    all_branches = get_env_branches_and_managers()
+    """Instantly return managers configured for the specified branch code."""
+    all_branches = get_env_branches_and_managers(db)
     target_code = branch_code.strip().upper()
     for b in all_branches:
         if b.code == target_code:
@@ -137,6 +164,44 @@ def login(login_data: LoginRequest, request: Request, db: Session = Depends(get_
 def get_me(current_user: User = Depends(get_current_manager), db: Session = Depends(get_db)):
     auth_service = AuthService(db)
     return auth_service.get_manager_profile(current_user.id, current_user.branch_id)
+
+
+@router.post("/change-password", response_model=MessageResponse, summary="Manager self-service change password")
+def change_password(
+    pwd_data: ChangePasswordRequest,
+    request: Request,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    """
+    Allow logged in showroom managers to change their password themselves.
+    """
+    auth_service = AuthService(db)
+    client_ip = request.client.host if request.client else None
+    res = auth_service.change_manager_password(
+        user_id=current_user.id,
+        current_password=pwd_data.current_password,
+        new_password=pwd_data.new_password,
+        ip_address=client_ip,
+    )
+    return MessageResponse(message=res["message"], success=True)
+
+
+@router.put("/profile", response_model=ManagerProfile, summary="Update manager profile info")
+def update_profile(
+    profile_data: UpdateProfileRequest,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    """
+    Update logged-in manager's name or contact email.
+    """
+    auth_service = AuthService(db)
+    return auth_service.update_manager_profile(
+        user_id=current_user.id,
+        full_name=profile_data.full_name,
+        email=profile_data.email,
+    )
 
 
 @router.post("/logout", response_model=MessageResponse, summary="Logout current manager session")

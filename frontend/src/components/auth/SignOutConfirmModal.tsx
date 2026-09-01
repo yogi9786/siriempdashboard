@@ -35,7 +35,7 @@ export const SignOutConfirmModal: React.FC<SignOutConfirmModalProps> = ({
       {/* Luxury Purple Confirmation Card */}
       <div className="relative w-full max-w-md bg-white border border-[#D8B4FE] rounded-3xl shadow-2xl overflow-hidden z-10 my-8 flex flex-col animate-in zoom-in-95 duration-200">
         {/* Top Royal Purple Gradient Accent */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-[#7E22CE] via-[#A855F7] to-[#C084FC]" />
+        <div className="h-1.5 w-full bg-linear-to-r from-[#7E22CE] via-[#A855F7] to-[#C084FC]" />
 
         {/* Modal Header */}
         <div className="p-5 sm:p-6 pb-0 flex items-start justify-between gap-4">
@@ -67,7 +67,7 @@ export const SignOutConfirmModal: React.FC<SignOutConfirmModalProps> = ({
           {/* Active Manager Card */}
           <div className="bg-[#FAF8F3] border border-[#E4DFD4] rounded-2xl p-3.5 flex items-center justify-between shadow-2xs">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3B0764] to-[#7E22CE] text-white flex items-center justify-center font-extrabold text-xs shadow-2xs border border-[#A855F7]/60 shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-linear-to-br from-[#3B0764] to-[#7E22CE] text-white flex items-center justify-center font-extrabold text-xs shadow-2xs border border-[#A855F7]/60 shrink-0">
                 {user?.full_name?.charAt(0) || 'M'}
               </div>
               <div className="min-w-0">
@@ -105,7 +105,7 @@ export const SignOutConfirmModal: React.FC<SignOutConfirmModalProps> = ({
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#7E22CE] via-[#6B21A8] to-[#581C87] hover:from-[#6B21A8] hover:to-[#4C1D95] text-white shadow-sm transition-all cursor-pointer hover:scale-[1.02] disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold bg-linear-to-r from-[#7E22CE] via-[#6B21A8] to-[#581C87] hover:from-[#6B21A8] hover:to-[#4C1D95] text-white shadow-sm transition-all cursor-pointer hover:scale-[1.02] disabled:opacity-60"
           >
             <LogOut className="w-3.5 h-3.5 text-[#D8B4FE]" />
             <span>{isLoading ? 'Signing Out...' : 'Confirm Sign Out'}</span>

@@ -14,10 +14,12 @@ import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { EmployeeListPage } from '../pages/employees/EmployeeListPage';
 import { EmployeeAddPage } from '../pages/employees/EmployeeAddPage';
 import { EmployeeDetailPage } from '../pages/employees/EmployeeDetailPage';
+import { CustomerActivityPage } from '../pages/customers/CustomerActivityPage';
 import { GalleryPage } from '../pages/gallery/GalleryPage';
 import { GoogleReviewsPage } from '../pages/reviews/GoogleReviewsPage';
 import { AttirePage } from '../pages/attire/AttirePage';
 import { OutdoorMarketingPage } from '../pages/outdoor/OutdoorMarketingPage';
+import { AccountSettingsPage } from '../pages/account/AccountSettingsPage';
 
 // Super Admin Enterprise Module Pages
 import { AdminDashboardPage } from '../pages/admin/dashboard/AdminDashboardPage';
@@ -25,6 +27,7 @@ import { AdminBranchListPage } from '../pages/admin/branches/AdminBranchListPage
 import { AdminBranchDetailPage } from '../pages/admin/branches/AdminBranchDetailPage';
 import { AdminManagerPage } from '../pages/admin/managers/AdminManagerPage';
 import { AdminEmployeeListPage } from '../pages/admin/employees/AdminEmployeeListPage';
+import { AdminEmployeeDetailPage } from '../pages/admin/employees/AdminEmployeeDetailPage';
 import { AdminPerformancePage } from '../pages/admin/performance/AdminPerformancePage';
 import { AdminCustomerPage } from '../pages/admin/customers/AdminCustomerPage';
 import { AdminCustomerActivitiesPage } from '../pages/admin/customers/AdminCustomerActivitiesPage';
@@ -50,13 +53,18 @@ export const AppRoutes: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/customers" element={<CustomerActivityPage />} />
+          <Route path="/customer-activity" element={<Navigate to="/customers" replace />} />
           <Route path="/employees" element={<EmployeeListPage />} />
           <Route path="/employees/add" element={<EmployeeAddPage />} />
           <Route path="/employees/:id" element={<EmployeeDetailPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/google-reviews" element={<GoogleReviewsPage />} />
-          <Route path="/attire" element={<AttirePage />} />
           <Route path="/outdoor-marketing" element={<OutdoorMarketingPage />} />
+          <Route path="/outdoor-marketing/daily" element={<OutdoorMarketingPage />} />
+          <Route path="/account" element={<AccountSettingsPage />} />
+
+          <Route path="/profile" element={<Navigate to="/account" replace />} />
         </Route>
       </Route>
 
@@ -68,6 +76,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/admin/branches/:id" element={<AdminBranchDetailPage />} />
           <Route path="/admin/managers" element={<AdminManagerPage />} />
           <Route path="/admin/employees" element={<AdminEmployeeListPage />} />
+          <Route path="/admin/employees/:id" element={<AdminEmployeeDetailPage />} />
           <Route path="/admin/performance" element={<AdminPerformancePage />} />
           <Route path="/admin/customers" element={<AdminCustomerPage />} />
           <Route path="/admin/customer-activities" element={<AdminCustomerActivitiesPage />} />

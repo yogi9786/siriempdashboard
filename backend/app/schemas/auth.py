@@ -17,6 +17,7 @@ class TokenResponse(BaseModel):
     user_id: int
     username: str
     full_name: str
+    manager_code: Optional[str] = None
     email: Optional[str] = None
     role: str
     user_type: Optional[str] = None
@@ -34,9 +35,20 @@ class ManagerProfile(BaseModel):
     branch_name: str
     username: str
     full_name: str
+    manager_code: Optional[str] = None
     email: Optional[str] = None
     role: str
     is_active: bool
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class UpdateProfileRequest(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = None
 
 
 class ManagerPublicOption(BaseModel):
@@ -45,6 +57,7 @@ class ManagerPublicOption(BaseModel):
     id: int
     full_name: str
     username: str
+    manager_code: Optional[str] = None
     email: Optional[str] = None
     branch_id: int
     branch_code: str

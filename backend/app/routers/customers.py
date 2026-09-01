@@ -54,15 +54,24 @@ def list_customer_activities(
     result = []
     for r in records:
         emp_name = r.employee.full_name if r.employee else None
+        emp_code = r.employee.employee_code if r.employee else None
+        b_name = r.branch.name if r.branch else None
+        b_code = r.branch.code if r.branch else None
         res_item = CustomerActivityResponse(
             id=r.id,
             branch_id=r.branch_id,
+            branch_code=b_code,
+            branch_name=b_name,
             employee_id=r.employee_id,
             employee_name=emp_name,
+            employee_code=emp_code,
             customers_count=getattr(r, 'customers_count', 1) or 1,
             breakdown=getattr(r, 'breakdown', None),
             customer_name=r.customer_name or "Customer Interaction",
             phone_number=r.phone_number or "",
+            dob=getattr(r, 'dob', None),
+            anniversary=getattr(r, 'anniversary', None),
+            product_value=getattr(r, 'product_value', 0.0) or 0.0,
             activity_date=r.activity_date,
             status=r.status,
             notes=r.notes,
@@ -94,27 +103,46 @@ def create_customer_activity(
     record = CustomerActivity(
         branch_id=current_user.branch_id,
         employee_id=employee.id,
-        customers_count=activity_data.customers_count or 1,
+        customers_count=activity_data.customers_count if activity_data.customers_count is not None else 1,
         breakdown=activity_data.breakdown,
         customer_name=(activity_data.customer_name or "Customer Interaction").strip(),
         phone_number=(activity_data.phone_number or "").strip(),
+        dob=activity_data.dob,
+        anniversary=activity_data.anniversary,
+        product_value=activity_data.product_value or 0.0,
         activity_date=activity_data.activity_date or date.today(),
-        status=activity_data.status or "Attended",
+        status=activity_data.status or "Walkin",
         notes=activity_data.notes,
     )
-    db.add(record)
-    db.commit()
-    db.refresh(record)
+    try:
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to record customer activity: {str(e)}",
+        )
+
+    b_name = record.branch.name if record.branch else None
+    b_code = record.branch.code if record.branch else None
 
     return CustomerActivityResponse(
         id=record.id,
         branch_id=record.branch_id,
+        branch_code=b_code,
+        branch_name=b_name,
         employee_id=record.employee_id,
         employee_name=employee.full_name,
+        employee_code=employee.employee_code,
         customers_count=record.customers_count,
         breakdown=record.breakdown,
         customer_name=record.customer_name,
         phone_number=record.phone_number,
+        dob=record.dob,
+        anniversary=record.anniversary,
+        product_value=record.product_value or 0.0,
         activity_date=record.activity_date,
         status=record.status,
         notes=record.notes,
@@ -151,6 +179,12 @@ def update_customer_activity(
         record.customer_name = update_data.customer_name.strip()
     if update_data.phone_number is not None:
         record.phone_number = update_data.phone_number.strip()
+    if update_data.dob is not None:
+        record.dob = update_data.dob
+    if update_data.anniversary is not None:
+        record.anniversary = update_data.anniversary
+    if update_data.product_value is not None:
+        record.product_value = update_data.product_value
     if update_data.activity_date is not None:
         record.activity_date = update_data.activity_date
     if update_data.status is not None:
@@ -158,19 +192,36 @@ def update_customer_activity(
     if update_data.notes is not None:
         record.notes = update_data.notes
 
-    db.commit()
-    db.refresh(record)
+    try:
+        db.commit()
+        db.refresh(record)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update customer activity: {str(e)}",
+        )
 
     emp_name = record.employee.full_name if record.employee else None
+    emp_code = record.employee.employee_code if record.employee else None
+    b_name = record.branch.name if record.branch else None
+    b_code = record.branch.code if record.branch else None
+
     return CustomerActivityResponse(
         id=record.id,
         branch_id=record.branch_id,
+        branch_code=b_code,
+        branch_name=b_name,
         employee_id=record.employee_id,
         employee_name=emp_name,
+        employee_code=emp_code,
         customers_count=getattr(record, 'customers_count', 1) or 1,
         breakdown=getattr(record, 'breakdown', None),
         customer_name=record.customer_name,
         phone_number=record.phone_number,
+        dob=getattr(record, 'dob', None),
+        anniversary=getattr(record, 'anniversary', None),
+        product_value=getattr(record, 'product_value', 0.0) or 0.0,
         activity_date=record.activity_date,
         status=record.status,
         notes=record.notes,
@@ -197,6 +248,13 @@ def delete_customer_activity(
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Record not found.")
 
-    db.delete(record)
-    db.commit()
-    return {"message": "Customer activity record deleted successfully."}
+    try:
+        db.delete(record)
+        db.commit()
+        return {"message": "Customer activity record deleted successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete customer activity: {str(e)}",
+        )

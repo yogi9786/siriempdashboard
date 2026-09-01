@@ -103,9 +103,16 @@ def create_google_review(
         screenshot_url=review_data.screenshot_url,
         status=review_data.status or "Published",
     )
-    db.add(record)
-    db.commit()
-    db.refresh(record)
+    try:
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to record Google review: {str(e)}",
+        )
 
     return GoogleReviewResponse(
         id=record.id,
@@ -171,8 +178,15 @@ def update_google_review(
     if update_data.status is not None:
         record.status = update_data.status
 
-    db.commit()
-    db.refresh(record)
+    try:
+        db.commit()
+        db.refresh(record)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update Google review: {str(e)}",
+        )
 
     emp_name = record.employee.full_name if record.employee else None
     return GoogleReviewResponse(
@@ -205,6 +219,13 @@ def delete_google_review(
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Google review not found.")
 
-    db.delete(record)
-    db.commit()
-    return {"message": "Google review deleted successfully."}
+    try:
+        db.delete(record)
+        db.commit()
+        return {"message": "Google review deleted successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete Google review: {str(e)}",
+        )

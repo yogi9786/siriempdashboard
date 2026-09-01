@@ -12,6 +12,7 @@ import {
   CheckCircle,
   AlertCircle,
   XCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -189,7 +190,7 @@ export const AttirePage: React.FC = () => {
           <select
             value={employeeFilter}
             onChange={(e) => setEmployeeFilter(e.target.value)}
-            className="bg-neutral-50 border border-neutral-300 rounded-md px-2.5 py-1.5 text-xs text-black focus:outline-none focus:border-black"
+            className="bg-neutral-50 border border-neutral-300 rounded-md px-2.5 py-1.5 text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
           >
             <option value="all">All Employees</option>
             {employees.map((emp) => (
@@ -202,7 +203,7 @@ export const AttirePage: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-neutral-50 border border-neutral-300 rounded-md px-2.5 py-1.5 text-xs text-black focus:outline-none focus:border-black"
+            className="bg-neutral-50 border border-neutral-300 rounded-md px-2.5 py-1.5 text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
           >
             <option value="all">All Compliance Status</option>
             <option value="Proper">Proper</option>
@@ -214,8 +215,18 @@ export const AttirePage: React.FC = () => {
             type="date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="bg-neutral-50 border border-neutral-300 rounded-md px-2 py-1 text-xs text-black focus:outline-none focus:border-black"
+            className="bg-neutral-50 border border-neutral-300 rounded-md px-2 py-1 text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
           />
+
+          {/* Quick Refresh / Fetch Button */}
+          <button
+            onClick={fetchAttire}
+            title="Fetch and refresh attire compliance records"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-[#536B8A] bg-[#EDF2F7] border border-[#C5D5E6] hover:bg-[#E2E8F0] transition-colors cursor-pointer shrink-0"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Fetch / Refresh</span>
+          </button>
 
           {dateFilter && (
             <button
@@ -414,7 +425,7 @@ export const AttirePage: React.FC = () => {
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Comments on name badge, uniform condition, grooming, etc..."
-              className="w-full bg-white text-black border border-neutral-300 rounded-md px-3 py-2 text-xs placeholder:text-neutral-400 focus:outline-none focus:border-black"
+              className="w-full bg-white text-black border border-neutral-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-black"
             />
           </div>
         </form>

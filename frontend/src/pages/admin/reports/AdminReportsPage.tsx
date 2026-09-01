@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Clock,
   RefreshCw,
+  ShieldCheck,
 } from 'lucide-react';
 import { AdminReportResponse } from '../../../types';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
@@ -20,6 +21,7 @@ import { Button } from '../../../components/ui/Button';
 import { useAdminBranch } from '../../../context/AdminBranchContext';
 import { useToast } from '../../../context/ToastContext';
 import api from '../../../api/client';
+import logoImg from '../../../assets/siri samruddhi logo.png';
 
 const reportTypes = [
   { id: 'executive_summary', label: 'Executive Enterprise Summary', desc: 'Holistic multi-branch performance overview' },
@@ -105,8 +107,29 @@ export const AdminReportsPage: React.FC = () => {
 
   return (
     <div className="space-y-7 pb-16">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EBE6DC] pb-5">
+      {/* ---------------- PRINT ONLY CORPORATE LETTERHEAD ---------------- */}
+      <div className="hidden print:block border-b-2 border-[#1D1D1B] pb-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={logoImg} alt="Siri Samruddhi" className="w-14 h-14 object-contain" />
+            <div>
+              <h1 className="text-xl font-black text-black uppercase tracking-wider">
+                Siri Samruddhi Gold Palace Private Limited
+              </h1>
+              <p className="text-xs text-gray-700 font-semibold">
+                Executive Management Intelligence & Performance Audit Report
+              </p>
+            </div>
+          </div>
+          <div className="text-right text-xs text-gray-800">
+            <p className="font-bold">Confidential Enterprise Document</p>
+            <p className="text-[11px] text-gray-600">Generated: {new Date().toLocaleString('en-IN')}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Screen Header (Hidden on Print) */}
+      <div className="print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EBE6DC] pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-[#3B82F6] bg-[#EFF6FF] px-2.5 py-1 rounded-full border border-[#BFDBFE]">
@@ -129,7 +152,7 @@ export const AdminReportsPage: React.FC = () => {
             onClick={handlePrint}
             icon={<Printer className="w-4 h-4" />}
           >
-            Print
+            Professional Print
           </Button>
 
           <Button
@@ -142,8 +165,8 @@ export const AdminReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Report Categories Selector */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Report Categories Selector (Hidden on Print) */}
+      <div className="print:hidden grid grid-cols-2 sm:grid-cols-4 gap-3">
         {reportTypes.map((rt) => (
           <button
             key={rt.id}
@@ -163,8 +186,8 @@ export const AdminReportsPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="p-4 bg-white border border-[#E4DFD4] rounded-2xl shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+      {/* Filter Toolbar (Hidden on Print) */}
+      <div className="print:hidden p-4 bg-white border border-[#E4DFD4] rounded-2xl shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto">
           {/* Branch Filter */}
           <div className="flex items-center gap-2">
@@ -216,32 +239,32 @@ export const AdminReportsPage: React.FC = () => {
       </div>
 
       {/* Generated Report Presentation */}
-      <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-7 shadow-[0_4px_18px_rgba(40,35,25,0.045)] space-y-6">
+      <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-7 shadow-[0_4px_18px_rgba(40,35,25,0.045)] space-y-6 print:border-none print:shadow-none print:p-0">
         {/* Report Document Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#EBE6DC] pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#EBE6DC] pb-4 print:border-b-2 print:border-black">
           <div>
-            <h2 className="text-lg font-extrabold text-[#1D1D1B] tracking-tight">
+            <h2 className="text-lg sm:text-xl font-extrabold text-[#1D1D1B] tracking-tight print:text-black">
               {reportData?.title || 'Executive Report'}
             </h2>
-            <p className="text-xs text-[#8A8479] font-medium mt-0.5">
-              Scope: <span className="font-bold text-[#7E22CE]">{reportData?.branch_filter}</span> • Generated:{' '}
+            <p className="text-xs text-[#8A8479] font-medium mt-0.5 print:text-gray-700">
+              Scope: <span className="font-bold text-[#7E22CE] print:text-black">{reportData?.branch_filter}</span> • Generated:{' '}
               {reportData?.generated_at ? new Date(reportData.generated_at).toLocaleString('en-IN') : 'Just now'}
             </p>
           </div>
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-[#1D1D1B] self-start sm:self-auto">
+          <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-[#1D1D1B] self-start sm:self-auto print:border-black print:text-black">
             {reportData?.total_records ?? 0} Records Processed
           </span>
         </div>
 
         {/* Summary Metrics Cards */}
         {reportData?.summary_metrics && Object.keys(reportData.summary_metrics).length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 print:grid-cols-4 print:gap-2">
             {Object.entries(reportData.summary_metrics).map(([key, val]) => (
-              <div key={key} className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4] space-y-1">
-                <span className="text-[10px] font-bold text-[#8A8479] uppercase tracking-wider block">
+              <div key={key} className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4] space-y-1 print:border-gray-300 print:bg-gray-50 print:p-2">
+                <span className="text-[10px] font-bold text-[#8A8479] uppercase tracking-wider block print:text-gray-600">
                   {key.replace(/_/g, ' ')}
                 </span>
-                <span className="text-base font-extrabold text-[#1D1D1B] block">
+                <span className="text-base font-extrabold text-[#1D1D1B] block print:text-black print:text-sm">
                   {typeof val === 'number' && key.toLowerCase().includes('revenue')
                     ? `₹${val.toLocaleString('en-IN')}`
                     : val.toString()}
@@ -261,21 +284,21 @@ export const AdminReportsPage: React.FC = () => {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-[#FAF8F3] border-b border-[#E4DFD4] text-[#5E5A52] uppercase font-bold text-[11px]">
+            <table className="w-full text-left text-xs border-collapse print:text-[10px]">
+              <thead className="bg-[#FAF8F3] border-b border-[#E4DFD4] text-[#5E5A52] uppercase font-bold text-[11px] print:bg-gray-100 print:text-black print:border-black">
                 <tr>
                   {reportData.headers.map((h, i) => (
-                    <th key={i} className="px-4 py-3 whitespace-nowrap">
+                    <th key={i} className="px-4 py-3 whitespace-nowrap print:px-2 print:py-2 print:border-b print:border-black">
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#EBE6DC] font-medium">
+              <tbody className="divide-y divide-[#EBE6DC] font-medium print:divide-gray-300">
                 {reportData.rows.map((row, rIndex) => (
-                  <tr key={rIndex} className="hover:bg-[#FAF5FF] transition-colors">
+                  <tr key={rIndex} className="hover:bg-[#FAF5FF] transition-colors print:hover:bg-transparent">
                     {row.map((cell, cIndex) => (
-                      <td key={cIndex} className="px-4 py-3.5 text-[#1D1D1B] whitespace-nowrap">
+                      <td key={cIndex} className="px-4 py-3.5 text-[#1D1D1B] whitespace-nowrap print:px-2 print:py-2 print:border-b print:border-gray-200">
                         {cell !== null && cell !== undefined ? cell.toString() : '—'}
                       </td>
                     ))}
@@ -285,6 +308,22 @@ export const AdminReportsPage: React.FC = () => {
             </table>
           </div>
         )}
+
+        {/* ---------------- PRINT ONLY SIGNATORY BLOCK ---------------- */}
+        <div className="hidden print:grid grid-cols-3 gap-8 pt-12 mt-8 border-t border-gray-300 text-xs text-gray-800">
+          <div className="border-t border-black pt-2 text-center">
+            <p className="font-bold">Prepared By</p>
+            <p className="text-[10px] text-gray-600">Showroom Operations Desk</p>
+          </div>
+          <div className="border-t border-black pt-2 text-center">
+            <p className="font-bold">Audited & Verified By</p>
+            <p className="text-[10px] text-gray-600">Executive Showroom Manager</p>
+          </div>
+          <div className="border-t border-black pt-2 text-center">
+            <p className="font-bold">Authorized Signatory</p>
+            <p className="text-[10px] text-gray-600">Siri Samruddhi Gold Palace HQ</p>
+          </div>
+        </div>
       </div>
     </div>
   );

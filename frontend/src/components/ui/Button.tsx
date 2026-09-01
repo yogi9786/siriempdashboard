@@ -42,11 +42,11 @@ export const Button: React.FC<ButtonProps> = ({
     plum:
       'bg-[#4A2638] text-white hover:bg-[#381B2A] border border-[#5E3248] shadow-xs font-semibold',
     premium:
-      'bg-gradient-to-r from-[#C8A951] to-[#B38E1E] text-white hover:from-[#B8963E] hover:to-[#9E7B15] border border-[#C8A951] shadow-xs font-bold shadow-[#C8A951]/20',
+      'bg-linear-to-r from-[#C8A951] to-[#B38E1E] text-white hover:from-[#B8963E] hover:to-[#9E7B15] border border-[#C8A951] shadow-xs font-bold shadow-[#C8A951]/20',
     gold:
-      'bg-gradient-to-r from-[#C8A951] to-[#B38E1E] text-white hover:from-[#B8963E] hover:to-[#9E7B15] border border-[#C8A951] shadow-xs font-bold shadow-[#C8A951]/20',
+      'bg-linear-to-r from-[#C8A951] to-[#B38E1E] text-white hover:from-[#B8963E] hover:to-[#9E7B15] border border-[#C8A951] shadow-xs font-bold shadow-[#C8A951]/20',
     yellow:
-      'bg-gradient-to-r from-[#C8A951] to-[#B38E1E] text-white hover:from-[#B8963E] hover:to-[#9E7B15] border border-[#C8A951] shadow-xs font-bold',
+      'bg-linear-to-r from-[#C8A951] to-[#B38E1E] text-white hover:from-[#B8963E] hover:to-[#9E7B15] border border-[#C8A951] shadow-xs font-bold',
     secondary:
       'bg-[#FAF5E8] text-[#8C6D1F] hover:bg-[#F5E7B0]/60 border border-[#E5D6AD] font-semibold',
     outline:

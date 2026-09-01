@@ -58,7 +58,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile }) => 
       {/* Brand Header */}
       <div className="h-18 px-4 bg-[#18181B] flex items-center border-b border-[#27272A]">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#27272A] to-[#1F1F23] border border-[#C5A869]/60 p-1 flex items-center justify-center shrink-0 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#27272A] to-[#1F1F23] border border-[#C5A869]/60 p-1 flex items-center justify-center shrink-0 shadow-xs">
             <img
               src={logoImg}
               alt="Siri Samruddhi Gold Palace"
@@ -275,124 +275,18 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile }) => 
                 <Award className="w-3.5 h-3.5" />
                 <span>Staff Leaderboard</span>
               </NavLink>
-            </div>
-          )}
-        </div>
-
-        {/* ---------------- OPERATIONS SECTION ---------------- */}
-        <div className="space-y-1">
-          <button
-            onClick={() => setOpsOpen(!opsOpen)}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              opsOpen
-                ? 'text-[#E2E8F0] font-bold'
-                : 'text-[#D4D4D8] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-lg bg-[#27272A] text-[#FB923C] flex items-center justify-center shrink-0">
-                <Layers className="w-3.5 h-3.5" />
-              </div>
-              <span>Operations & CRM</span>
-            </div>
-            {opsOpen ? (
-              <ChevronDown className="w-4 h-4 text-[#A1A1AA]" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-[#A1A1AA]" />
-            )}
-          </button>
-
-          {opsOpen && (
-            <div className="pl-6 pr-1 py-1 space-y-1 animate-in fade-in slide-in-from-top-1">
-              <NavLink
-                to="/admin/customers"
-                onClick={onCloseMobile}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    isActive ? 'bg-[#EA580C] text-white font-semibold' : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Customer CRM</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin/customer-activities"
-                onClick={onCloseMobile}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    isActive ? 'bg-[#EA580C] text-white font-semibold' : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Customer Activities</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin/gold-schemes"
-                onClick={onCloseMobile}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    isActive ? 'bg-[#EA580C] text-white font-semibold' : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                <Award className="w-3.5 h-3.5" />
-                <span>Gold Savings Schemes</span>
-              </NavLink>
 
               <NavLink
                 to="/admin/outdoor-marketing"
                 onClick={onCloseMobile}
                 className={({ isActive }) =>
                   `flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    isActive ? 'bg-[#EA580C] text-white font-semibold' : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
+                    isActive ? 'bg-[#D97706] text-white font-semibold' : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
                   }`
                 }
               >
                 <Compass className="w-3.5 h-3.5" />
                 <span>Outdoor Marketing</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin/google-reviews"
-                onClick={onCloseMobile}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    isActive ? 'bg-[#EA580C] text-white font-semibold' : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                <Star className="w-3.5 h-3.5" />
-                <span>Google Reviews</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin/attire"
-                onClick={onCloseMobile}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    isActive ? 'bg-[#EA580C] text-white font-semibold' : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                <Shirt className="w-3.5 h-3.5" />
-                <span>Attire & Grooming</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin/gallery"
-                onClick={onCloseMobile}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    isActive ? 'bg-[#EA580C] text-white font-semibold' : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Daily Closing Forms</span>
               </NavLink>
             </div>
           )}
@@ -440,34 +334,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile }) => 
           </div>
 
           <NavLink
-            to="/admin/audit-logs"
-            onClick={onCloseMobile}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group ${
-                isActive
-                  ? 'bg-[#374151]/80 text-white font-bold border-l-[3px] border-l-[#9CA3AF] border border-[#4B5563]/50 shadow-xs pl-2.5'
-                  : 'text-[#D4D4D8] hover:text-white hover:bg-white/5'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                    isActive
-                      ? 'bg-[#4B5563] text-white border border-[#6B7280]'
-                      : 'bg-[#27272A] text-[#9CA3AF] group-hover:bg-[#3F3F46]'
-                  }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                </div>
-                <span>Audit Logs</span>
-                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-[#9CA3AF] ml-auto" />}
-              </>
-            )}
-          </NavLink>
-
-          <NavLink
             to="/admin/settings"
             onClick={onCloseMobile}
             className={({ isActive }) =>
@@ -483,13 +349,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile }) => 
                 <div
                   className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                     isActive
-                      ? 'bg-[#4B5563] text-white border border-[#6B7280]'
+                      ? 'bg-[#4B5563] text-white border border-[#6B7280]/60 shadow-2xs'
                       : 'bg-[#27272A] text-[#9CA3AF] group-hover:bg-[#3F3F46]'
                   }`}
                 >
                   <Settings className="w-3.5 h-3.5" />
                 </div>
-                <span>Admin Settings</span>
+                <span>System Settings</span>
                 {isActive && <div className="w-1.5 h-1.5 rounded-full bg-[#9CA3AF] ml-auto" />}
               </>
             )}
@@ -501,7 +367,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile }) => 
       <div className="p-3 border-t border-[#27272A] bg-[#18181B]">
         <div className="flex items-center justify-between px-2.5 py-2 bg-[#222226] rounded-xl border border-[#2E2E33] shadow-xs">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#78350F] to-[#D97706] text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-xs border border-[#FBBF24]/60">
+            <div className="w-8 h-8 rounded-xl bg-linear-to-br from-[#78350F] to-[#D97706] text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-xs border border-[#FBBF24]/60">
               <Shield className="w-4 h-4 text-white" />
             </div>
             <div className="flex-1 min-w-0">

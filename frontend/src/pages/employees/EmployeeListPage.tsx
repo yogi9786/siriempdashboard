@@ -117,9 +117,9 @@ export const EmployeeListPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-16">
       {/* 1. Light Slate Sapphire Hero Banner */}
-      <div className="relative bg-gradient-to-br from-[#FAF8F3] via-white to-[#F0F4F8] border border-[#C5D5E6] rounded-3xl p-6 sm:p-8 shadow-sm text-[#1D1D1B] overflow-hidden">
+      <div className="relative bg-linear-to-br from-[#FAF8F3] via-white to-[#F0F4F8] border border-[#C5D5E6] rounded-3xl p-6 sm:p-8 shadow-sm text-[#1D1D1B] overflow-hidden">
         {/* Subtle Ambient Blue Shimmer */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#536B8A] to-transparent opacity-60 animate-pulse" />
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-[#536B8A] to-transparent opacity-60 animate-pulse" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2.5">
@@ -232,7 +232,7 @@ export const EmployeeListPage: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search by name, code, or role..."
-            className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs text-[#1D1D1B] placeholder:text-[#8A8479] focus:outline-none focus:border-[#536B8A] focus:ring-2 focus:ring-[#536B8A]/20 transition-all font-medium"
+            className="w-full pl-9 pr-3.5 py-2.5 input-luxury-beige rounded-xl text-xs transition-all font-medium"
           />
         </div>
 
@@ -241,7 +241,7 @@ export const EmployeeListPage: React.FC = () => {
           <select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
-            className="w-full lg:w-auto bg-[#EDF2F7]/60 border border-[#C5D5E6] rounded-xl px-3 py-2.5 text-xs text-[#1D1D1B] focus:outline-none focus:border-[#536B8A] font-semibold cursor-pointer"
+            className="w-full lg:w-auto select-luxury-slate rounded-xl px-3 py-2.5 text-xs font-semibold cursor-pointer"
           >
             <option value="all">All Departments</option>
             <option value="Sales Department">Sales Department</option>
@@ -252,7 +252,7 @@ export const EmployeeListPage: React.FC = () => {
           <select
             value={outdoorFilter}
             onChange={(e) => setOutdoorFilter(e.target.value)}
-            className="w-full lg:w-auto bg-[#EDF2F7]/60 border border-[#C5D5E6] rounded-xl px-3 py-2.5 text-xs text-[#1D1D1B] focus:outline-none focus:border-[#536B8A] font-semibold cursor-pointer"
+            className="w-full lg:w-auto select-luxury-slate rounded-xl px-3 py-2.5 text-xs font-semibold cursor-pointer"
           >
             <option value="all">All Roles</option>
             <option value="showroom">Showroom Floor</option>
@@ -262,20 +262,30 @@ export const EmployeeListPage: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full lg:w-auto bg-[#EDF2F7]/60 border border-[#C5D5E6] rounded-xl px-3 py-2.5 text-xs text-[#1D1D1B] focus:outline-none focus:border-[#536B8A] font-semibold cursor-pointer"
+            className="w-full lg:w-auto select-luxury-slate rounded-xl px-3 py-2.5 text-xs font-semibold cursor-pointer"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
 
+          {/* Refresh / Fetch Button */}
+          <button
+            onClick={fetchEmployees}
+            title="Fetch and reload latest employee records"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#536B8A] bg-[#EDF2F7] border border-[#C5D5E6] hover:bg-[#E2E8F0] transition-colors cursor-pointer shrink-0"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Fetch / Refresh</span>
+          </button>
+
           {hasActiveFilters && (
             <button
               onClick={handleClearFilters}
               title="Clear active filters"
-              className="w-full sm:w-auto col-span-1 sm:col-span-3 lg:col-span-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#B97855] bg-[#FAF1EC] border border-[#ECCFC0] hover:bg-[#F5E2D6] transition-colors cursor-pointer shrink-0"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#B97855] bg-[#FAF1EC] border border-[#ECCFC0] hover:bg-[#F5E2D6] transition-colors cursor-pointer shrink-0"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <XCircle className="w-3.5 h-3.5" />
               <span>Clear</span>
             </button>
           )}

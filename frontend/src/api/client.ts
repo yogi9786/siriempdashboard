@@ -53,7 +53,10 @@ api.interceptors.response.use(
         const pathname = window.location.pathname;
         if (pathname !== '/login' && pathname !== '/' && !pathname.startsWith('/admin/login')) {
           localStorage.removeItem('siri_auth_token');
+          localStorage.removeItem('siri_admin_refresh_token');
           localStorage.removeItem('siri_auth_user');
+          localStorage.removeItem('siri_auth_expires_at');
+          localStorage.removeItem('siri_auth_timestamp');
           window.location.href = '/login';
         }
       } else if (status >= 400 && status !== 404 && typeof window !== 'undefined') {

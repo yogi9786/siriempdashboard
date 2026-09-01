@@ -55,6 +55,13 @@ async def lifespan(app: FastAPI):
         seed_database()
     except Exception as e:
         logger.error(f"Seeding failed: {e}")
+    try:
+        from backend.app.core.database import SessionLocal
+        from backend.app.services.auth_service import sync_managers_from_env
+        with SessionLocal() as db_session:
+            sync_managers_from_env(db_session)
+    except Exception as e:
+        logger.warning(f"Manager sync note: {e}")
     yield
     logger.info(f"Shutting down {settings.APP_NAME}...")
 

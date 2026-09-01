@@ -60,7 +60,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobile }) => {
 
         {/* Super Admin Profile Pill */}
         <div className="flex items-center gap-2 pl-2 border-l border-[#EBE6DC]">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#78350F] to-[#D97706] text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-2xs border border-[#FBBF24]/60">
+          <div className="w-8 h-8 rounded-xl bg-linear-to-br from-[#78350F] to-[#D97706] text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-2xs border border-[#FBBF24]/60">
             <Shield className="w-4 h-4 text-white" />
           </div>
           <div className="hidden xl:block text-left">

@@ -24,6 +24,7 @@ import { Button } from '../../../components/ui/Button';
 import { useToast } from '../../../context/ToastContext';
 import api from '../../../api/client';
 import { getMediaUrl } from '../../../utils/media';
+import { formatCleanBreakdownText } from '../../../utils/customerUtils';
 
 export const AdminBranchDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -90,7 +91,7 @@ export const AdminBranchDetailPage: React.FC = () => {
         </button>
 
         {/* Branch Luxury Hero */}
-        <div className="bg-gradient-to-br from-[#FAF8F3] via-white to-[#FAF5FF] border border-[#D8B4FE] rounded-3xl p-6 sm:p-8 shadow-xs relative overflow-hidden">
+        <div className="bg-linear-to-br from-[#FAF8F3] via-white to-[#FAF5FF] border border-[#D8B4FE] rounded-3xl p-6 sm:p-8 shadow-xs relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center font-extrabold text-2xl shrink-0 shadow-2xs">
@@ -108,10 +109,8 @@ export const AdminBranchDetailPage: React.FC = () => {
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D1D1B] tracking-tight">
                   {branch.name} Showroom Command
                 </h1>
-                <p className="text-xs text-[#5E5A52] font-medium flex items-center gap-2 flex-wrap">
-                  {branch.address && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[#8A8479]" /> {branch.address}</span>}
-                  {branch.phone && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5 text-[#8A8479]" /> {branch.phone}</span>}
-                  {branch.email && <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5 text-[#8A8479]" /> {branch.email}</span>}
+                <p className="text-xs text-[#8A8479] font-medium">
+                  {branch.city} Location • Active Branch Management
                 </p>
               </div>
             </div>
@@ -242,7 +241,7 @@ export const AdminBranchDetailPage: React.FC = () => {
                 {employees.map((emp) => (
                   <tr
                     key={emp.id}
-                    onClick={() => navigate(`/employees/${emp.id}`)}
+                    onClick={() => navigate(`/admin/employees/${emp.id}`)}
                     className="hover:bg-[#FAF5FF] transition-colors cursor-pointer group"
                   >
                     <td className="px-4 py-3.5">
@@ -295,15 +294,9 @@ export const AdminBranchDetailPage: React.FC = () => {
                     <p className="text-xs text-[#8A8479] font-mono">@{m.username}</p>
                   </div>
                 </div>
-                {m.email && (
-                  <p className="text-xs text-[#5E5A52] flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-[#8A8479]" />
-                    <span>{m.email}</span>
-                  </p>
-                )}
                 <div className="flex items-center justify-between pt-2 border-t border-[#EBE6DC] text-[11px] font-bold">
                   <span className="text-[#21845F] bg-[#E8F4EE] px-2 py-0.5 rounded-md">Active Manager</span>
-                  <span className="text-[#8A8479]">{m.last_login ? 'Logged in recently' : 'Never logged in'}</span>
+                  <span className="text-[#8A8479]">{m.last_login ? 'Logged in recently' : 'Active Account'}</span>
                 </div>
               </div>
             ))}
@@ -339,7 +332,11 @@ export const AdminBranchDetailPage: React.FC = () => {
                           {c.status}
                         </span>
                       </div>
-                      {c.breakdown && <p className="text-[10px] text-[#8A8479] font-mono">{c.breakdown}</p>}
+                      {c.breakdown && (
+                        <p className="text-[11px] text-[#5E5A52] font-medium">
+                          {formatCleanBreakdownText(c.breakdown, c.status)}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-[#8A8479] max-w-xs">{c.notes || '—'}</td>
                   </tr>

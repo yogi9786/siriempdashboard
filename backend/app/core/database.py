@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy import create_engine, text, inspect
+from sqlalchemy import create_engine, text, inspect, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 from backend.app.core.config import settings
 
@@ -45,6 +45,20 @@ def create_db_engine():
         )
 
 engine = create_db_engine()
+
+# Enable WAL mode and 30-second busy timeout for concurrent read/write across multiple showroom managers
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if "sqlite" in str(engine.url):
+        try:
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA busy_timeout=30000")
+            cursor.close()
+        except Exception:
+            pass
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
 Base = declarative_base()
 
@@ -59,7 +73,7 @@ def auto_migrate_db_schema():
     from backend.app.models.branch import Branch, User
     from backend.app.models.employee import Employee
     from backend.app.models.activity import CustomerActivity, SchemeRecord, EmployeeFormMedia, GoogleReview, AttireRecord
-    from backend.app.models.outdoor_marketing import OutdoorMarketingArea, OutdoorMarketingCustomer, OutdoorMarketingScheme, OutdoorMarketingActivity
+    from backend.app.models.outdoor_marketing import OutdoorMarketingArea, OutdoorMarketingDuty, OutdoorMarketingCustomer, OutdoorMarketingScheme, OutdoorMarketingActivity
     from backend.app.models.audit import AuditLog
 
     Base.metadata.create_all(bind=engine)

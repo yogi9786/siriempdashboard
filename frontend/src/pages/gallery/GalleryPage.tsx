@@ -10,6 +10,7 @@ import {
   Calendar,
   User,
   FileText,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
@@ -167,7 +168,7 @@ export const GalleryPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-12">
       {/* 1. Warm Terracotta Light Hero Banner */}
-      <div className="relative bg-gradient-to-br from-[#FAF8F3] via-white to-[#FAF1EC] border border-[#ECCFC0] rounded-3xl p-6 sm:p-8 shadow-xs text-[#1D1D1B] overflow-hidden">
+      <div className="relative bg-linear-to-br from-[#FAF8F3] via-white to-[#FAF1EC] border border-[#ECCFC0] rounded-3xl p-6 sm:p-8 shadow-xs text-[#1D1D1B] overflow-hidden">
         {/* Ambient Subtle Radial Lighting */}
         <div className="absolute top-0 right-0 w-72 h-72 bg-[#B97855]/6 rounded-full blur-3xl pointer-events-none" />
 
@@ -220,7 +221,7 @@ export const GalleryPage: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search notes or staff..."
-            className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs text-[#1D1D1B] placeholder:text-[#8A8479] focus:outline-none focus:border-[#B97855] focus:ring-2 focus:ring-[#B97855]/10 transition-all font-medium shadow-2xs"
+            className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs text-[#1D1D1B] focus:outline-none focus:ring-2 focus:ring-[#B97855]/10 transition-all font-medium shadow-2xs"
           />
         </form>
 
@@ -229,7 +230,7 @@ export const GalleryPage: React.FC = () => {
           <select
             value={formTypeFilter}
             onChange={(e) => setFormTypeFilter(e.target.value)}
-            className="w-full lg:w-auto bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-3 py-2.5 text-xs text-[#1D1D1B] focus:outline-none focus:border-[#B97855] font-semibold cursor-pointer shadow-2xs"
+            className="w-full lg:w-auto bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-3 py-2.5 text-xs text-[#1D1D1B] focus:outline-none font-semibold cursor-pointer shadow-2xs"
           >
             <option value="all">All Form Types</option>
             <option value="Daily Closing Form">Daily Closing Form</option>
@@ -241,7 +242,7 @@ export const GalleryPage: React.FC = () => {
           <select
             value={employeeFilter}
             onChange={(e) => setEmployeeFilter(e.target.value)}
-            className="w-full lg:w-auto bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-3 py-2.5 text-xs text-[#1D1D1B] focus:outline-none focus:border-[#B97855] font-semibold cursor-pointer shadow-2xs"
+            className="w-full lg:w-auto bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-3 py-2.5 text-xs text-[#1D1D1B] focus:outline-none font-semibold cursor-pointer shadow-2xs"
           >
             <option value="all">All Staff Members</option>
             {employees.map((emp) => (
@@ -250,6 +251,15 @@ export const GalleryPage: React.FC = () => {
               </option>
             ))}
           </select>
+
+          <button
+            onClick={fetchMedia}
+            title="Fetch and reload latest form records"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#B97855] bg-[#FAF1EC] border border-[#ECCFC0] hover:bg-[#F5E2D6] transition-colors cursor-pointer shrink-0"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Fetch / Refresh</span>
+          </button>
         </div>
       </div>
 
@@ -260,46 +270,86 @@ export const GalleryPage: React.FC = () => {
         </div>
       ) : mediaList.length === 0 ? (
         <EmptyState
-          title="No form images found."
-          description="Upload daily closing sheets and reports for staff verification."
+          title="No form images uploaded yet."
+          description="Upload daily closing records, counter tallies, and gold appraisal sheets."
           icon={FileText}
           actionText="Upload Form Photo"
           onAction={() => setShowUploadModal(true)}
-          actionIcon={<Camera className="w-4 h-4" />}
+          actionIcon={<Plus className="w-4 h-4" />}
         />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
           {mediaList.map((m) => (
             <div
               key={m.id}
-              onClick={() => setViewImageModalUrl(m.file_url)}
-              className="bg-white border border-[#ECCFC0] rounded-2xl overflow-hidden shadow-2xs group cursor-pointer hover:border-[#B97855] hover:shadow-xs transition-all flex flex-col justify-between"
+              className="bg-white border border-[#ECCFC0] rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col group"
             >
-              <div className="aspect-4/3 bg-[#FAF8F3] overflow-hidden relative">
+              {/* Image Preview Container */}
+              <div
+                className="aspect-video bg-[#FAF8F3] relative overflow-hidden cursor-pointer flex items-center justify-center"
+                onClick={() => setViewImageModalUrl(m.file_url)}
+              >
                 <img
                   src={getMediaUrl(m.file_url)}
                   alt={m.form_type}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
                 />
-                <div className="absolute inset-0 bg-[#1D1D1B]/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
-                  View Full Size
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <div className="p-2 rounded-full bg-white/80 text-black shadow-xs">
+                    <Eye className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="absolute top-2 left-2">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-black/60 text-white backdrop-blur-xs">
+                    {m.form_type}
+                  </span>
                 </div>
               </div>
-              <div className="p-3.5 space-y-1">
-                <div className="flex items-center justify-between gap-1">
-                  <p className="text-xs font-bold text-[#1D1D1B] truncate">{m.form_type}</p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteTarget(m);
-                    }}
-                    className="text-[#8A8479] hover:text-[#DC2626] p-1 rounded-md hover:bg-[#FEF2F2] transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+
+              {/* Card Meta Body */}
+              <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
+                <div>
+                  <div className="flex items-center justify-between text-xs font-semibold text-[#1D1D1B] mb-1">
+                    <span className="flex items-center gap-1">
+                      <User className="w-3 h-3 text-[#B97855]" />
+                      <span>{m.employee_name || 'Staff Member'}</span>
+                    </span>
+                    <span className="text-[10px] text-[#8A8479] flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>{m.upload_date}</span>
+                    </span>
+                  </div>
+                  {m.notes && (
+                    <p className="text-xs text-[#5E5A52] font-medium line-clamp-2 italic">
+                      "{m.notes}"
+                    </p>
+                  )}
                 </div>
-                <p className="text-[11px] text-[#B97855] font-semibold truncate">{m.employee_name || 'Staff'}</p>
-                <p className="text-[10px] text-[#8A8479]">{m.upload_date}</p>
+
+                <div className="pt-2 border-t border-[#FAF1EC] flex items-center justify-between text-xs">
+                  <span className="text-[10px] text-[#8A8479] font-medium">
+                    {m.file_size ? `${(m.file_size / 1024).toFixed(1)} KB` : ''}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setViewImageModalUrl(m.file_url)}
+                      title="View full size image"
+                      className="p-1.5 rounded-lg hover:bg-[#FAF1EC] text-[#5E5A52] hover:text-[#B97855] transition-colors cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(m)}
+                      title="Delete form media"
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-[#8A8479] hover:text-red-600 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -309,30 +359,33 @@ export const GalleryPage: React.FC = () => {
       {/* Upload Modal */}
       <Modal
         isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        title="Upload Daily Closing Form"
-        subtitle="Capture or select closing sheets and verification forms (Single image under 2.5 MB)"
+        onClose={() => !isUploading && setShowUploadModal(false)}
+        title="Upload Counter Form / Document"
+        size="md"
         footer={
           <>
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setShowUploadModal(false)}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-[#5E5A52] hover:bg-[#FAF8F3] border border-[#E4DFD4] cursor-pointer"
+              disabled={isUploading}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               onClick={handleUpload}
-              disabled={isUploading}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-[#B97855] hover:bg-[#A36443] text-white shadow-xs cursor-pointer disabled:opacity-60"
+              isLoading={isUploading}
             >
-              {isUploading ? 'Uploading...' : 'Upload Form Photo'}
-            </button>
+              Upload Form Photo
+            </Button>
           </>
         }
       >
         <form onSubmit={handleUpload} className="space-y-4">
           <Select
-            label="Staff Representative *"
+            label="Staff Member *"
             value={uploadEmployeeId}
             onChange={(e) => setUploadEmployeeId(e.target.value)}
             options={employees.map((emp) => ({
@@ -343,7 +396,7 @@ export const GalleryPage: React.FC = () => {
           />
 
           <Select
-            label="Form Type *"
+            label="Form / Report Type *"
             value={uploadFormType}
             onChange={(e) => setUploadFormType(e.target.value)}
             options={[
@@ -364,13 +417,13 @@ export const GalleryPage: React.FC = () => {
               accept="image/*"
               capture="environment"
               onChange={handleFileSelect}
-              className="w-full text-xs text-[#5E5A52] file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#FAF1EC] file:text-[#B97855] hover:file:bg-[#F5E2D6] file:cursor-pointer border border-[#ECCFC0] rounded-xl p-2 bg-[#FAF8F3]"
+              className="w-full border border-[#ECCFC0] rounded-xl p-2 bg-[#FAF8F3] text-xs"
               required
             />
           </div>
 
           {previewUrl && (
-            <div className="rounded-xl border border-[#ECCFC0] overflow-hidden aspect-16/9 max-h-48 bg-[#FAF8F3] flex items-center justify-center">
+            <div className="rounded-xl border border-[#ECCFC0] overflow-hidden aspect-video max-h-48 bg-[#FAF8F3] flex items-center justify-center">
               <img src={previewUrl} alt="Preview" className="h-full w-full object-contain" />
             </div>
           )}

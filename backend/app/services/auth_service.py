@@ -407,7 +407,44 @@ class AuthService:
                 detail=f"Too many failed login attempts. Please wait {wait_time} seconds before trying again.",
             )
 
-        # 2. Strict Credential Verification against .env
+        # 2. Strict Role Isolation: Explicitly Block Showroom Managers from Super Admin Login
+        env_mgr = get_env_manager_by_username(email_or_user_clean)
+        db_mgr = None
+        if not env_mgr:
+            db_mgr = (
+                self.db.query(User)
+                .filter(
+                    (func.lower(User.username) == email_or_user_clean)
+                    | (func.lower(User.email) == email_or_user_clean)
+                )
+                .first()
+            )
+
+        if env_mgr or (db_mgr and db_mgr.role == "MANAGER"):
+            record_failed_login(client_key)
+            record_failed_login(email_or_user_clean)
+            mgr_name = env_mgr["full_name"] if env_mgr else (db_mgr.full_name if db_mgr else email_or_user_clean)
+            try:
+                audit = AuditLog(
+                    branch_id=None,
+                    admin_id=None,
+                    admin_username=email_or_user_clean,
+                    action="Manager Super Admin Login Blocked",
+                    entity="Auth",
+                    ip_address=ip_address,
+                    details=f"Showroom Manager '{mgr_name}' attempted unauthorized login via Super Admin portal.",
+                )
+                self.db.add(audit)
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access Denied: Showroom Managers are not authorized to log in through the Super Admin portal. Please use the Showroom Manager Login page (/login).",
+            )
+
+        # 3. Strict Credential Verification against .env
         expected_email = live_settings.ADMIN_EMAIL.strip().lower()
         is_email_match = (
             email_or_user_clean == expected_email

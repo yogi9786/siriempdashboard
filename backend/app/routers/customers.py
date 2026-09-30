@@ -1,11 +1,10 @@
 from typing import List, Optional, Dict, Any
 from datetime import date
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from backend.app.core.database import get_db
-from backend.app.core.config import settings
 from backend.app.models.branch import User
 from backend.app.models.employee import Employee
 from backend.app.models.activity import CustomerActivity
@@ -94,7 +93,6 @@ def list_customer_activities(
 @router.post("", response_model=CustomerActivityResponse, status_code=status.HTTP_201_CREATED, summary="Record a customer attended by an employee")
 def create_customer_activity(
     activity_data: CustomerActivityCreate,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_manager),
     db: Session = Depends(get_db),
 ):
@@ -134,9 +132,7 @@ def create_customer_activity(
             detail=f"Failed to record customer activity: {str(e)}",
         )
 
-    # Auto-send WhatsApp notifications via AiSensy if enabled
-    if getattr(settings, "AISENSY_AUTO_SEND_ON_SAVE", True):
-        background_tasks.add_task(AiSensyService.send_activity_whatsapp_notifications, record)
+    # WhatsApp is only sent via explicit button click (/send-whatsapp endpoint).
 
     b_name = record.branch.name if record.branch else None
     b_code = record.branch.code if record.branch else None
@@ -164,27 +160,8 @@ def create_customer_activity(
     )
 
 
-@router.put("/{record_id}", response_model=CustomerActivityResponse, summary="Update a customer activity record")
-@router.patch("/{record_id}", response_model=CustomerActivityResponse, summary="Patch a customer activity record")
-def update_customer_activity(
-    record_id: int,
-    update_data: CustomerActivityUpdate,
-    background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_manager),
-    db: Session = Depends(get_db),
-):
-    record = (
-        db.query(CustomerActivity)
-        .join(Employee, CustomerActivity.employee_id == Employee.id)
-        .filter(
-            CustomerActivity.id == record_id,
-            CustomerActivity.branch_id == current_user.branch_id,
-        )
-        .first()
-    )
-    if not record:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer activity record not found.")
-
+def _apply_activity_update(record: CustomerActivity, update_data: CustomerActivityUpdate) -> None:
+    """Apply fields from update_data onto the CustomerActivity ORM record."""
     if update_data.customers_count is not None:
         record.customers_count = update_data.customers_count
     if update_data.breakdown is not None:
@@ -206,6 +183,9 @@ def update_customer_activity(
     if update_data.notes is not None:
         record.notes = update_data.notes
 
+
+def _commit_activity_update(record: CustomerActivity, db: Session) -> None:
+    """Commit update and refresh, rolling back on error."""
     try:
         db.commit()
         db.refresh(record)
@@ -216,15 +196,13 @@ def update_customer_activity(
             detail=f"Failed to update customer activity: {str(e)}",
         )
 
-    # Auto-send WhatsApp notifications via AiSensy if enabled
-    if getattr(settings, "AISENSY_AUTO_SEND_ON_SAVE", True):
-        background_tasks.add_task(AiSensyService.send_activity_whatsapp_notifications, record)
 
+def _build_activity_response(record: CustomerActivity) -> CustomerActivityResponse:
+    """Build a CustomerActivityResponse from an ORM record."""
     emp_name = record.employee.full_name if record.employee else None
     emp_code = record.employee.employee_code if record.employee else None
     b_name = record.branch.name if record.branch else None
     b_code = record.branch.code if record.branch else None
-
     return CustomerActivityResponse(
         id=record.id,
         branch_id=record.branch_id,
@@ -246,6 +224,55 @@ def update_customer_activity(
         created_at=record.created_at,
         updated_at=record.updated_at,
     )
+
+
+@router.put("/{record_id}", response_model=CustomerActivityResponse, summary="Update a customer activity record (full replace)")
+def put_customer_activity(
+    record_id: int,
+    update_data: CustomerActivityUpdate,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(CustomerActivity)
+        .join(Employee, CustomerActivity.employee_id == Employee.id)
+        .filter(
+            CustomerActivity.id == record_id,
+            CustomerActivity.branch_id == current_user.branch_id,
+        )
+        .first()
+    )
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer activity record not found.")
+    _apply_activity_update(record, update_data)
+    _commit_activity_update(record, db)
+    # WhatsApp is only sent via explicit button click (/send-whatsapp endpoint).
+    return _build_activity_response(record)
+
+
+@router.patch("/{record_id}", response_model=CustomerActivityResponse, summary="Partially update a customer activity record")
+def patch_customer_activity(
+    record_id: int,
+    update_data: CustomerActivityUpdate,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(CustomerActivity)
+        .join(Employee, CustomerActivity.employee_id == Employee.id)
+        .filter(
+            CustomerActivity.id == record_id,
+            CustomerActivity.branch_id == current_user.branch_id,
+        )
+        .first()
+    )
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer activity record not found.")
+    _apply_activity_update(record, update_data)
+    _commit_activity_update(record, db)
+    # WhatsApp is only sent via explicit button click (/send-whatsapp endpoint).
+
+    return _build_activity_response(record)
 
 
 @router.post("/{record_id}/send-whatsapp", summary="Manually trigger WhatsApp notification for a customer activity record via AiSensy")

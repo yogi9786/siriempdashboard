@@ -5,9 +5,25 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_root_dir = os.path.dirname(_base_dir)
+
+_possible_env_files = [
+    os.path.join(_base_dir, ".env"),
+    os.path.join(_base_dir, "env"),
+    os.path.join(_root_dir, ".env"),
+    os.path.join(_root_dir, "env"),
+    ".env",
+    "backend/.env",
+    "env",
+    "backend/env",
+]
+_env_files_to_load = [f for f in _possible_env_files if os.path.exists(f)] or [os.path.join(_base_dir, ".env")]
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".env"),
+        env_file=tuple(_env_files_to_load),
         env_file_encoding="utf-8",
         extra="ignore",
     )

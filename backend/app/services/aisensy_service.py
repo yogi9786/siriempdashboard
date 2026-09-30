@@ -1,12 +1,22 @@
 import re
 import json
 import logging
+import time
+import threading
 import urllib.request
 import urllib.error
 from typing import List, Dict, Any, Optional, Tuple
 from backend.app.core.config import settings
 
 logger = logging.getLogger("aisensy_service")
+
+# ---------------------------------------------------------------------------
+# Deduplication cache: prevents the same (phone, campaign) from being sent
+# more than once within DEDUP_WINDOW_SECONDS seconds.
+# ---------------------------------------------------------------------------
+_DEDUP_LOCK = threading.Lock()
+_dedup_cache: Dict[str, float] = {}   # key -> last_sent_epoch
+DEDUP_WINDOW_SECONDS = 60             # 1 minute cooldown
 
 
 class AiSensyService:
@@ -107,32 +117,34 @@ class AiSensyService:
     @classmethod
     def get_media_url_for_status(cls, status_str: Optional[str]) -> Optional[str]:
         """
-        Resolves the image / media header URL for templates that require media (e.g. customer_purchase_thank_you).
+        Resolves the image / media header URL for templates that require media.
+        Reads directly from server .env settings per outcome status.
         """
         status_norm = (status_str or "Walkin").strip().lower()
-        default_media = (
-            getattr(settings, "AISENSY_MEDIA_URL", None)
-            or getattr(settings, "AISENSY_DEFAULT_MEDIA_URL", "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&q=80")
-        )
 
+        url: Optional[str] = None
         if status_norm in ["sold", "purchased", "closed", "sale"]:
-            url = getattr(settings, "AISENSY_MEDIA_URL_SOLD", None) or default_media
-            return url.strip() if url else None
+            url = getattr(settings, "AISENSY_MEDIA_URL_SOLD", None)
+        elif status_norm in ["exchange", "gold exchange", "jewellery exchange"]:
+            url = getattr(settings, "AISENSY_MEDIA_URL_EXCHANGE", None)
+        elif status_norm in ["in hold / follow up", "in hold", "hold", "follow up", "follow-up", "callback"]:
+            url = getattr(settings, "AISENSY_MEDIA_URL_IN_HOLD", None)
+        elif status_norm in ["lost", "not interested", "left", "cancelled"]:
+            url = getattr(settings, "AISENSY_MEDIA_URL_LOST", None)
+        else:
+            # Default / Walk-in
+            url = getattr(settings, "AISENSY_MEDIA_URL_WALKIN", None)
 
-        if status_norm in ["exchange", "gold exchange", "jewellery exchange"]:
-            url = getattr(settings, "AISENSY_MEDIA_URL_EXCHANGE", None) or default_media
-            return url.strip() if url else None
+        # Fallback to general AISENSY_MEDIA_URL if status-specific is not set
+        if not url or not str(url).strip():
+            url = getattr(settings, "AISENSY_MEDIA_URL", None)
 
-        if status_norm in ["in hold / follow up", "in hold", "hold", "follow up", "follow-up", "callback"]:
-            url = getattr(settings, "AISENSY_MEDIA_URL_IN_HOLD", None) or default_media
-            return url.strip() if url else None
+        if url and str(url).strip():
+            clean_url = str(url).strip()
+            if clean_url.startswith("http://") or clean_url.startswith("https://"):
+                return clean_url
 
-        if status_norm in ["lost", "not interested", "left", "cancelled"]:
-            url = getattr(settings, "AISENSY_MEDIA_URL_LOST", None) or default_media
-            return url.strip() if url else None
-
-        url = getattr(settings, "AISENSY_MEDIA_URL_WALKIN", None) or default_media
-        return url.strip() if url else None
+        return None
 
     @classmethod
     def get_template_for_status(cls, status_str: Optional[str]) -> Tuple[str, str]:
@@ -241,6 +253,36 @@ class AiSensyService:
                 "url": str(media_url).strip(),
                 "filename": "siri_samruddhi_jewellery.jpg",
             }
+
+        # ------------------------------------------------------------------
+        # Deduplication guard: skip if the same (phone, campaign) was sent
+        # within the last DEDUP_WINDOW_SECONDS seconds to prevent double-send.
+        # ------------------------------------------------------------------
+        dedup_key = f"{clean_phone}::{template_name}"
+        now = time.monotonic()
+        with _DEDUP_LOCK:
+            last_sent = _dedup_cache.get(dedup_key, 0.0)
+            elapsed = now - last_sent
+            if elapsed < DEDUP_WINDOW_SECONDS:
+                remaining = int(DEDUP_WINDOW_SECONDS - elapsed)
+                logger.warning(
+                    f"[AiSensy DEDUP] Skipping duplicate WhatsApp to {clean_phone} "
+                    f"(campaign '{template_name}'). Last sent {int(elapsed)}s ago. "
+                    f"Cooldown: {remaining}s remaining."
+                )
+                return {
+                    "success": True,
+                    "deduplicated": True,
+                    "phone": clean_phone,
+                    "campaign_name": template_name,
+                    "message": (
+                        f"Duplicate send blocked: message to +{clean_phone} via '{template_name}' "
+                        f"was already dispatched {int(elapsed)}s ago. "
+                        f"Please wait {remaining}s before resending."
+                    ),
+                }
+            # Mark this (phone, campaign) as sent NOW
+            _dedup_cache[dedup_key] = now
 
         if is_placeholder_key:
             logger.info(

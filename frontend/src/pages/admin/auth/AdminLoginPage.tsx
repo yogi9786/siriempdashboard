@@ -189,11 +189,23 @@ export const AdminLoginPage: React.FC = () => {
 
           {/* Error Message Box */}
           {errorMessage && (
-            <div className="mb-5 p-3.5 rounded-2xl bg-red-950/70 border border-red-500/50 text-red-200 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in">
-              <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
-                <span className="text-red-400 font-bold">!</span>
+            <div className="mb-5 p-3.5 rounded-2xl bg-red-950/70 border border-red-500/50 text-red-200 text-xs font-semibold flex flex-col gap-2 animate-in fade-in">
+              <div className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-red-400 font-bold">!</span>
+                </div>
+                <p className="leading-snug">{errorMessage}</p>
               </div>
-              <p className="leading-snug">{errorMessage}</p>
+              {errorMessage.toLowerCase().includes('manager') && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="self-start text-[11px] font-bold text-[#E5C378] hover:underline flex items-center gap-1 pl-7 cursor-pointer"
+                >
+                  <span>Go to Showroom Manager Login Portal</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              )}
             </div>
           )}
 

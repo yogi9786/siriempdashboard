@@ -14,8 +14,6 @@ import {
   ArrowUpDown,
   Sparkles,
   UserCheck,
-  MessageSquare,
-  Send,
   Check,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
@@ -24,6 +22,12 @@ import { useToast } from '../../context/ToastContext';
 import { CustomerActivity, CustomerDetailItem, Employee } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
 import api from '../../api/client';
+
+const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.97.53 1.83.812 2.796.813 3.179 0 5.767-2.587 5.768-5.766.001-3.181-2.587-5.766-5.768-5.766zm3.376 8.212c-.144.405-.837.774-1.17.824-.312.045-.717.067-1.168-.08-.288-.094-.658-.236-1.144-.45-2.072-.913-3.414-3.033-3.518-3.173-.104-.14-1.01-1.344-1.01-2.564 0-1.22.637-1.82.863-2.066.226-.246.495-.308.66-.308.165 0 .33.003.475.01.153.008.358-.058.56.427.207.497.708 1.724.77 1.849.062.125.104.271.021.437-.083.165-.124.27-.247.416-.124.145-.262.325-.374.436-.125.124-.255.26-.11.51.145.249.645 1.062 1.385 1.722.953.849 1.756 1.112 2.004 1.237.248.125.394.104.539-.063.145-.166.621-.726.786-.975.166-.249.331-.208.558-.125.228.083 1.446.682 1.694.807.248.124.414.186.475.29.063.104.063.602-.081 1.007zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.98-1.306A9.957 9.957 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" />
+  </svg>
+);
 
 interface CustomerActivityModalProps {
   isOpen: boolean;
@@ -54,6 +58,8 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
   );
   const [overallNotes, setOverallNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [sendingWhatsappIdx, setSendingWhatsappIdx] = useState<number | null>(null);
+  const [isSendingWhatsappAll, setIsSendingWhatsappAll] = useState<boolean>(false);
 
   // Initialize form ONLY when modal opens or initialData ID changes (prevents resetting on input/dropdown changes)
   useEffect(() => {
@@ -134,79 +140,6 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
     );
   };
 
-  const [sendingWhatsappIdx, setSendingWhatsappIdx] = useState<number | null>(null);
-
-  const getAiSensyTemplateMeta = (status: string) => {
-    switch (status) {
-      case 'Sold':
-        return {
-          name: 'Purchase Thank You',
-          id: 'customer_purchase_thank_you',
-          color: 'text-[#21845F] bg-[#E8F4EE] border-[#C5E3D5]',
-        };
-      case 'Exchange':
-        return {
-          name: 'Exchange Acknowledgment',
-          id: 'customer_exchange_thank_you',
-          color: 'text-[#536B8A] bg-[#EDF2F7] border-[#C5D5E6]',
-        };
-      case 'In Hold / Follow Up':
-      case 'In Hold':
-      case 'Follow Up':
-        return {
-          name: 'Item on Hold / Follow-up',
-          id: 'customer_in_hold_update',
-          color: 'text-[#B97855] bg-[#FAF1EC] border-[#ECCFC0]',
-        };
-      case 'Lost':
-        return {
-          name: 'Visit Thank You',
-          id: 'customer_visit_thank_you',
-          color: 'text-[#C24141] bg-[#FDECEC] border-[#F9C3C3]',
-        };
-      case 'Walkin':
-      default:
-        return {
-          name: 'Walk-in Welcome',
-          id: 'customer_walkin_welcome',
-          color: 'text-[#8A8479] bg-[#FAF8F3] border-[#E4DFD4]',
-        };
-    }
-  };
-
-  const handleSendWhatsappSingle = async (idx: number, cust: CustomerDetailItem) => {
-    if (!cust.phone || !cust.phone.trim()) {
-      toastError(`Please enter a phone number for ${cust.name || `Customer #${idx + 1}`} first.`);
-      return;
-    }
-
-    if (!initialData?.id) {
-      success(
-        `WhatsApp template "${getAiSensyTemplateMeta(cust.status || 'Walkin').name}" will automatically be sent to ${cust.phone} upon saving!`
-      );
-      return;
-    }
-
-    try {
-      setSendingWhatsappIdx(idx);
-      const res = await api.post(`/api/v1/customers/${initialData.id}/send-whatsapp`, {
-        customer_index: idx,
-      });
-
-      if (res.data?.success) {
-        success(
-          `WhatsApp sent to ${cust.name || 'Customer'} (${cust.phone}) using template "${getAiSensyTemplateMeta(cust.status || 'Walkin').name}".`
-        );
-      } else {
-        toastError(res.data?.results?.[0]?.error || 'Failed to dispatch WhatsApp message.');
-      }
-    } catch (err: any) {
-      console.error('Failed to send WhatsApp:', err);
-      toastError(err.response?.data?.detail || 'Failed to send WhatsApp message via AiSensy.');
-    } finally {
-      setSendingWhatsappIdx(null);
-    }
-  };
 
   const getStatusBadgeStyle = (status: string) => {
     switch (status) {
@@ -223,6 +156,143 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
       case 'Walkin':
       default:
         return 'bg-[#FAF8F3] text-[#8A8479] border-[#E4DFD4]';
+    }
+  };
+
+  const handleSendWhatsappSingle = async (idx: number, cust: CustomerDetailItem) => {
+    if (!cust.phone || !cust.phone.trim()) {
+      toastError(`Please enter a valid phone number for ${cust.name || `Customer #${idx + 1}`} first.`);
+      return;
+    }
+
+    if (!initialData?.id) {
+      toastError('Please save the customer activity first or click "Save & Send WhatsApp".');
+      return;
+    }
+
+    try {
+      setSendingWhatsappIdx(idx);
+      const res = await api.post(`/api/v1/customers/${initialData.id}/send-whatsapp`, {
+        customer_index: idx,
+      });
+
+      if (res.data?.success) {
+        success(
+          `WhatsApp message dispatched to ${cust.name || 'Customer'} (${cust.phone}) via AiSensy.`
+        );
+      } else {
+        toastError(res.data?.results?.[0]?.error || 'Failed to dispatch WhatsApp message.');
+      }
+    } catch (err: any) {
+      console.error('Failed to send WhatsApp:', err);
+      toastError(err.response?.data?.detail || 'Failed to send WhatsApp message via AiSensy.');
+    } finally {
+      setSendingWhatsappIdx(null);
+    }
+  };
+
+  const handleSaveAndSendWhatsapp = async () => {
+    const empIdToUse =
+      selectedEmpId ||
+      employeeId ||
+      (employeesList.length > 0 ? employeesList[0].id : 0);
+
+    if (!empIdToUse) {
+      toastError('Please select a staff member.');
+      return;
+    }
+
+    try {
+      setIsSendingWhatsappAll(true);
+
+      let primaryStatus = 'Walkin';
+      let totalProductVal = 0;
+
+      if (customerCount > 0 && customerItems.length > 0) {
+        const statusCounts = customerItems.reduce(
+          (acc: Record<string, number>, item) => {
+            const st = item.status || 'Walkin';
+            acc[st] = (acc[st] || 0) + 1;
+            return acc;
+          },
+          {}
+        );
+        const priority = [
+          'Sold',
+          'Exchange',
+          'In Hold / Follow Up',
+          'In Hold',
+          'Follow Up',
+          'Lost',
+          'Walkin',
+        ];
+        for (const p of priority) {
+          if (statusCounts[p]) {
+            primaryStatus = p;
+            break;
+          }
+        }
+
+        totalProductVal = customerItems.reduce((sum, item) => {
+          const val = parseFloat(item.product_value?.toString() || '0');
+          return sum + (isNaN(val) ? 0 : val);
+        }, 0);
+      }
+
+      const firstCustomer = customerItems[0];
+      const payload = {
+        employee_id: empIdToUse,
+        customers_count: customerCount,
+        customer_name:
+          firstCustomer?.name?.trim() ||
+          (customerCount > 0
+            ? `Customer Interaction (${customerCount})`
+            : '0 Customers Attended'),
+        phone_number: firstCustomer?.phone?.trim() || '',
+        dob: firstCustomer?.dob || null,
+        anniversary: firstCustomer?.anniversary || null,
+        product_value: totalProductVal,
+        activity_date: activityDate,
+        status: primaryStatus,
+        breakdown: JSON.stringify(customerItems),
+        notes: overallNotes.trim() || null,
+      };
+
+      let savedRecordId: number | undefined;
+      if (initialData) {
+        const putRes = await api.put(`/api/v1/customers/${initialData.id}`, payload);
+        savedRecordId = putRes.data?.id || initialData.id;
+      } else {
+        const postRes = await api.post('/api/v1/customers', payload);
+        savedRecordId = postRes.data?.id;
+      }
+
+      if (savedRecordId) {
+        try {
+          const waRes = await api.post(`/api/v1/customers/${savedRecordId}/send-whatsapp`, {});
+          const sentCount = waRes.data?.total_sent || 0;
+          if (sentCount > 0) {
+            success(`Activity saved & WhatsApp dispatched successfully to ${sentCount} customer${sentCount > 1 ? 's' : ''}!`);
+          } else {
+            success('Customer activity saved successfully.');
+          }
+        } catch (waErr: any) {
+          console.warn('WhatsApp auto-send response:', waErr);
+          success('Customer activity saved successfully.');
+        }
+      } else {
+        success('Customer activity saved successfully.');
+      }
+
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      console.error('Failed to save customer activity:', err);
+      toastError(
+        err.response?.data?.detail || 'Failed to save customer activity.'
+      );
+    } finally {
+      setIsSendingWhatsappAll(false);
     }
   };
 
@@ -333,25 +403,41 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
       }
       size="xl"
       footer={
-        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 w-full">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="w-full sm:w-auto text-xs"
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleSubmit}
-            isLoading={isSubmitting}
-            className="w-full sm:w-auto bg-[#536B8A] hover:bg-[#40546D] text-white text-xs font-bold shadow-sm"
-          >
-            {initialData ? 'Save Changes' : 'Save Customer Activity'}
-          </Button>
+        <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 w-full">
+          <div className="text-[11px] text-[#737373] hidden sm:flex items-center gap-1.5 font-medium">
+            <WhatsAppIcon className="w-3.5 h-3.5 text-[#25D366]" />
+            <span>AiSensy WhatsApp notifications are sent to recorded customer phones</span>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={isSubmitting || isSendingWhatsappAll}
+              className="w-full sm:w-auto text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSubmit}
+              isLoading={isSubmitting}
+              disabled={isSendingWhatsappAll}
+              className="w-full sm:w-auto text-xs font-bold border-[#CBD5E1] text-[#334155] hover:bg-[#F1F5F9]"
+            >
+              {initialData ? 'Save Changes' : 'Save'}
+            </Button>
+            <button
+              type="button"
+              onClick={() => handleSaveAndSendWhatsapp()}
+              disabled={isSubmitting || isSendingWhatsappAll}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] active:scale-98 text-white text-xs font-bold shadow-md shadow-[#25D366]/20 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <WhatsAppIcon className={`w-4 h-4 text-white ${isSendingWhatsappAll ? 'animate-spin' : ''}`} />
+              <span>{isSendingWhatsappAll ? 'Sending WhatsApp...' : 'Save & Send WhatsApp'}</span>
+            </button>
+          </div>
         </div>
       }
     >
@@ -471,17 +557,6 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
-                      {/* Live Template Badge */}
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                          getAiSensyTemplateMeta(item.status || 'Walkin').color
-                        }`}
-                        title={`Template ID in .env: ${getAiSensyTemplateMeta(item.status || 'Walkin').id}`}
-                      >
-                        <MessageSquare className="w-3 h-3 text-[#25D366]" />
-                        <span>WhatsApp: {getAiSensyTemplateMeta(item.status || 'Walkin').name}</span>
-                      </span>
-
                       {/* Top Right Live Dynamic Badge */}
                       <span
                         className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-all ${getStatusBadgeStyle(
@@ -491,16 +566,16 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                         {item.status || 'Walkin'}
                       </span>
 
-                      {/* Instant WhatsApp Send Button for this customer */}
+                      {/* Direct Send WhatsApp Button for this customer */}
                       {item.phone && item.phone.trim().length >= 10 && (
                         <button
                           type="button"
                           onClick={() => handleSendWhatsappSingle(idx, item)}
-                          disabled={sendingWhatsappIdx === idx}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#E8F8EE] hover:bg-[#D1F2DD] border border-[#A6E7B9] text-[#1E7E34] text-[11px] font-bold transition-all cursor-pointer shadow-2xs hover:scale-[1.02]"
-                          title={`Send "${getAiSensyTemplateMeta(item.status || 'Walkin').name}" WhatsApp message directly to ${item.phone}`}
+                          disabled={sendingWhatsappIdx === idx || isSendingWhatsappAll}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#E8F8EE] hover:bg-[#D1F2DD] border border-[#A6E7B9] text-[#1E7E34] text-[11px] font-bold transition-all cursor-pointer shadow-2xs hover:scale-[1.02] disabled:opacity-50"
+                          title={`Send "${item.status || 'Walkin'}" WhatsApp message directly to ${item.phone}`}
                         >
-                          <Send className={`w-3 h-3 text-[#25D366] ${sendingWhatsappIdx === idx ? 'animate-spin' : ''}`} />
+                          <WhatsAppIcon className={`w-3.5 h-3.5 text-[#25D366] ${sendingWhatsappIdx === idx ? 'animate-spin' : ''}`} />
                           <span>{sendingWhatsappIdx === idx ? 'Sending...' : 'Send WhatsApp'}</span>
                         </button>
                       )}
@@ -645,21 +720,6 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
           </div>
         )}
 
-        {/* WhatsApp Auto-Send Notification Banner */}
-        <div className="bg-[#E8F8EE] border border-[#A6E7B9] rounded-2xl p-3.5 flex items-start gap-3 text-xs">
-          <div className="w-8 h-8 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-2xs font-bold">
-            <MessageSquare className="w-4 h-4" />
-          </div>
-          <div className="space-y-1">
-            <span className="font-bold text-[#1E7E34] flex items-center gap-1.5">
-              <span>AiSensy WhatsApp Automation Active</span>
-              <span className="text-[9px] uppercase px-2 py-0.5 rounded-full bg-[#1E7E34] text-white font-extrabold">Auto-Dispatch</span>
-            </span>
-            <p className="text-[11px] text-[#2D5A3A] leading-relaxed">
-              When you save, an official WhatsApp message formatted for the selected <strong>Outcome Status</strong> (Purchased, Exchange, In Hold, Walk-in, or Lost) will be automatically sent to every customer with a recorded phone number via AiSensy.
-            </p>
-          </div>
-        </div>
 
         {/* Overall General Activity Notes */}
         <div>

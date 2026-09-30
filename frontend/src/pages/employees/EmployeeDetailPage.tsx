@@ -14,7 +14,6 @@ import {
   Camera,
   UserCheck,
   FileText,
-  MessageSquare,
   MapPin,
   Award,
   ChevronDown,
@@ -69,31 +68,7 @@ export const EmployeeDetailPage: React.FC = () => {
   const [customerActivities, setCustomerActivities] = useState<CustomerActivity[]>([]);
   const [showCustomerModal, setShowCustomerModal] = useState<boolean>(false);
   const [editingCustomerActivity, setEditingCustomerActivity] = useState<CustomerActivity | null>(null);
-  const [sendingWhatsappId, setSendingWhatsappId] = useState<number | null>(null);
 
-  const handleSendCustomerWhatsapp = async (act: CustomerActivity) => {
-    try {
-      setSendingWhatsappId(act.id);
-      const res = await api.post(`/api/v1/customers/${act.id}/send-whatsapp`, {});
-      if (res.data?.success) {
-        const sentCount = res.data?.total_sent || 1;
-        success(
-          `WhatsApp dispatched successfully to ${sentCount} customer${
-            sentCount > 1 ? 's' : ''
-          } for ${act.customer_name || 'Activity'} (Status: ${act.status}) via AiSensy.`
-        );
-      } else {
-        toastError('Failed to dispatch WhatsApp message.');
-      }
-    } catch (err: any) {
-      console.error('Failed to send WhatsApp message:', err);
-      toastError(
-        err.response?.data?.detail || 'Failed to send WhatsApp message. Ensure a valid phone number is entered.'
-      );
-    } finally {
-      setSendingWhatsappId(null);
-    }
-  };
 
   const openAddCustomerModal = () => {
     setEditingCustomerActivity(null);
@@ -932,14 +907,6 @@ export const EmployeeDetailPage: React.FC = () => {
                           <div className="flex items-center gap-1">
                             {getCustomerStatusBadge(act.status)}
                             <button
-                              onClick={() => handleSendCustomerWhatsapp(act)}
-                              disabled={sendingWhatsappId === act.id}
-                              className="p-1 text-[#1E7E34] hover:bg-[#E8F8EE] rounded-md transition-colors cursor-pointer"
-                              title={`Send "${act.status}" WhatsApp message via AiSensy`}
-                            >
-                              <MessageSquare className={`w-3.5 h-3.5 text-[#25D366] ${sendingWhatsappId === act.id ? 'animate-spin' : ''}`} />
-                            </button>
-                            <button
                               onClick={() => openEditCustomerModal(act)}
                               className="p-1 text-[#737373] hover:text-[#536B8A] hover:bg-[#F0F4F8] rounded-md transition-colors"
                               title="Edit Activity"
@@ -1095,14 +1062,6 @@ export const EmployeeDetailPage: React.FC = () => {
                             </td>
                             <td className="px-5 py-3.5 text-right">
                               <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  onClick={() => handleSendCustomerWhatsapp(act)}
-                                  disabled={sendingWhatsappId === act.id}
-                                  className="p-1 text-[#1E7E34] hover:bg-[#E8F8EE] rounded-md transition-colors cursor-pointer"
-                                  title={`Send "${act.status}" WhatsApp message via AiSensy`}
-                                >
-                                  <MessageSquare className={`w-3.5 h-3.5 text-[#25D366] ${sendingWhatsappId === act.id ? 'animate-spin' : ''}`} />
-                                </button>
                                 <button
                                   onClick={() => openEditCustomerModal(act)}
                                   className="p-1 text-[#737373] hover:text-[#536B8A] hover:bg-[#F0F4F8] rounded-md transition-colors cursor-pointer"

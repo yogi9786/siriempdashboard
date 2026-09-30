@@ -1,0 +1,105 @@
+# Application Settings
+APP_NAME=Siri Samruddhi Gold Palace Management Dashboard
+ENVIRONMENT=development
+LOG_LEVEL=INFO
+
+# Security & JWT Token Security
+JWT_SECRET_KEY=siri_samruddhi_super_secret_jwt_key_gold_palace_2026_change_in_prod
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=2880
+REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# Database Configuration (PostgreSQL primary with strong credentials, fallback to SQLite if offline)
+DATABASE_URL=postgresql://siri_admin_pg_2026:SiriG0ld#Palace!Secure9876@localhost:5432/siridashboard
+SQLITE_FALLBACK_URL=sqlite:///./database.db
+
+# =========================================================================
+# AISENSY WHATSAPP API CONFIGURATION (Outcome Activity Notifications)
+# =========================================================================
+AISENSY_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5NGU2ZWFmNTc4MjAwMWJjNzI1MDk4YiIsIm5hbWUiOiJTSVJJU0FNUlVEREhJIEdPTEQgUEFMQUNFIFBSSVZBVEUgTElNSVRFRCIsImFwcE5hbWUiOiJBaVNlbnN5IiwiY2xpZW50SWQiOiI2OTRlNmVhZjU3ODIwMDFiYzcyNTA5ODQiLCJhY3RpdmVQbGFuIjoiUFJPX1lFQVJMWSIsImlhdCI6MTc4ODQyMzEwNn0.FjmToVxVRb5Xs5EWsTOPObAn8o2vOAVehl71CDlRvnU
+AISENSY_BASE_URL=https://backend.aisensy.com
+AISENSY_AUTO_SEND_ON_SAVE=true
+# Set to false for static Meta templates without {{1}}, {{2}} placeholders
+AISENSY_SEND_TEMPLATE_PARAMS=false
+
+# 1. Sold / Purchased Outcome
+AISENSY_CAMPAIGN_SOLD=sold-camp
+AISENSY_TEMPLATE_SOLD=customer_purchase_thank_you
+AISENSY_MEDIA_URL_SOLD=https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/148ca827-fc11-4b78-9c4f-b224dc3a4e09_purchase.png
+
+# 2. Exchange Outcome
+AISENSY_CAMPAIGN_EXCHANGE=Exchangejwellery
+AISENSY_TEMPLATE_EXCHANGE=jewellery_exchange_thank_you
+AISENSY_MEDIA_URL_EXCHANGE=https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/ce4c3082-ffa1-4bc9-8962-0e3a53823d4f_exchangejwellery.png
+
+# 3. In Hold / Follow Up Outcome
+AISENSY_CAMPAIGN_IN_HOLD=Holdcamp
+AISENSY_TEMPLATE_IN_HOLD=jewellery_hold_reminder
+AISENSY_MEDIA_URL_IN_HOLD=https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/ad1d7745-d1a5-4b43-8054-08aef85fa48d_hold jwellery.png
+
+# 4. Walkin Outcome
+AISENSY_CAMPAIGN_WALKIN=Thankyouforvisiting
+AISENSY_TEMPLATE_WALKIN=thank_you_for_visiting
+AISENSY_MEDIA_URL_WALKIN=https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png
+
+# 5. Lost Outcome
+AISENSY_CAMPAIGN_LOST=Thankyouforvisiting
+AISENSY_TEMPLATE_LOST=thank_you_for_visiting
+AISENSY_MEDIA_URL_LOST=https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png
+
+# CORS Configuration
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173
+
+# Media / Upload Configuration
+MEDIA_DIR=uploads
+MAX_UPLOAD_SIZE_MB=10
+
+# =========================================================================
+# SUPER ADMIN (ENV-Configured Identity — ZERO Database Storage)
+# =========================================================================
+ADMIN_EMAIL=admin@sirisamruddhigold.com
+ADMIN_PASSWORD_HASH=Admin@siri0897
+ADMIN_NAME=Super Administrator
+
+# YELAHANKA SHOWROOM MANAGERS (5 Managers: ADARSHA, DILEEP H E, BASAVARAJ BARADDI, MANJUNATH P S, VIJAY SARATHY)
+MANAGER_1_NAME=ADARSHA
+MANAGER_1_USERNAME=ADARSHA1234
+MANAGER_1_PASSWORD=ADARSHA@siri1234
+
+MANAGER_2_NAME=DILEEP H E
+MANAGER_2_USERNAME=DILEEP4321
+MANAGER_2_PASSWORD=DILEEP@siri4321
+
+MANAGER_3_NAME=BASAVARAJ BARADDI
+MANAGER_3_USERNAME=BASAVARAJ1234
+MANAGER_3_PASSWORD=BASAVARAJ@siri4567
+
+MANAGER_4_NAME=MANJUNATH P S
+MANAGER_4_USERNAME=MANJUNATH7654
+MANAGER_4_PASSWORD=MANJUNATH@siri4567
+
+MANAGER_5_NAME=VIJAY SARATHY
+MANAGER_5_USERNAME=VIJAY0987
+MANAGER_5_PASSWORD=VIJAY@siri7890
+
+# KOLAR SHOWROOM MANAGERS (IDs: 77, 80, 78)
+KOLAR_MANAGER_1_NAME=PRADEEP KUMAR B N
+KOLAR_MANAGER_1_USERNAME=PRADEEP1234
+KOLAR_MANAGER_1_PASSWORD=PRADEEP@siri1234
+
+KOLAR_MANAGER_2_NAME=SHIVAKUMAR M K
+KOLAR_MANAGER_2_USERNAME=SHIVAKUMAR1234
+KOLAR_MANAGER_2_PASSWORD=SHIVAKUMAR@siri1234
+
+KOLAR_MANAGER_3_NAME=SIVA R
+KOLAR_MANAGER_3_USERNAME=SIVA1234
+KOLAR_MANAGER_3_PASSWORD=SIVA@siri1234
+
+# UDUPI SHOWROOM MANAGERS (IDs: 37, 217)
+UDUPI_MANAGER_1_NAME=SANDEEPA
+UDUPI_MANAGER_1_USERNAME=SANDEEPA1234
+UDUPI_MANAGER_1_PASSWORD=SANDEEPA@siri1234
+
+UDUPI_MANAGER_2_NAME=PRITHVIRAJU B V
+UDUPI_MANAGER_2_USERNAME=PRITHVIRAJ1234
+UDUPI_MANAGER_2_PASSWORD=PRITHVIRAJ@siri1234

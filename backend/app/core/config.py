@@ -53,6 +53,47 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 10
 
     # =========================================================================
+    # AiSensy WhatsApp Configuration & Outcome Status Templates
+    # =========================================================================
+    AISENSY_API_KEY: str = "your_aisensy_api_key_here"
+    AISENSY_BASE_URL: str = "https://backend.aisensy.com"
+    AISENSY_API_URL: Optional[str] = None
+    AISENSY_AUTO_SEND_ON_SAVE: bool = True
+    AISENSY_SEND_TEMPLATE_PARAMS: bool = False  # Set to True only if templates have {{1}}, {{2}} placeholders
+
+    # 5 Customer Outcome Status Campaign & Template Names
+    AISENSY_CAMPAIGN_SOLD: str = "customer_purchase_thank_you"
+    AISENSY_TEMPLATE_SOLD: str = "customer_purchase_thank_you"
+
+    AISENSY_CAMPAIGN_EXCHANGE: str = "customer_exchange_thank_you"
+    AISENSY_TEMPLATE_EXCHANGE: str = "customer_exchange_thank_you"
+
+    AISENSY_CAMPAIGN_IN_HOLD: str = "customer_in_hold_update"
+    AISENSY_TEMPLATE_IN_HOLD: str = "customer_in_hold_update"
+
+    AISENSY_CAMPAIGN_WALKIN: str = "customer_walkin_welcome"
+    AISENSY_TEMPLATE_WALKIN: str = "customer_walkin_welcome"
+
+    AISENSY_CAMPAIGN_LOST: str = "customer_visit_thank_you"
+    AISENSY_TEMPLATE_LOST: str = "customer_visit_thank_you"
+
+    # Optional Per-Campaign API Keys
+    AISENSY_API_KEY_SOLD: Optional[str] = None
+    AISENSY_API_KEY_EXCHANGE: Optional[str] = None
+    AISENSY_API_KEY_IN_HOLD: Optional[str] = None
+    AISENSY_API_KEY_WALKIN: Optional[str] = None
+    AISENSY_API_KEY_LOST: Optional[str] = None
+
+    # Media URLs for templates with image/media headers (e.g. customer_purchase_thank_you)
+    AISENSY_DEFAULT_MEDIA_URL: str = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/148ca827-fc11-4b78-9c4f-b224dc3a4e09_purchase.png"
+    AISENSY_MEDIA_URL: Optional[str] = None
+    AISENSY_MEDIA_URL_SOLD: str = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/148ca827-fc11-4b78-9c4f-b224dc3a4e09_purchase.png"
+    AISENSY_MEDIA_URL_EXCHANGE: Optional[str] = None
+    AISENSY_MEDIA_URL_IN_HOLD: Optional[str] = None
+    AISENSY_MEDIA_URL_WALKIN: Optional[str] = None
+    AISENSY_MEDIA_URL_LOST: Optional[str] = None
+
+    # =========================================================================
     # Super Admin Authentication (ENV-Configured Identity — ZERO Database Storage)
     # =========================================================================
     ADMIN_EMAIL: str = "admin@sirisamruddhigold.com"

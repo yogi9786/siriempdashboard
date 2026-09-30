@@ -14,6 +14,9 @@ import {
   ArrowUpDown,
   Sparkles,
   UserCheck,
+  MessageSquare,
+  Send,
+  Check,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -129,6 +132,80 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
     setCustomerItems((prev) =>
       prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
+  };
+
+  const [sendingWhatsappIdx, setSendingWhatsappIdx] = useState<number | null>(null);
+
+  const getAiSensyTemplateMeta = (status: string) => {
+    switch (status) {
+      case 'Sold':
+        return {
+          name: 'Purchase Thank You',
+          id: 'customer_purchase_thank_you',
+          color: 'text-[#21845F] bg-[#E8F4EE] border-[#C5E3D5]',
+        };
+      case 'Exchange':
+        return {
+          name: 'Exchange Acknowledgment',
+          id: 'customer_exchange_thank_you',
+          color: 'text-[#536B8A] bg-[#EDF2F7] border-[#C5D5E6]',
+        };
+      case 'In Hold / Follow Up':
+      case 'In Hold':
+      case 'Follow Up':
+        return {
+          name: 'Item on Hold / Follow-up',
+          id: 'customer_in_hold_update',
+          color: 'text-[#B97855] bg-[#FAF1EC] border-[#ECCFC0]',
+        };
+      case 'Lost':
+        return {
+          name: 'Visit Thank You',
+          id: 'customer_visit_thank_you',
+          color: 'text-[#C24141] bg-[#FDECEC] border-[#F9C3C3]',
+        };
+      case 'Walkin':
+      default:
+        return {
+          name: 'Walk-in Welcome',
+          id: 'customer_walkin_welcome',
+          color: 'text-[#8A8479] bg-[#FAF8F3] border-[#E4DFD4]',
+        };
+    }
+  };
+
+  const handleSendWhatsappSingle = async (idx: number, cust: CustomerDetailItem) => {
+    if (!cust.phone || !cust.phone.trim()) {
+      toastError(`Please enter a phone number for ${cust.name || `Customer #${idx + 1}`} first.`);
+      return;
+    }
+
+    if (!initialData?.id) {
+      success(
+        `WhatsApp template "${getAiSensyTemplateMeta(cust.status || 'Walkin').name}" will automatically be sent to ${cust.phone} upon saving!`
+      );
+      return;
+    }
+
+    try {
+      setSendingWhatsappIdx(idx);
+      const res = await api.post(`/api/v1/customers/${initialData.id}/send-whatsapp`, {
+        customer_index: idx,
+      });
+
+      if (res.data?.success) {
+        success(
+          `WhatsApp sent to ${cust.name || 'Customer'} (${cust.phone}) using template "${getAiSensyTemplateMeta(cust.status || 'Walkin').name}".`
+        );
+      } else {
+        toastError(res.data?.results?.[0]?.error || 'Failed to dispatch WhatsApp message.');
+      }
+    } catch (err: any) {
+      console.error('Failed to send WhatsApp:', err);
+      toastError(err.response?.data?.detail || 'Failed to send WhatsApp message via AiSensy.');
+    } finally {
+      setSendingWhatsappIdx(null);
+    }
   };
 
   const getStatusBadgeStyle = (status: string) => {
@@ -290,7 +367,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
               <select
                 value={selectedEmpId}
                 onChange={(e) => setSelectedEmpId(parseInt(e.target.value, 10))}
-                className="w-full text-xs font-semibold bg-white border border-[#C5D5E6] rounded-xl px-3 py-2 text-[#1D1D1B] focus:outline-none focus:border-[#536B8A]"
+                className="w-full text-xs font-semibold select-luxury-slate rounded-xl px-3 py-2 cursor-pointer"
                 required
               >
                 {employeesList.map((emp) => (
@@ -327,7 +404,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                 const val = parseInt(e.target.value, 10);
                 handleCustomerCountChange(isNaN(val) ? 0 : val);
               }}
-              className="w-full text-xs font-bold bg-white border border-[#C5D5E6] rounded-xl px-3 py-2 text-[#1D1D1B] focus:outline-none focus:border-[#536B8A] cursor-pointer"
+              className="w-full text-xs font-bold select-luxury-slate rounded-xl px-3 py-2 cursor-pointer"
             >
               <option value={0}>0 Customers (No Walk-in)</option>
               {Array.from({ length: 20 }, (_, i) => (
@@ -347,7 +424,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
               type="date"
               value={activityDate}
               onChange={(e) => setActivityDate(e.target.value)}
-              className="w-full text-xs font-semibold bg-white border border-[#C5D5E6] rounded-xl px-3 py-2 text-[#1D1D1B] focus:outline-none focus:border-[#536B8A]"
+              className="w-full text-xs font-semibold input-luxury-beige rounded-xl px-3 py-2"
               required
             />
           </div>
@@ -383,7 +460,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                   className="bg-white border border-[#E4DFD4] hover:border-[#536B8A] rounded-2xl p-4 shadow-[0_4px_18px_rgba(40,35,25,0.045)] space-y-3 relative transition-all"
                 >
                   {/* Card Header with Customer Number & Status Badge */}
-                  <div className="flex items-center justify-between pb-2.5 border-b border-[#F0EFEA]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[#F0EFEA]">
                     <div className="flex items-center gap-2">
                       <span className="w-6 h-6 rounded-lg bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] font-bold text-xs flex items-center justify-center">
                         #{idx + 1}
@@ -393,21 +470,48 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                       </span>
                     </div>
 
-                    {/* Top Right Live Dynamic Badge */}
-                    <span
-                      className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-all ${getStatusBadgeStyle(
-                        item.status || 'Walkin'
-                      )}`}
-                    >
-                      {item.status || 'Walkin'}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Live Template Badge */}
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+                          getAiSensyTemplateMeta(item.status || 'Walkin').color
+                        }`}
+                        title={`Template ID in .env: ${getAiSensyTemplateMeta(item.status || 'Walkin').id}`}
+                      >
+                        <MessageSquare className="w-3 h-3 text-[#25D366]" />
+                        <span>WhatsApp: {getAiSensyTemplateMeta(item.status || 'Walkin').name}</span>
+                      </span>
+
+                      {/* Top Right Live Dynamic Badge */}
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-all ${getStatusBadgeStyle(
+                          item.status || 'Walkin'
+                        )}`}
+                      >
+                        {item.status || 'Walkin'}
+                      </span>
+
+                      {/* Instant WhatsApp Send Button for this customer */}
+                      {item.phone && item.phone.trim().length >= 10 && (
+                        <button
+                          type="button"
+                          onClick={() => handleSendWhatsappSingle(idx, item)}
+                          disabled={sendingWhatsappIdx === idx}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#E8F8EE] hover:bg-[#D1F2DD] border border-[#A6E7B9] text-[#1E7E34] text-[11px] font-bold transition-all cursor-pointer shadow-2xs hover:scale-[1.02]"
+                          title={`Send "${getAiSensyTemplateMeta(item.status || 'Walkin').name}" WhatsApp message directly to ${item.phone}`}
+                        >
+                          <Send className={`w-3 h-3 text-[#25D366] ${sendingWhatsappIdx === idx ? 'animate-spin' : ''}`} />
+                          <span>{sendingWhatsappIdx === idx ? 'Sending...' : 'Send WhatsApp'}</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Customer Info Grid: Name, Phone, DOB, Anniversary (All Optional) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
                     {/* Customer Name */}
                     <div>
-                      <label className="block text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
+                      <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
                         <User className="w-3 h-3 text-[#8A8479]" />
                         <span>Customer Name (Optional)</span>
                       </label>
@@ -418,13 +522,13 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                           handleCustomerFieldChange(idx, 'name', e.target.value)
                         }
                         placeholder="e.g. Ramesh Kumar"
-                        className="w-full text-xs bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-2.5 py-2 text-[#1D1D1B] placeholder-[#8A8479] focus:bg-white focus:outline-none focus:border-[#536B8A]"
+                        className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2"
                       />
                     </div>
 
                     {/* Phone Number */}
                     <div>
-                      <label className="block text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
+                      <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
                         <Phone className="w-3 h-3 text-[#8A8479]" />
                         <span>Phone Number (Optional)</span>
                       </label>
@@ -435,13 +539,13 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                           handleCustomerFieldChange(idx, 'phone', e.target.value)
                         }
                         placeholder="e.g. 9876543210"
-                        className="w-full text-xs bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-2.5 py-2 text-[#1D1D1B] placeholder-[#8A8479] focus:bg-white focus:outline-none focus:border-[#536B8A]"
+                        className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2"
                       />
                     </div>
 
                     {/* DOB (Date of Birth) */}
                     <div>
-                      <label className="block text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
+                      <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
                         <Gift className="w-3 h-3 text-[#B97855]" />
                         <span>Date of Birth (Optional)</span>
                       </label>
@@ -451,13 +555,13 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                         onChange={(e) =>
                           handleCustomerFieldChange(idx, 'dob', e.target.value)
                         }
-                        className="w-full text-xs bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-2.5 py-2 text-[#1D1D1B] focus:bg-white focus:outline-none focus:border-[#536B8A]"
+                        className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2"
                       />
                     </div>
 
                     {/* Anniversary Date */}
                     <div>
-                      <label className="block text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
+                      <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
                         <Heart className="w-3 h-3 text-[#C24141]" />
                         <span>Anniversary Date (Optional)</span>
                       </label>
@@ -467,7 +571,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                         onChange={(e) =>
                           handleCustomerFieldChange(idx, 'anniversary', e.target.value)
                         }
-                        className="w-full text-xs bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-2.5 py-2 text-[#1D1D1B] focus:bg-white focus:outline-none focus:border-[#536B8A]"
+                        className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2"
                       />
                     </div>
                   </div>
@@ -476,7 +580,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5">
                     {/* Status Dropdown: Sold, Exchange, Lost, Walkin, In Hold / Follow Up */}
                     <div>
-                      <label className="block text-[11px] font-bold text-[#1D1D1B] mb-1 flex items-center gap-1">
+                      <label className="text-[11px] font-bold text-[#1D1D1B] mb-1 flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3 text-[#536B8A]" />
                         <span>Outcome / Status *</span>
                       </label>
@@ -485,7 +589,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                         onChange={(e) =>
                           handleCustomerFieldChange(idx, 'status', e.target.value)
                         }
-                        className="w-full text-xs font-bold bg-white border border-[#C5D5E6] rounded-xl px-2.5 py-2 text-[#1D1D1B] focus:outline-none focus:border-[#536B8A] cursor-pointer"
+                        className="w-full text-xs font-bold select-luxury-slate rounded-xl px-2.5 py-2 cursor-pointer"
                       >
                         <option value="Sold">Sold (Purchased / Closed)</option>
                         <option value="Exchange">Exchange (Gold / Diamond Exchange)</option>
@@ -497,7 +601,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
 
                     {/* Product Value (₹) */}
                     <div>
-                      <label className="block text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
+                      <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
                         <IndianRupee className="w-3 h-3 text-[#21845F]" />
                         <span>Value of Product (₹, Optional)</span>
                       </label>
@@ -514,14 +618,14 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                           )
                         }
                         placeholder="e.g. 45000"
-                        className="w-full text-xs bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-2.5 py-2 font-mono text-[#1D1D1B] placeholder-[#8A8479] focus:bg-white focus:outline-none focus:border-[#536B8A]"
+                        className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2 font-mono"
                       />
                     </div>
                   </div>
 
                   {/* Specific Individual Customer Notes */}
                   <div>
-                    <label className="block text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
+                    <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
                       <FileText className="w-3 h-3 text-[#536B8A]" />
                       <span>Customer Notes / Inquired Item Details (Optional)</span>
                     </label>
@@ -532,7 +636,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                         handleCustomerFieldChange(idx, 'notes', e.target.value)
                       }
                       placeholder="e.g. Looked at 22kt antique gold necklace, asked for festival discount & exchange estimate"
-                      className="w-full text-xs bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-3 py-2 text-[#1D1D1B] placeholder-[#8A8479] focus:bg-white focus:outline-none focus:border-[#536B8A]"
+                      className="w-full text-xs input-luxury-beige rounded-xl px-3 py-2"
                     />
                   </div>
                 </div>
@@ -540,6 +644,22 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
             </div>
           </div>
         )}
+
+        {/* WhatsApp Auto-Send Notification Banner */}
+        <div className="bg-[#E8F8EE] border border-[#A6E7B9] rounded-2xl p-3.5 flex items-start gap-3 text-xs">
+          <div className="w-8 h-8 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-2xs font-bold">
+            <MessageSquare className="w-4 h-4" />
+          </div>
+          <div className="space-y-1">
+            <span className="font-bold text-[#1E7E34] flex items-center gap-1.5">
+              <span>AiSensy WhatsApp Automation Active</span>
+              <span className="text-[9px] uppercase px-2 py-0.5 rounded-full bg-[#1E7E34] text-white font-extrabold">Auto-Dispatch</span>
+            </span>
+            <p className="text-[11px] text-[#2D5A3A] leading-relaxed">
+              When you save, an official WhatsApp message formatted for the selected <strong>Outcome Status</strong> (Purchased, Exchange, In Hold, Walk-in, or Lost) will be automatically sent to every customer with a recorded phone number via AiSensy.
+            </p>
+          </div>
+        </div>
 
         {/* Overall General Activity Notes */}
         <div>
@@ -551,7 +671,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
             value={overallNotes}
             onChange={(e) => setOverallNotes(e.target.value)}
             placeholder="e.g. High footfall evening drive; customer booked auspicious wedding jewellery on hold"
-            className="w-full text-xs bg-white border border-[#E4DFD4] rounded-xl p-2.5 text-[#1D1D1B] placeholder:text-[#8A8479] focus:outline-none focus:border-[#536B8A] focus:ring-2 focus:ring-[#536B8A]/20 font-medium"
+            className="w-full text-xs input-luxury-beige rounded-xl p-2.5 font-medium"
           />
         </div>
       </form>

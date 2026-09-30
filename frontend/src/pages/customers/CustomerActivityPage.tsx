@@ -22,6 +22,8 @@ import {
   RotateCcw,
   Building2,
   FileText,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
 import { CustomerActivity, Employee } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -44,6 +46,7 @@ export const CustomerActivityPage: React.FC = () => {
   const [activities, setActivities] = useState<CustomerActivity[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [sendingWhatsappId, setSendingWhatsappId] = useState<number | null>(null);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -56,6 +59,30 @@ export const CustomerActivityPage: React.FC = () => {
   const [editingActivity, setEditingActivity] = useState<CustomerActivity | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomerActivity | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  const handleSendWhatsapp = async (act: CustomerActivity) => {
+    try {
+      setSendingWhatsappId(act.id);
+      const res = await api.post(`/api/v1/customers/${act.id}/send-whatsapp`, {});
+      if (res.data?.success) {
+        const sentCount = res.data?.total_sent || 1;
+        success(
+          `WhatsApp dispatched successfully to ${sentCount} customer${
+            sentCount > 1 ? 's' : ''
+          } for ${act.customer_name || 'Activity'} (Status: ${act.status}) via AiSensy.`
+        );
+      } else {
+        toastError('Failed to dispatch WhatsApp message.');
+      }
+    } catch (err: any) {
+      console.error('Failed to send WhatsApp message:', err);
+      toastError(
+        err.response?.data?.detail || 'Failed to send WhatsApp message. Ensure a valid phone number is entered.'
+      );
+    } finally {
+      setSendingWhatsappId(null);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -523,6 +550,18 @@ export const CustomerActivityPage: React.FC = () => {
                     <div className="flex items-center gap-1 shrink-0">
                       {getStatusBadge(act.status)}
                       <button
+                        onClick={() => handleSendWhatsapp(act)}
+                        disabled={sendingWhatsappId === act.id}
+                        className="p-1.5 rounded-lg text-[#1E7E34] hover:bg-[#E8F8EE] transition-colors cursor-pointer"
+                        title={`Send "${act.status}" WhatsApp message via AiSensy`}
+                      >
+                        <MessageSquare
+                          className={`w-3.5 h-3.5 text-[#25D366] ${
+                            sendingWhatsappId === act.id ? 'animate-spin' : ''
+                          }`}
+                        />
+                      </button>
+                      <button
                         onClick={() => {
                           setEditingActivity(act);
                           setShowAddModal(true);
@@ -778,6 +817,20 @@ export const CustomerActivityPage: React.FC = () => {
                       {/* Action Buttons */}
                       <td className="px-5 py-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Send WhatsApp Button */}
+                          <button
+                            onClick={() => handleSendWhatsapp(act)}
+                            disabled={sendingWhatsappId === act.id}
+                            className="p-2 rounded-xl text-[#1E7E34] hover:bg-[#E8F8EE] border border-transparent hover:border-[#A6E7B9] transition-all cursor-pointer"
+                            title={`Send "${act.status}" WhatsApp message via AiSensy`}
+                          >
+                            <MessageSquare
+                              className={`w-4 h-4 text-[#25D366] ${
+                                sendingWhatsappId === act.id ? 'animate-spin' : ''
+                              }`}
+                            />
+                          </button>
+
                           <button
                             onClick={() => {
                               setEditingActivity(act);

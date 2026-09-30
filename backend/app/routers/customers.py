@@ -1,9 +1,11 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from backend.app.core.database import get_db
+from backend.app.core.config import settings
 from backend.app.models.branch import User
 from backend.app.models.employee import Employee
 from backend.app.models.activity import CustomerActivity
@@ -12,7 +14,13 @@ from backend.app.schemas.activity import (
     CustomerActivityUpdate,
     CustomerActivityResponse,
 )
+from backend.app.services.aisensy_service import AiSensyService
 from backend.app.dependencies.auth import get_current_manager
+
+
+class SendWhatsAppRequest(BaseModel):
+    customer_index: Optional[int] = None
+
 
 router = APIRouter(prefix="/api/v1/customers", tags=["Customer Activity"])
 
@@ -86,6 +94,7 @@ def list_customer_activities(
 @router.post("", response_model=CustomerActivityResponse, status_code=status.HTTP_201_CREATED, summary="Record a customer attended by an employee")
 def create_customer_activity(
     activity_data: CustomerActivityCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_manager),
     db: Session = Depends(get_db),
 ):
@@ -125,6 +134,10 @@ def create_customer_activity(
             detail=f"Failed to record customer activity: {str(e)}",
         )
 
+    # Auto-send WhatsApp notifications via AiSensy if enabled
+    if getattr(settings, "AISENSY_AUTO_SEND_ON_SAVE", True):
+        background_tasks.add_task(AiSensyService.send_activity_whatsapp_notifications, record)
+
     b_name = record.branch.name if record.branch else None
     b_code = record.branch.code if record.branch else None
 
@@ -156,6 +169,7 @@ def create_customer_activity(
 def update_customer_activity(
     record_id: int,
     update_data: CustomerActivityUpdate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_manager),
     db: Session = Depends(get_db),
 ):
@@ -202,6 +216,10 @@ def update_customer_activity(
             detail=f"Failed to update customer activity: {str(e)}",
         )
 
+    # Auto-send WhatsApp notifications via AiSensy if enabled
+    if getattr(settings, "AISENSY_AUTO_SEND_ON_SAVE", True):
+        background_tasks.add_task(AiSensyService.send_activity_whatsapp_notifications, record)
+
     emp_name = record.employee.full_name if record.employee else None
     emp_code = record.employee.employee_code if record.employee else None
     b_name = record.branch.name if record.branch else None
@@ -228,6 +246,49 @@ def update_customer_activity(
         created_at=record.created_at,
         updated_at=record.updated_at,
     )
+
+
+@router.post("/{record_id}/send-whatsapp", summary="Manually trigger WhatsApp notification for a customer activity record via AiSensy")
+def send_customer_activity_whatsapp(
+    record_id: int,
+    req: SendWhatsAppRequest = SendWhatsAppRequest(),
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(CustomerActivity)
+        .join(Employee, CustomerActivity.employee_id == Employee.id)
+        .filter(
+            CustomerActivity.id == record_id,
+            CustomerActivity.branch_id == current_user.branch_id,
+        )
+        .first()
+    )
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Customer activity record not found in your showroom branch.",
+        )
+
+    results = AiSensyService.send_activity_whatsapp_notifications(
+        record,
+        specific_customer_index=req.customer_index,
+    )
+
+    if not results:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid phone numbers found for the selected customer(s) to send WhatsApp messages.",
+        )
+
+    success_count = sum(1 for r in results if r.get("success"))
+    return {
+        "success": success_count > 0,
+        "record_id": record.id,
+        "total_attempted": len(results),
+        "total_sent": success_count,
+        "results": results,
+    }
 
 
 @router.delete("/{record_id}", status_code=status.HTTP_200_OK, summary="Delete a customer activity record")

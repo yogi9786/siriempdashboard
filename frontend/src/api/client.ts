@@ -45,8 +45,8 @@ api.interceptors.response.use(
         typeof data?.detail === 'string'
           ? data.detail
           : typeof data?.message === 'string'
-          ? data.message
-          : 'An unexpected server error occurred.';
+            ? data.message
+            : 'An unexpected server error occurred.';
 
       if (status === 401) {
         // Clear expired token and redirect to login if not already on login or root

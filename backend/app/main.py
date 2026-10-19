@@ -76,22 +76,32 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure Robust CORS (Supports dynamic ports like 5173, 5174, 5175, 3000)
+# Configure Robust CORS (Supports dynamic ports and production domains)
+_configured_origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175",
+    "http://127.0.0.1:5176",
+    "http://127.0.0.1:3000",
+    "https://ssgpdashboard.in",
+    "http://ssgpdashboard.in",
+    "https://www.ssgpdashboard.in",
+    "http://www.ssgpdashboard.in",
+]
+if isinstance(settings.CORS_ORIGINS, list):
+    for o in settings.CORS_ORIGINS:
+        if o not in _configured_origins:
+            _configured_origins.append(o)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5176",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-        "http://127.0.0.1:5175",
-        "http://127.0.0.1:5176",
-        "http://127.0.0.1:3000",
-    ],
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_origins=_configured_origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|(.*\.)?ssgpdashboard\.in)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

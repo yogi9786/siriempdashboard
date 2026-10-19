@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Connect dynamically to backend API
 const getBaseURL = () => {
-  if (import.meta.env.VITE_API_BASE_URL) {
+  if (import.meta.env.VITE_API_BASE_URL !== undefined && import.meta.env.VITE_API_BASE_URL !== '') {
     return import.meta.env.VITE_API_BASE_URL;
   }
   if (typeof window !== 'undefined') {
@@ -10,8 +10,10 @@ const getBaseURL = () => {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://127.0.0.1:8000';
     }
+    // Production domain (ssgpdashboard.in) -> relative URL routed through Nginx reverse proxy
+    return '';
   }
-  return 'http://127.0.0.1:8000';
+  return '';
 };
 
 export const api = axios.create({

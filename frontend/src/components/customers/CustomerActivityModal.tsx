@@ -191,6 +191,39 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
     }
   };
 
+  const buildPayload = (empId: number, primaryStatus: string, totalVal: number) => {
+    const firstCustomer = customerItems[0];
+    const customerNameClean =
+      firstCustomer?.name?.trim() ||
+      (customerCount > 0
+        ? `Customer Interaction (${customerCount})`
+        : 'Customer Interaction');
+
+    const phoneClean = firstCustomer?.phone ? firstCustomer.phone.trim() : '';
+    const dobClean =
+      firstCustomer?.dob && firstCustomer.dob.trim()
+        ? firstCustomer.dob.trim().split('T')[0]
+        : null;
+    const annivClean =
+      firstCustomer?.anniversary && firstCustomer.anniversary.trim()
+        ? firstCustomer.anniversary.trim().split('T')[0]
+        : null;
+
+    return {
+      employee_id: empId,
+      customers_count: customerCount,
+      customer_name: customerNameClean,
+      phone_number: phoneClean,
+      dob: dobClean,
+      anniversary: annivClean,
+      product_value: typeof totalVal === 'number' && !isNaN(totalVal) ? totalVal : 0,
+      activity_date: activityDate && activityDate.trim() ? activityDate.trim() : new Date().toISOString().split('T')[0],
+      status: primaryStatus || 'Walkin',
+      breakdown: JSON.stringify(customerItems),
+      notes: overallNotes.trim() || null,
+    };
+  };
+
   const handleSaveAndSendWhatsapp = async () => {
     const empIdToUse =
       selectedEmpId ||
@@ -199,6 +232,19 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
 
     if (!empIdToUse) {
       toastError('Please select a staff member.');
+      return;
+    }
+
+    if (customerCount <= 0 || customerItems.length === 0) {
+      toastError('Please select at least 1 customer to send WhatsApp messages.');
+      return;
+    }
+
+    const hasValidPhone = customerItems.some(
+      (c) => c.phone && c.phone.trim().replace(/\D/g, '').length >= 10
+    );
+    if (!hasValidPhone) {
+      toastError('Please enter at least one 10-digit mobile number to send WhatsApp message.');
       return;
     }
 
@@ -239,24 +285,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
         }, 0);
       }
 
-      const firstCustomer = customerItems[0];
-      const payload = {
-        employee_id: empIdToUse,
-        customers_count: customerCount,
-        customer_name:
-          firstCustomer?.name?.trim() ||
-          (customerCount > 0
-            ? `Customer Interaction (${customerCount})`
-            : '0 Customers Attended'),
-        phone_number: firstCustomer?.phone?.trim() || '',
-        dob: firstCustomer?.dob || null,
-        anniversary: firstCustomer?.anniversary || null,
-        product_value: totalProductVal,
-        activity_date: activityDate,
-        status: primaryStatus,
-        breakdown: JSON.stringify(customerItems),
-        notes: overallNotes.trim() || null,
-      };
+      const payload = buildPayload(empIdToUse, primaryStatus, totalProductVal);
 
       let savedRecordId: number | undefined;
       if (initialData) {
@@ -278,7 +307,12 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
           }
         } catch (waErr: any) {
           console.warn('WhatsApp auto-send response:', waErr);
-          success('Customer activity saved successfully.');
+          if (waErr.response?.status === 404) {
+            toastError('Customer activity saved. Note: production backend service needs to be updated & restarted to enable WhatsApp dispatch.');
+          } else {
+            const waDetail = waErr.response?.data?.detail;
+            toastError(waDetail ? `Saved, but WhatsApp failed: ${waDetail}` : 'Customer activity saved successfully.');
+          }
         }
       } else {
         success('Customer activity saved successfully.');
@@ -288,9 +322,19 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error('Failed to save customer activity:', err);
-      toastError(
-        err.response?.data?.detail || 'Failed to save customer activity.'
-      );
+      const detail = err.response?.data?.detail;
+      const errors = err.response?.data?.errors;
+      if (typeof detail === 'string') {
+        toastError(detail);
+      } else if (Array.isArray(detail)) {
+        const msg = detail.map((d: any) => `${d.loc?.slice(-1)[0] || 'Field'}: ${d.msg}`).join('; ');
+        toastError(msg || 'Server validation failed.');
+      } else if (Array.isArray(errors)) {
+        const msg = errors.map((d: any) => `${d.loc?.slice(-1)[0] || 'Field'}: ${d.msg}`).join('; ');
+        toastError(msg || 'Server validation failed.');
+      } else {
+        toastError(err.message || 'Failed to save customer activity.');
+      }
     } finally {
       setIsSendingWhatsappAll(false);
     }
@@ -346,24 +390,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
         }, 0);
       }
 
-      const firstCustomer = customerItems[0];
-      const payload = {
-        employee_id: empIdToUse,
-        customers_count: customerCount,
-        customer_name:
-          firstCustomer?.name?.trim() ||
-          (customerCount > 0
-            ? `Customer Interaction (${customerCount})`
-            : '0 Customers Attended'),
-        phone_number: firstCustomer?.phone?.trim() || '',
-        dob: firstCustomer?.dob || null,
-        anniversary: firstCustomer?.anniversary || null,
-        product_value: totalProductVal,
-        activity_date: activityDate,
-        status: primaryStatus,
-        breakdown: JSON.stringify(customerItems),
-        notes: overallNotes.trim() || null,
-      };
+      const payload = buildPayload(empIdToUse, primaryStatus, totalProductVal);
 
       if (initialData) {
         await api.put(`/api/v1/customers/${initialData.id}`, payload);
@@ -381,9 +408,19 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error('Failed to save customer activity:', err);
-      toastError(
-        err.response?.data?.detail || 'Failed to save customer activity.'
-      );
+      const detail = err.response?.data?.detail;
+      const errors = err.response?.data?.errors;
+      if (typeof detail === 'string') {
+        toastError(detail);
+      } else if (Array.isArray(detail)) {
+        const msg = detail.map((d: any) => `${d.loc?.slice(-1)[0] || 'Field'}: ${d.msg}`).join('; ');
+        toastError(msg || 'Server validation failed.');
+      } else if (Array.isArray(errors)) {
+        const msg = errors.map((d: any) => `${d.loc?.slice(-1)[0] || 'Field'}: ${d.msg}`).join('; ');
+        toastError(msg || 'Server validation failed.');
+      } else {
+        toastError(err.message || 'Failed to save customer activity.');
+      }
     } finally {
       setIsSubmitting(false);
     }

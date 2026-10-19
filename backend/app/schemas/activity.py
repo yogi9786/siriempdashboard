@@ -1,6 +1,6 @@
 from datetime import date, datetime
-from typing import Optional
-from pydantic import BaseModel, Field
+from typing import Optional, Any
+from pydantic import BaseModel, Field, field_validator
 
 
 # ----------------------------------------------------
@@ -14,6 +14,29 @@ class CustomerDetailItem(BaseModel):
     status: Optional[str] = "Walkin"  # Sold, Exchange, Lost, Walkin, In Hold / Follow Up
     product_value: Optional[float] = 0.0
     notes: Optional[str] = None
+
+    @field_validator("dob", "anniversary", mode="before")
+    @classmethod
+    def parse_optional_date(cls, v: Any) -> Optional[date]:
+        if v is None or v == "" or (isinstance(v, str) and not v.strip()):
+            return None
+        if isinstance(v, str):
+            try:
+                clean = v.strip().split("T")[0]
+                return date.fromisoformat(clean)
+            except Exception:
+                return None
+        return v
+
+    @field_validator("product_value", mode="before")
+    @classmethod
+    def parse_product_value(cls, v: Any) -> float:
+        if v is None or v == "" or (isinstance(v, str) and not str(v).strip()):
+            return 0.0
+        try:
+            return float(str(v).replace(",", "").strip())
+        except Exception:
+            return 0.0
 
 
 class CustomerActivityCreate(BaseModel):
@@ -29,6 +52,85 @@ class CustomerActivityCreate(BaseModel):
     breakdown: Optional[str] = None
     notes: Optional[str] = None
 
+    @field_validator("dob", "anniversary", mode="before")
+    @classmethod
+    def parse_optional_date(cls, v: Any) -> Optional[date]:
+        if v is None or v == "" or (isinstance(v, str) and not v.strip()):
+            return None
+        if isinstance(v, str):
+            try:
+                clean = v.strip().split("T")[0]
+                return date.fromisoformat(clean)
+            except Exception:
+                return None
+        return v
+
+    @field_validator("activity_date", mode="before")
+    @classmethod
+    def parse_activity_date(cls, v: Any) -> date:
+        if v is None or v == "" or (isinstance(v, str) and not v.strip()):
+            return date.today()
+        if isinstance(v, str):
+            try:
+                clean = v.strip().split("T")[0]
+                return date.fromisoformat(clean)
+            except Exception:
+                return date.today()
+        return v
+
+    @field_validator("product_value", mode="before")
+    @classmethod
+    def parse_product_value(cls, v: Any) -> float:
+        if v is None or v == "" or (isinstance(v, str) and not str(v).strip()):
+            return 0.0
+        try:
+            return float(str(v).replace(",", "").strip())
+        except Exception:
+            return 0.0
+
+    @field_validator("employee_id", mode="before")
+    @classmethod
+    def parse_employee_id(cls, v: Any) -> int:
+        if v is None or v == "":
+            raise ValueError("Employee ID is required")
+        try:
+            return int(v)
+        except Exception:
+            raise ValueError(f"Invalid Employee ID: {v}")
+
+    @field_validator("customers_count", mode="before")
+    @classmethod
+    def parse_customers_count(cls, v: Any) -> int:
+        if v is None or v == "":
+            return 1
+        try:
+            val = int(v)
+            return max(0, val)
+        except Exception:
+            return 1
+
+    @field_validator("customer_name", mode="before")
+    @classmethod
+    def parse_customer_name(cls, v: Any) -> str:
+        if v is None:
+            return "Customer Interaction"
+        val = str(v).strip()
+        return val if val else "Customer Interaction"
+
+    @field_validator("phone_number", mode="before")
+    @classmethod
+    def parse_phone_number(cls, v: Any) -> str:
+        if v is None:
+            return ""
+        return str(v).strip()
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def parse_status(cls, v: Any) -> str:
+        if v is None or not str(v).strip():
+            return "Walkin"
+        return str(v).strip()
+
 
 class CustomerActivityUpdate(BaseModel):
     customers_count: Optional[int] = Field(default=None, ge=0)
@@ -41,6 +143,42 @@ class CustomerActivityUpdate(BaseModel):
     status: Optional[str] = None
     breakdown: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator("dob", "anniversary", mode="before")
+    @classmethod
+    def parse_optional_date(cls, v: Any) -> Optional[date]:
+        if v is None or v == "" or (isinstance(v, str) and not v.strip()):
+            return None
+        if isinstance(v, str):
+            try:
+                clean = v.strip().split("T")[0]
+                return date.fromisoformat(clean)
+            except Exception:
+                return None
+        return v
+
+    @field_validator("activity_date", mode="before")
+    @classmethod
+    def parse_activity_date(cls, v: Any) -> Optional[date]:
+        if v is None or v == "" or (isinstance(v, str) and not v.strip()):
+            return None
+        if isinstance(v, str):
+            try:
+                clean = v.strip().split("T")[0]
+                return date.fromisoformat(clean)
+            except Exception:
+                return None
+        return v
+
+    @field_validator("product_value", mode="before")
+    @classmethod
+    def parse_product_value(cls, v: Any) -> Optional[float]:
+        if v is None or v == "" or (isinstance(v, str) and not str(v).strip()):
+            return None
+        try:
+            return float(str(v).replace(",", "").strip())
+        except Exception:
+            return None
 
 
 class CustomerActivityResponse(BaseModel):

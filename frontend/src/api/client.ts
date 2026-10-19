@@ -2,18 +2,21 @@ import axios from 'axios';
 
 // Connect dynamically to backend API
 const getBaseURL = () => {
-  if (import.meta.env.VITE_API_BASE_URL !== undefined && import.meta.env.VITE_API_BASE_URL !== '') {
+  // 1. Explicit Vite environment variable from .env.production / .env.development
+  if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
+  // 2. Runtime browser check
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
+    // Strictly Localhost Development
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://127.0.0.1:8000';
     }
-    // Production domain (ssgpdashboard.in) -> relative URL routed through Nginx reverse proxy
-    return '';
+    // Production: VPS IP or ssgpdashboard.in domain
+    return window.location.origin || 'https://ssgpdashboard.in';
   }
-  return '';
+  return 'https://ssgpdashboard.in';
 };
 
 export const api = axios.create({

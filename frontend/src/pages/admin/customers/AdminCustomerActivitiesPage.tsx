@@ -36,9 +36,21 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [branchFilter, setBranchFilter] = useState<string>(
-    selectedBranchId?.toString() || 'all'
+    selectedBranchId ? selectedBranchId.toString() : 'all'
   );
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
+
+  // Sync with global header branch selector
+  useEffect(() => {
+    if (selectedBranchId !== null && selectedBranchId !== undefined) {
+      setBranchFilter(selectedBranchId.toString());
+    } else {
+      setBranchFilter('all');
+    }
+  }, [selectedBranchId]);
 
   const fetchActivities = async () => {
     try {
@@ -47,6 +59,11 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
       if (searchTerm.trim()) params.search = searchTerm.trim();
       if (branchFilter !== 'all') params.branch_id = parseInt(branchFilter);
       if (statusFilter !== 'all') params.status = statusFilter;
+      if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom') {
+        params.date_filter = dateFilter;
+      }
+      if (fromDate) params.from_date = fromDate;
+      if (toDate) params.to_date = toDate;
 
       const res = await api.get<CustomerActivity[]>('/api/v1/admin/customer-activities', {
         params,
@@ -62,7 +79,24 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
 
   useEffect(() => {
     fetchActivities();
-  }, [searchTerm, branchFilter, statusFilter]);
+  }, [searchTerm, branchFilter, statusFilter, dateFilter, fromDate, toDate]);
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setBranchFilter('all');
+    setStatusFilter('all');
+    setDateFilter('all');
+    setFromDate('');
+    setToDate('');
+  };
+
+  const hasActiveFilters =
+    searchTerm.trim() !== '' ||
+    branchFilter !== 'all' ||
+    statusFilter !== 'all' ||
+    dateFilter !== 'all' ||
+    fromDate !== '' ||
+    toDate !== '';
 
   const totalFootfall = activities.reduce(
     (sum, a) => sum + (a.customers_count || 0),
@@ -255,6 +289,50 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
             <option value="Walkin">Walkin</option>
             <option value="Lost">Lost</option>
           </select>
+
+          {/* Date Filter Dropdown */}
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="px-3 py-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs font-bold text-[#1D1D1B] focus:outline-none cursor-pointer"
+          >
+            <option value="all">All Dates</option>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="this_week">This Week</option>
+            <option value="this_month">This Month</option>
+            <option value="custom">Custom Date Range</option>
+          </select>
+
+          {/* Custom Date Pickers */}
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                title="From Date"
+                className="px-2.5 py-1.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs font-medium cursor-pointer"
+              />
+              <span className="text-xs text-[#8A8479] font-bold">to</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                title="To Date"
+                className="px-2.5 py-1.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs font-medium cursor-pointer"
+              />
+            </div>
+          )}
+
+          {hasActiveFilters && (
+            <button
+              onClick={handleClearFilters}
+              className="px-3 py-2 bg-[#FAF1EC] border border-[#ECCFC0] text-[#B97855] hover:bg-[#F5E2D6] rounded-xl text-xs font-bold transition-colors cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 

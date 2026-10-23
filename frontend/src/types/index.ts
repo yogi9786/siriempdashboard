@@ -62,6 +62,28 @@ export interface EmployeeDetail extends Employee {
   attire_records_count: number;
   google_reviews_count?: number;
   average_rating?: number;
+  customer_feedbacks_count?: number;
+  customer_feedbacks_avg_rating?: number;
+  calls_count?: number;
+  calls_done_count?: number;
+  calls_pending_count?: number;
+}
+
+export interface EmployeeCallLog {
+  id: number;
+  branch_id: number;
+  employee_id: number;
+  employee_name?: string;
+  customer_name: string;
+  phone_number: string;
+  customers_count: number;
+  call_status: 'Done' | 'Pending' | string;
+  call_date: string;
+  call_time?: string;
+  purpose?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Customer {
@@ -85,6 +107,18 @@ export interface CustomerDetailItem {
   status: 'Sold' | 'Exchange' | 'Lost' | 'Walkin' | 'In Hold / Follow Up' | 'In Hold' | 'Follow Up' | string;
   product_value?: number | string;
   notes?: string;
+  // Schemes Closed
+  has_scheme?: boolean;
+  scheme_name?: string;
+  scheme_amount?: number | string;
+  // Google Reviews
+  has_google_review?: boolean;
+  google_review_rating?: number;
+  google_review_text?: string;
+  // Customer Direct Feedback
+  has_customer_feedback?: boolean;
+  feedback_rating?: number;
+  feedback_text?: string;
 }
 
 export interface CustomerActivity {
@@ -198,6 +232,8 @@ export interface OutdoorMarketingCustomer {
   branch_name?: string;
   marketing_employee_id: number;
   marketing_employee_name?: string;
+  marketing_employee_code?: string;
+  marketing_employee_designation?: string;
   duty_id?: number;
   customer_name: string;
   phone?: string;
@@ -211,6 +247,7 @@ export interface OutdoorMarketingCustomer {
   google_review_rating?: number;
   google_review_text?: string;
   status: 'Lead' | 'Contacted' | 'Interested' | 'Converted' | 'Closed' | 'Lost' | string;
+  interested_in?: string;
   notes?: string;
   created_at?: string;
   updated_at?: string;
@@ -228,6 +265,7 @@ export interface OutdoorCustomerDetail {
   google_review_text?: string;
   scheme_name?: string;
   area_name?: string;
+  interested_in?: string;
   notes?: string;
 }
 
@@ -645,7 +683,102 @@ export interface AdminEmployeeDetail {
     notes?: string;
     created_at?: string;
   }>;
+  customer_feedbacks?: CustomerFeedback[];
+  calls?: EmployeeCallLog[];
+  calls_done_count?: number;
+  calls_pending_count?: number;
   performance?: AdminEmployeePerformance;
 }
+
+// ----------------------------------------------------
+// Employee Attendance Interfaces
+// ----------------------------------------------------
+export interface EmployeeAttendance {
+  id: number;
+  branch_id: number;
+  branch_name?: string;
+  branch_code?: string;
+  employee_id: number;
+  employee_name?: string;
+  employee_code?: string;
+  designation?: string;
+  department?: string;
+  date: string;
+  status: 'Present' | 'Absent' | 'Half Day' | 'On Leave' | 'Late' | string;
+  check_in?: string | null;
+  check_out?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AttendanceSummary {
+  total_roster: number;
+  total_present: number;
+  total_absent: number;
+  total_half_day: number;
+  total_leave: number;
+  total_late: number;
+  attendance_rate: number;
+  total_employees?: number;
+  present_count?: number;
+  absent_count?: number;
+  half_day_count?: number;
+  leave_count?: number;
+  late_count?: number;
+  attendance_rate_pct?: number;
+}
+
+export interface BranchAttendanceMetric {
+  branch_id: number;
+  branch_name: string;
+  branch_code: string;
+  total_roster: number;
+  total_present: number;
+  present_count: number;
+  absent_count: number;
+  attendance_rate: number;
+  rate: number;
+}
+
+export interface AdminAttendanceOverview {
+  date?: string;
+  branch_id?: number | null;
+  summary: AttendanceSummary;
+  records: EmployeeAttendance[];
+  branch_metrics?: BranchAttendanceMetric[];
+  sync_timestamp: string;
+}
+
+// ----------------------------------------------------
+// Customer Direct Review & Feedback Interfaces
+// ----------------------------------------------------
+export interface CustomerFeedback {
+  id: number;
+  branch_id: number;
+  branch_name?: string;
+  branch_code?: string;
+  employee_id: number;
+  employee_name?: string;
+  employee_code?: string;
+  customer_name: string;
+  customer_phone?: string;
+  feedback_date: string;
+  rating: number; // 1 to 5
+  category: string;
+  feedback_text: string;
+  notes?: string | null;
+  status: 'Verified' | 'Follow-up Required' | 'Resolved' | string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AdminFeedbackOverview {
+  total_feedbacks: number;
+  average_rating: number;
+  feedbacks: CustomerFeedback[];
+  records?: CustomerFeedback[];
+}
+
 
 

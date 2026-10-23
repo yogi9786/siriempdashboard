@@ -15,6 +15,7 @@ import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { useAdminBranch } from '../../../context/AdminBranchContext';
 import { useToast } from '../../../context/ToastContext';
+import { SCHEMES } from '../../../constants/schemes';
 import api from '../../../api/client';
 
 export const AdminGoldSchemesPage: React.FC = () => {
@@ -27,6 +28,7 @@ export const AdminGoldSchemesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [branchFilter, setBranchFilter] = useState<string>(selectedBranchId?.toString() || 'all');
+  const [schemeFilter, setSchemeFilter] = useState<string>('all');
 
   const fetchSchemes = async () => {
     try {
@@ -34,11 +36,17 @@ export const AdminGoldSchemesPage: React.FC = () => {
       const params: Record<string, any> = {};
       if (searchTerm.trim()) params.search = searchTerm.trim();
       if (branchFilter !== 'all') params.branch_id = parseInt(branchFilter);
+      if (schemeFilter !== 'all') params.scheme_name = schemeFilter;
 
       const res = await api.get<any>('/api/v1/admin/gold-schemes', { params });
-      setSchemes(res.data.schemes || []);
-      setTotalSchemes(res.data.total_schemes || 0);
-      setTotalAmount(res.data.total_amount || 0);
+      let loadedSchemes: SchemeRecord[] = res.data.schemes || [];
+      if (schemeFilter !== 'all') {
+        loadedSchemes = loadedSchemes.filter((s) => s.scheme_name === schemeFilter);
+      }
+      setSchemes(loadedSchemes);
+      setTotalSchemes(schemeFilter !== 'all' ? loadedSchemes.length : (res.data.total_schemes || 0));
+      const filteredAmount = loadedSchemes.reduce((acc, s) => acc + (s.amount || 0), 0);
+      setTotalAmount(schemeFilter !== 'all' ? filteredAmount : (res.data.total_amount || 0));
     } catch (err) {
       console.error('Failed to load schemes:', err);
       toastError('Failed to fetch gold schemes data.');
@@ -49,7 +57,7 @@ export const AdminGoldSchemesPage: React.FC = () => {
 
   useEffect(() => {
     fetchSchemes();
-  }, [searchTerm, branchFilter]);
+  }, [searchTerm, branchFilter, schemeFilter]);
 
   const avgTicket = totalSchemes > 0 ? Math.round(totalAmount / totalSchemes) : 0;
 
@@ -130,6 +138,20 @@ export const AdminGoldSchemesPage: React.FC = () => {
           {branches.map((b) => (
             <option key={b.id} value={b.id.toString()}>
               {b.name} Showroom
+            </option>
+          ))}
+        </select>
+
+        {/* Scheme Dropdown Filter */}
+        <select
+          value={schemeFilter}
+          onChange={(e) => setSchemeFilter(e.target.value)}
+          className="px-3 py-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs font-bold text-[#7E22CE] focus:outline-none cursor-pointer w-full sm:w-auto"
+        >
+          <option value="all">All 3 Schemes</option>
+          {SCHEMES.map((sch) => (
+            <option key={sch} value={sch}>
+              {sch}
             </option>
           ))}
         </select>

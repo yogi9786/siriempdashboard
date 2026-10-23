@@ -31,6 +31,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ZoomIn,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -43,17 +44,7 @@ import {
   OutdoorCustomerDetail,
 } from '../../types';
 import api from '../../api/client';
-
-// Standard Jewellery Schemes for Quick Selection
-const STANDARD_SCHEMES = [
-  'Siri Samruddhi Gold Monthly Scheme',
-  'Swarna Nidhi 11-Month Gold Plan',
-  'Diamond Digi Savings Scheme',
-  'Bridal Gold Advance Booking Plan',
-  'Dhanavruddhi Gold Coin Scheme',
-  'Festival Gold Exchange Offer',
-  'General Showroom Walk-in Promotion',
-];
+import { SCHEMES as STANDARD_SCHEMES } from '../../constants/schemes';
 
 // ----------------------------------------------------
 // Data Interfaces
@@ -68,6 +59,9 @@ interface CustomerEntryState {
   google_review_rating: number;
   google_review_text: string;
   scheme_name: string;
+  interested_gold: boolean;
+  interested_diamond: boolean;
+  interested_silver: boolean;
   notes: string;
 }
 
@@ -400,16 +394,14 @@ export const OutdoorMarketingPage: React.FC = () => {
       // Initialize form states for each assigned duty
       const formMap: Record<number, DutyFormState> = {};
       dutyRes.data.forEach((duty) => {
-        const attendedCusts = duty.customers.filter((c) => !c.is_converted);
-        const convertedCusts = duty.customers.filter((c) => c.is_converted);
+        const allCusts = duty.customers || [];
+        const attendedCount = Math.max(duty.customers_attended_count, allCusts.length);
 
-        const attendedCount = Math.max(duty.customers_attended_count, attendedCusts.length);
-        const convertedCount = Math.max(duty.converted_customers_count, convertedCusts.length);
-
-        // Build attended array matching count
+        // Build attended array matching count with interested categories
         const attendedList: CustomerEntryState[] = [];
         for (let i = 0; i < attendedCount; i++) {
-          const existing = attendedCusts[i];
+          const existing = allCusts[i];
+          const intStr = ((existing as any)?.interested_in || '').toLowerCase();
           attendedList.push({
             id: existing?.id,
             name: existing?.customer_name || '',
@@ -420,24 +412,9 @@ export const OutdoorMarketingPage: React.FC = () => {
             google_review_rating: existing?.google_review_rating || 5,
             google_review_text: existing?.google_review_text || '',
             scheme_name: existing?.scheme_name || duty.scheme_name || '',
-            notes: existing?.notes || '',
-          });
-        }
-
-        // Build converted array matching count
-        const convertedList: CustomerEntryState[] = [];
-        for (let i = 0; i < convertedCount; i++) {
-          const existing = convertedCusts[i];
-          attendedList.push({
-            id: existing?.id,
-            name: existing?.customer_name || '',
-            phone: existing?.phone || '',
-            dob: existing?.dob ? String(existing.dob) : '',
-            anniversary_date: existing?.anniversary_date ? String(existing.anniversary_date) : '',
-            has_google_review: existing?.has_google_review || false,
-            google_review_rating: existing?.google_review_rating || 5,
-            google_review_text: existing?.google_review_text || '',
-            scheme_name: existing?.scheme_name || duty.scheme_name || STANDARD_SCHEMES[0],
+            interested_gold: intStr.includes('gold'),
+            interested_diamond: intStr.includes('diamond'),
+            interested_silver: intStr.includes('silver'),
             notes: existing?.notes || '',
           });
         }
@@ -450,7 +427,7 @@ export const OutdoorMarketingPage: React.FC = () => {
           area: duty.area || '',
           scheme_name: duty.scheme_name || STANDARD_SCHEMES[0],
           customers_attended_count: attendedCount,
-          converted_customers_count: convertedCount,
+          converted_customers_count: 0,
           google_ratings_count: duty.google_ratings_count || 0,
           photo_url: duty.photo_url || (existingPhotos[0] || ''),
           photo_urls: existingPhotos,
@@ -459,7 +436,7 @@ export const OutdoorMarketingPage: React.FC = () => {
           isUploadingPhotos: false,
           isSaving: false,
           attendedList,
-          convertedList,
+          convertedList: [],
         };
       });
 
@@ -564,6 +541,9 @@ export const OutdoorMarketingPage: React.FC = () => {
             google_review_rating: 5,
             google_review_text: '',
             scheme_name: form.scheme_name || '',
+            interested_gold: false,
+            interested_diamond: false,
+            interested_silver: false,
             notes: '',
           });
         }
@@ -600,6 +580,9 @@ export const OutdoorMarketingPage: React.FC = () => {
             google_review_rating: 5,
             google_review_text: '',
             scheme_name: form.scheme_name || STANDARD_SCHEMES[0],
+            interested_gold: false,
+            interested_diamond: false,
+            interested_silver: false,
             notes: '',
           });
         }
@@ -769,30 +752,30 @@ export const OutdoorMarketingPage: React.FC = () => {
       return;
     }
 
-    // Validate Converted Customers Compulsory Name & Phone
-    for (let i = 0; i < form.convertedList.length; i++) {
-      const c = form.convertedList[i];
-      if (!c.name.trim()) {
-        toastError(`Converted Customer #${i + 1}: Customer Name is compulsory.`);
-        return;
-      }
-      if (!c.phone.trim()) {
-        toastError(`Converted Customer #${i + 1}: Phone number is compulsory.`);
-        return;
-      }
-    }
-
     updateDutyFormField(dutyId, 'isSaving', true);
 
     try {
       const customersPayload: OutdoorCustomerDetail[] = [];
 
-      // Attended Customers (Optional fields)
+      // Customers Attended with Interested In & Notes
       form.attendedList.forEach((c) => {
-        if (c.name.trim() || c.phone.trim() || c.has_google_review) {
+        if (
+          c.name.trim() ||
+          c.phone.trim() ||
+          c.has_google_review ||
+          c.interested_gold ||
+          c.interested_diamond ||
+          c.interested_silver ||
+          c.notes.trim()
+        ) {
+          const interestedArr: string[] = [];
+          if (c.interested_gold) interestedArr.push('Gold');
+          if (c.interested_diamond) interestedArr.push('Diamond');
+          if (c.interested_silver) interestedArr.push('Silver');
+
           customersPayload.push({
             id: c.id,
-            customer_name: c.name.trim() || 'Attended Visitor',
+            customer_name: c.name.trim() || 'Field Visitor',
             phone: c.phone.trim() || undefined,
             dob: c.dob || undefined,
             anniversary_date: c.anniversary_date || undefined,
@@ -800,29 +783,12 @@ export const OutdoorMarketingPage: React.FC = () => {
             has_google_review: c.has_google_review,
             google_review_rating: c.google_review_rating || 5,
             google_review_text: c.google_review_text.trim() || undefined,
-            scheme_name: form.scheme_name,
+            scheme_name: c.scheme_name || form.scheme_name,
             area_name: form.area,
+            interested_in: interestedArr.length > 0 ? interestedArr.join(', ') : undefined,
             notes: c.notes.trim() || undefined,
           });
         }
-      });
-
-      // Converted Customers (Compulsory fields)
-      form.convertedList.forEach((c) => {
-        customersPayload.push({
-          id: c.id,
-          customer_name: c.name.trim(),
-          phone: c.phone.trim(),
-          dob: c.dob || undefined,
-          anniversary_date: c.anniversary_date || undefined,
-          is_converted: true,
-          has_google_review: c.has_google_review,
-          google_review_rating: c.google_review_rating || 5,
-          google_review_text: c.google_review_text.trim() || undefined,
-          scheme_name: c.scheme_name || form.scheme_name,
-          area_name: form.area,
-          notes: c.notes.trim() || undefined,
-        });
       });
 
       const customerReviewsCount = customersPayload.filter((c) => c.has_google_review).length;
@@ -832,7 +798,7 @@ export const OutdoorMarketingPage: React.FC = () => {
         area: form.area.trim(),
         scheme_name: form.scheme_name.trim(),
         customers_attended_count: form.customers_attended_count,
-        converted_customers_count: form.converted_customers_count,
+        converted_customers_count: 0,
         google_ratings_count: totalGoogleRatings,
         photo_url: form.photo_urls[0] || form.photo_url || null,
         photo_urls: form.photo_urls,
@@ -1391,6 +1357,25 @@ export const OutdoorMarketingPage: React.FC = () => {
                             </option>
                           ))}
                         </select>
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {STANDARD_SCHEMES.map((sch) => {
+                            const isSelected = form.scheme_name === sch;
+                            return (
+                              <button
+                                key={sch}
+                                type="button"
+                                onClick={() => updateDutyFormField(duty.id, 'scheme_name', sch)}
+                                className={`px-2 py-1 text-[10px] font-bold rounded-lg border transition-all text-left ${
+                                  isSelected
+                                    ? 'bg-[#FEF3C7] border-[#D97706] text-[#92400E] shadow-2xs font-extrabold'
+                                    : 'bg-white border-[#E4DFD4] text-[#5E5A52] hover:bg-[#FAF8F3]'
+                                }`}
+                              >
+                                {isSelected ? '✓ ' : ''}{sch}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
 
@@ -1543,167 +1528,93 @@ export const OutdoorMarketingPage: React.FC = () => {
                                     </div>
                                   )}
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Converted Customers Section */}
-                    <div className="space-y-3 bg-[#FAF6EB] border border-[#C6A45C]/30 rounded-2xl p-4 sm:p-5">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                          <label className="text-xs font-extrabold text-[#9A782F] flex items-center gap-1.5">
-                            <Award className="w-4 h-4 text-[#9A782F]" />
-                            <span>Converted Customers / Scheme Enrolments</span>
-                          </label>
-                          <p className="text-[11px] text-[#5E5A52] mt-0.5">
-                            For converted customers, full contact details below are <strong className="text-[#C24141]">compulsory</strong>.
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-[#5E5A52]">Converted Count:</span>
-                          <select
-                            value={form.converted_customers_count}
-                            onChange={(e) => handleConvertedCountChange(duty.id, parseInt(e.target.value) || 0)}
-                            className="select-luxury-slate rounded-xl px-3 py-1.5 text-xs font-bold cursor-pointer"
-                          >
-                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20].map((num) => (
-                              <option key={num} value={num}>
-                                {num} {num === 1 ? 'Converted Customer' : 'Converted Customers'}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {form.converted_customers_count > 0 && (
-                        <div className="space-y-3 pt-2">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {form.convertedList.map((cust, cIdx) => (
-                              <div
-                                key={cIdx}
-                                className="bg-white border-2 border-[#C6A45C]/40 rounded-2xl p-4 space-y-3 shadow-2xs"
-                              >
-                                <div className="text-xs font-extrabold text-[#9A782F] flex items-center justify-between">
-                                  <span>🏆 Converted Customer #{cIdx + 1}</span>
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FAF6EB] text-[#9A782F] font-bold border border-[#C6A45C]/30">
-                                    Enrolled
-                                  </span>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <label className="text-[10px] font-extrabold text-[#1D1D1B] block mb-1">
-                                      Customer Name <span className="text-[#C24141]">*</span>
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={cust.name}
-                                      onChange={(e) => updateConvertedCustomer(duty.id, cIdx, 'name', e.target.value)}
-                                      placeholder="e.g. Sunita Devi"
-                                      className="w-full px-2.5 py-1.5 input-luxury-beige rounded-lg text-xs font-bold"
-                                      required
-                                    />
+                                {/* Interested In Section */}
+                                <div className="p-2.5 rounded-xl bg-[#FFFDF7] border border-[#E8DFC8] space-y-2">
+                                  <div className="text-[11px] font-extrabold text-[#7E5E18] uppercase tracking-wider flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5 text-[#C6A45C]" />
+                                    <span>Interested In</span>
                                   </div>
-
-                                  <div>
-                                    <label className="text-[10px] font-extrabold text-[#1D1D1B] block mb-1">
-                                      Phone Number <span className="text-[#C24141]">*</span>
+                                  <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-[#1D1D1B]">
+                                    <label className="flex items-center gap-1.5 cursor-pointer select-none px-2.5 py-1 rounded-lg border border-[#E8DFC8] bg-white hover:bg-amber-50/50">
+                                      <input
+                                        type="checkbox"
+                                        checked={cust.interested_gold}
+                                        onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'interested_gold', e.target.checked)}
+                                        className="rounded text-amber-600 focus:ring-amber-500"
+                                      />
+                                      <span className="text-amber-800">🟡 Gold</span>
                                     </label>
-                                    <input
-                                      type="tel"
-                                      value={cust.phone}
-                                      onChange={(e) => updateConvertedCustomer(duty.id, cIdx, 'phone', e.target.value)}
-                                      placeholder="e.g. 9845098765"
-                                      className="w-full px-2.5 py-1.5 input-luxury-beige rounded-lg text-xs font-bold font-mono"
-                                      required
-                                    />
+                                    <label className="flex items-center gap-1.5 cursor-pointer select-none px-2.5 py-1 rounded-lg border border-[#E8DFC8] bg-white hover:bg-cyan-50/50">
+                                      <input
+                                        type="checkbox"
+                                        checked={cust.interested_diamond}
+                                        onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'interested_diamond', e.target.checked)}
+                                        className="rounded text-cyan-600 focus:ring-cyan-500"
+                                      />
+                                      <span className="text-cyan-800">💎 Diamond</span>
+                                    </label>
+                                    <label className="flex items-center gap-1.5 cursor-pointer select-none px-2.5 py-1 rounded-lg border border-[#E8DFC8] bg-white hover:bg-slate-50/50">
+                                      <input
+                                        type="checkbox"
+                                        checked={cust.interested_silver}
+                                        onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'interested_silver', e.target.checked)}
+                                        className="rounded text-slate-600 focus:ring-slate-500"
+                                      />
+                                      <span className="text-slate-700">⚪ Silver</span>
+                                    </label>
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <label className="text-[10px] font-bold text-[#5E5A52] mb-1 flex items-center gap-1">
-                                      <Cake className="w-3 h-3 text-[#9A782F]" />
-                                      <span>DOB</span>
-                                    </label>
-                                    <input
-                                      type="date"
-                                      value={cust.dob}
-                                      onChange={(e) => updateConvertedCustomer(duty.id, cIdx, 'dob', e.target.value)}
-                                      className="w-full px-2.5 py-1.5 input-luxury-beige rounded-lg text-xs font-medium cursor-pointer"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <label className="text-[10px] font-bold text-[#5E5A52] mb-1 flex items-center gap-1">
-                                      <Heart className="w-3 h-3 text-[#C24141]" />
-                                      <span>Anniversary</span>
-                                    </label>
-                                    <input
-                                      type="date"
-                                      value={cust.anniversary_date}
-                                      onChange={(e) => updateConvertedCustomer(duty.id, cIdx, 'anniversary_date', e.target.value)}
-                                      className="w-full px-2.5 py-1.5 input-luxury-beige rounded-lg text-xs font-medium cursor-pointer"
-                                    />
-                                  </div>
-                                </div>
-
+                                {/* Scheme Selection for Customer */}
                                 <div>
-                                  <label className="text-[10px] font-bold text-[#5E5A52] block mb-1">
-                                    Enrolled Scheme
+                                  <label className="text-[10px] font-bold text-[#8A8479] block mb-1">
+                                    Enrolled / Interested Scheme
+                                  </label>
+                                  <select
+                                    value={cust.scheme_name || form.scheme_name || STANDARD_SCHEMES[0]}
+                                    onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'scheme_name', e.target.value)}
+                                    className="w-full px-2.5 py-1.5 select-luxury-slate rounded-lg text-xs font-semibold cursor-pointer"
+                                  >
+                                    {STANDARD_SCHEMES.map((sch) => (
+                                      <option key={sch} value={sch}>
+                                        {sch}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {STANDARD_SCHEMES.map((sch) => {
+                                      const isSelected = (cust.scheme_name || form.scheme_name || STANDARD_SCHEMES[0]) === sch;
+                                      return (
+                                        <button
+                                          key={sch}
+                                          type="button"
+                                          onClick={() => updateAttendedCustomer(duty.id, cIdx, 'scheme_name', sch)}
+                                          className={`px-2 py-0.5 text-[9px] font-bold rounded-md border transition-all text-left ${
+                                            isSelected
+                                              ? 'bg-[#FEF3C7] border-[#D97706] text-[#92400E] shadow-2xs font-extrabold'
+                                              : 'bg-white border-[#E4DFD4] text-[#5E5A52] hover:bg-[#FAF8F3]'
+                                          }`}
+                                        >
+                                          {isSelected ? '✓ ' : ''}{sch}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* Customer Notes */}
+                                <div>
+                                  <label className="text-[10px] font-bold text-[#8A8479] block mb-1">
+                                    Customer Notes / Inquiries
                                   </label>
                                   <input
                                     type="text"
-                                    value={cust.scheme_name}
-                                    onChange={(e) => updateConvertedCustomer(duty.id, cIdx, 'scheme_name', e.target.value)}
-                                    placeholder={form.scheme_name || 'Scheme Name'}
+                                    value={cust.notes}
+                                    onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'notes', e.target.value)}
+                                    placeholder="e.g. Inquired about SIRISAMRUDDHI GOLDEN DREAMS scheme, follow-up next Monday..."
                                     className="w-full px-2.5 py-1.5 input-luxury-beige rounded-lg text-xs font-medium"
                                   />
-                                </div>
-
-                                {/* Converted Customer Google Review Toggle */}
-                                <div className="p-2.5 rounded-xl bg-[#FAFDFB] border border-[#C5E3D5] space-y-2">
-                                  <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-[#1D1D1B]">
-                                    <input
-                                      type="checkbox"
-                                      checked={cust.has_google_review}
-                                      onChange={(e) => updateConvertedCustomer(duty.id, cIdx, 'has_google_review', e.target.checked)}
-                                      className="rounded text-[#23815F] focus:ring-[#23815F]"
-                                    />
-                                    <span className="flex items-center gap-1 text-amber-600">
-                                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-                                      <span>Customer Gave Google Review?</span>
-                                    </span>
-                                  </label>
-
-                                  {cust.has_google_review && (
-                                    <div className="grid grid-cols-3 gap-2 pt-1">
-                                      <div>
-                                        <select
-                                          value={cust.google_review_rating}
-                                          onChange={(e) => updateConvertedCustomer(duty.id, cIdx, 'google_review_rating', parseInt(e.target.value) || 5)}
-                                          className="w-full px-2 py-1 select-luxury-slate rounded-lg text-xs font-bold"
-                                        >
-                                          <option value="5">⭐⭐⭐⭐⭐ (5 Star)</option>
-                                          <option value="4">⭐⭐⭐⭐ (4 Star)</option>
-                                          <option value="3">⭐⭐⭐ (3 Star)</option>
-                                        </select>
-                                      </div>
-                                      <div className="col-span-2">
-                                        <input
-                                          type="text"
-                                          value={cust.google_review_text}
-                                          onChange={(e) => updateConvertedCustomer(duty.id, cIdx, 'google_review_text', e.target.value)}
-                                          placeholder="Review remark / feedback snippet..."
-                                          className="w-full px-2.5 py-1 input-luxury-beige rounded-lg text-xs"
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                             ))}
@@ -1712,7 +1623,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Observations / Notes */}
+                    {/* Staff Field Observations / Notes */}
                     <div>
                       <label className="text-xs font-extrabold text-[#1D1D1B] block mb-1">
                         Staff Field Observations / Notes
@@ -1839,14 +1750,14 @@ export const OutdoorMarketingPage: React.FC = () => {
                         <div className="p-2 rounded-xl bg-[#E8F4EE]/60 border border-[#C5E3D5]/60">
                           <span className="text-[10px] font-bold text-[#5E5A52] uppercase block">Attended</span>
                           <span className="text-sm font-extrabold text-[#23815F]">
-                            {duty.customers_attended_count || duty.customers.filter((c) => !c.is_converted).length}
+                            {duty.customers_attended_count || duty.customers.length}
                           </span>
                         </div>
 
                         <div className="p-2 rounded-xl bg-[#FAF6EB]/60 border border-[#C6A45C]/20">
-                          <span className="text-[10px] font-bold text-[#5E5A52] uppercase block">Converted</span>
+                          <span className="text-[10px] font-bold text-[#5E5A52] uppercase block">Interested</span>
                           <span className="text-sm font-extrabold text-[#9A782F]">
-                            {duty.converted_customers_count || duty.customers.filter((c) => c.is_converted).length}
+                            {duty.customers.filter((c) => c.interested_in && c.interested_in.trim() !== '').length}
                           </span>
                         </div>
 
@@ -2072,8 +1983,8 @@ export const OutdoorMarketingPage: React.FC = () => {
                     <th className="px-5 py-3.5">DOB & Anniversary</th>
                     <th className="px-5 py-3.5">Google Review</th>
                     <th className="px-5 py-3.5">Staff Rep</th>
-                    <th className="px-5 py-3.5">Status</th>
-                    <th className="px-5 py-3.5">Scheme</th>
+                    <th className="px-5 py-3.5">Interested In</th>
+                    <th className="px-5 py-3.5">Notes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#EBF3EE] font-medium">
@@ -2123,17 +2034,22 @@ export const OutdoorMarketingPage: React.FC = () => {
                         </td>
                         <td className="px-5 py-3.5 text-[#5E5A52]">{cust.marketing_employee_name || 'Staff'}</td>
                         <td className="px-5 py-3.5">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                              cust.is_converted
-                                ? 'bg-[#FAF6EB] text-[#9A782F] border border-[#C6A45C]/30'
-                                : 'bg-[#E8F4EE] text-[#23815F] border border-[#C5E3D5]'
-                            }`}
-                          >
-                            {cust.is_converted ? '🏆 Converted' : '👥 Attended'}
-                          </span>
+                          {cust.interested_in ? (
+                            <div className="flex flex-wrap gap-1">
+                              {cust.interested_in.split(',').map((item, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF6EB] text-[#9A782F] border border-[#C6A45C]/30"
+                                >
+                                  {item.trim() === 'Gold' ? '🟡 Gold' : item.trim() === 'Diamond' ? '💎 Diamond' : item.trim() === 'Silver' ? '⚪ Silver' : item.trim()}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-[#8A8479] text-[11px]">—</span>
+                          )}
                         </td>
-                        <td className="px-5 py-3.5 font-semibold text-[#9A782F]">{cust.scheme_name || '—'}</td>
+                        <td className="px-5 py-3.5 text-[#5E5A52] text-[11px] max-w-xs">{cust.notes || '—'}</td>
                       </tr>
                     ))
                   )}
@@ -2205,7 +2121,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                 <div className="p-3.5 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5]">
                   <span className="text-[10px] font-bold text-[#5E5A52] uppercase block">Customers Reached</span>
                   <span className="text-base font-extrabold text-[#23815F] mt-0.5 block">
-                    {viewDetailDuty.customers_attended_count || viewDetailDuty.customers.length} Attended • {viewDetailDuty.converted_customers_count} Converted
+                    {viewDetailDuty.customers_attended_count || viewDetailDuty.customers.length} Attended • {viewDetailDuty.customers.filter((c) => c.interested_in && c.interested_in.trim() !== '').length} Interested Leads
                   </span>
                 </div>
 
@@ -2243,15 +2159,22 @@ export const OutdoorMarketingPage: React.FC = () => {
                           <span className="text-xs font-extrabold text-[#1D1D1B]">
                             {cust.customer_name}
                           </span>
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              cust.is_converted
-                                ? 'bg-amber-100 text-[#9A782F] border border-[#C6A45C]/30'
-                                : 'bg-[#E8F4EE] text-[#23815F] border border-[#C5E3D5]'
-                            }`}
-                          >
-                            {cust.is_converted ? '🏆 Converted' : '👥 Attended'}
-                          </span>
+                          {cust.interested_in ? (
+                            <div className="flex flex-wrap gap-1">
+                              {cust.interested_in.split(',').map((item, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-[#9A782F] border border-[#C6A45C]/30"
+                                >
+                                  {item.trim() === 'Gold' ? '🟡 Gold' : item.trim() === 'Diamond' ? '💎 Diamond' : item.trim() === 'Silver' ? '⚪ Silver' : item.trim()}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E8F4EE] text-[#23815F] border border-[#C5E3D5]">
+                              Attended
+                            </span>
+                          )}
                         </div>
 
                         <div className="text-xs text-[#5E5A52] font-mono flex items-center gap-1.5">

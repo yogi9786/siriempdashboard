@@ -40,7 +40,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile }) => 
     location.pathname.startsWith('/admin/branches')
   );
   const [peopleOpen, setPeopleOpen] = useState(
-    location.pathname.startsWith('/admin/managers') || location.pathname.startsWith('/admin/employees') || location.pathname.startsWith('/admin/performance')
+    location.pathname.startsWith('/admin/managers') ||
+    location.pathname.startsWith('/admin/employees') ||
+    location.pathname.startsWith('/admin/performance') ||
+    location.pathname.startsWith('/admin/customer-logs') ||
+    location.pathname.startsWith('/admin/outdoor-customers')
   );
   const [opsOpen, setOpsOpen] = useState(
     location.pathname.startsWith('/admin/customers') ||
@@ -287,6 +291,32 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile }) => 
               >
                 <Compass className="w-3.5 h-3.5" />
                 <span>Outdoor Marketing</span>
+              </NavLink>
+
+              <NavLink
+                to="/admin/customer-logs"
+                onClick={onCloseMobile}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    isActive ? 'bg-[#D97706] text-white font-semibold' : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Showroom Customer Logs</span>
+              </NavLink>
+
+              <NavLink
+                to="/admin/outdoor-customers"
+                onClick={onCloseMobile}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    isActive ? 'bg-[#D97706] text-white font-semibold' : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Outdoor Customer Leads</span>
               </NavLink>
             </div>
           )}

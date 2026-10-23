@@ -21,6 +21,10 @@ import {
   ExternalLink,
   Sparkles,
   TrendingUp,
+  MessageSquare,
+  PhoneCall,
+  Clock,
+  Search,
 } from 'lucide-react';
 import { AdminEmployeeDetail } from '../../../types';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
@@ -36,7 +40,9 @@ export const AdminEmployeeDetailPage: React.FC = () => {
 
   const [data, setData] = useState<AdminEmployeeDetail | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'customers' | 'schemes' | 'reviews' | 'attire' | 'outdoor' | 'gallery'>('customers');
+  const [activeTab, setActiveTab] = useState<'customers' | 'calls' | 'schemes' | 'reviews' | 'attire' | 'outdoor' | 'gallery'>('customers');
+  const [callSearchTerm, setCallSearchTerm] = useState<string>('');
+  const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
 
   const fetchEmployeeDetail = async () => {
     if (!id) return;
@@ -80,13 +86,50 @@ export const AdminEmployeeDetailPage: React.FC = () => {
     );
   }
 
-  const { employee, customer_activities, schemes, google_reviews, attire_records, gallery_media, outdoor_areas, outdoor_customers, outdoor_schemes } = data;
+  const {
+    employee,
+    customer_activities,
+    schemes,
+    google_reviews,
+    attire_records,
+    gallery_media,
+    outdoor_areas,
+    outdoor_customers,
+    outdoor_schemes,
+    customer_feedbacks = [],
+    calls = [],
+    calls_done_count = 0,
+    calls_pending_count = 0,
+  } = data;
 
   const totalSchemesAmount = schemes.reduce((acc, s) => acc + (s.amount || 0), 0);
   const totalSchemesCount = schemes.reduce((acc, s) => acc + (s.customers_count || 1), 0);
   const totalCustomersAttended = customer_activities.reduce((acc, c) => acc + (c.customers_count || 1), 0);
   const totalCustomersClosed = customer_activities.filter((c) => c.status === 'Closed').reduce((acc, c) => acc + (c.customers_count || 1), 0);
   const conversionPct = totalCustomersAttended > 0 ? Math.round((totalCustomersClosed / totalCustomersAttended) * 100) : 100;
+
+  // Calls analytics
+  const callsDoneList = calls.filter((c) => c.call_status === 'Done');
+  const callsPendingList = calls.filter((c) => c.call_status === 'Pending');
+  const totalCallsCount = calls.length;
+  const totalCallsHeadcount = calls.reduce((acc, c) => acc + (c.customers_count || 1), 0);
+  const callsDoneHeadcount = callsDoneList.reduce((acc, c) => acc + (c.customers_count || 1), 0);
+  const callsPendingHeadcount = callsPendingList.reduce((acc, c) => acc + (c.customers_count || 1), 0);
+  const callCompletionPct = totalCallsCount > 0 ? Math.round((callsDoneList.length / totalCallsCount) * 100) : 100;
+
+  const filteredCalls = calls.filter((c) => {
+    const matchesSearch =
+      !callSearchTerm.trim() ||
+      c.customer_name?.toLowerCase().includes(callSearchTerm.toLowerCase()) ||
+      c.phone_number?.includes(callSearchTerm) ||
+      c.purpose?.toLowerCase().includes(callSearchTerm.toLowerCase()) ||
+      c.notes?.toLowerCase().includes(callSearchTerm.toLowerCase());
+    const matchesStatus =
+      callStatusFilter === 'all' ||
+      (callStatusFilter === 'done' && c.call_status === 'Done') ||
+      (callStatusFilter === 'pending' && c.call_status === 'Pending');
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-7 pb-16">
@@ -151,10 +194,16 @@ export const AdminEmployeeDetailPage: React.FC = () => {
               </p>
 
               <div className="flex items-center gap-4 sm:gap-6 text-xs text-[#5E5A52] font-medium pt-1 flex-wrap">
-                <span className="flex items-center gap-1.5 font-bold text-[#3B0764]">
+                <button
+                  onClick={() => navigate(`/admin/branches/${employee.branch_id}`)}
+                  className="flex items-center gap-1.5 font-bold text-[#3B0764] hover:text-[#7E22CE] bg-white px-2.5 py-1 rounded-lg border border-[#D8B4FE] shadow-2xs hover:shadow-xs transition-all cursor-pointer group/br"
+                  title="Navigate to Showroom Details"
+                >
                   <Building2 className="w-3.5 h-3.5 text-[#7E22CE]" />
-                  {employee.branch_name} Showroom ({employee.branch_code})
-                </span>
+                  <span>{employee.branch_name} Showroom ({employee.branch_code})</span>
+                  <ExternalLink className="w-3 h-3 text-[#7E22CE] opacity-60 group-hover/br:opacity-100 transition-opacity" />
+                </button>
+
                 {employee.phone && (
                   <span className="flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-[#8A8479]" />
@@ -168,10 +217,14 @@ export const AdminEmployeeDetailPage: React.FC = () => {
                   </span>
                 )}
                 {employee.manager_name && (
-                  <span className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => navigate('/admin/managers')}
+                    className="flex items-center gap-1.5 text-xs text-[#5E5A52] hover:text-[#7E22CE] transition-colors cursor-pointer"
+                    title="View Showroom Managers"
+                  >
                     <ShieldCheck className="w-3.5 h-3.5 text-[#7E22CE]" />
-                    Manager: <strong className="text-[#1D1D1B]">{employee.manager_name}</strong>
-                  </span>
+                    <span>Manager: <strong className="text-[#1D1D1B] underline decoration-[#7E22CE]/40">{employee.manager_name}</strong></span>
+                  </button>
                 )}
               </div>
             </div>
@@ -180,11 +233,14 @@ export const AdminEmployeeDetailPage: React.FC = () => {
       </div>
 
       {/* -------------------------------------------------------------
-          3. 6 SUMMARY METRIC CARDS
+          3. SUMMARY METRIC CARDS
       ------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
         {/* Footfall Attended */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1">
+        <div
+          onClick={() => setActiveTab('customers')}
+          className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1 cursor-pointer hover:border-[#7E22CE] transition-colors"
+        >
           <div className="flex items-center justify-between text-[#526F91]">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#5E5A52]">Footfall</span>
             <UserCheck className="w-4 h-4 text-[#526F91]" />
@@ -193,8 +249,26 @@ export const AdminEmployeeDetailPage: React.FC = () => {
           <p className="text-[10px] text-[#21845F] font-bold">{totalCustomersClosed} Closed ({conversionPct}%)</p>
         </div>
 
+        {/* Customer Calls */}
+        <div
+          onClick={() => setActiveTab('calls')}
+          className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1 cursor-pointer hover:border-[#7E22CE] transition-colors group"
+        >
+          <div className="flex items-center justify-between text-[#7E22CE]">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#5E5A52] group-hover:text-[#7E22CE]">Calls</span>
+            <PhoneCall className="w-4 h-4 text-[#7E22CE]" />
+          </div>
+          <p className="text-xl font-black text-[#1D1D1B]">{totalCallsCount}</p>
+          <p className="text-[10px] text-[#21845F] font-bold">
+            {callsDoneList.length} Done • <span className="text-amber-600 font-bold">{callsPendingList.length} Pend</span>
+          </p>
+        </div>
+
         {/* Gold Schemes */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1">
+        <div
+          onClick={() => setActiveTab('schemes')}
+          className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1 cursor-pointer hover:border-[#7E22CE] transition-colors"
+        >
           <div className="flex items-center justify-between text-[#21845F]">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#5E5A52]">Schemes</span>
             <Award className="w-4 h-4 text-[#21845F]" />
@@ -204,7 +278,10 @@ export const AdminEmployeeDetailPage: React.FC = () => {
         </div>
 
         {/* Reputation */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1">
+        <div
+          onClick={() => setActiveTab('reviews')}
+          className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1 cursor-pointer hover:border-[#7E22CE] transition-colors"
+        >
           <div className="flex items-center justify-between text-[#B97855]">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#5E5A52]">Reviews</span>
             <Star className="w-4 h-4 fill-[#B97855] text-[#B97855]" />
@@ -214,7 +291,10 @@ export const AdminEmployeeDetailPage: React.FC = () => {
         </div>
 
         {/* Grooming */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1">
+        <div
+          onClick={() => setActiveTab('attire')}
+          className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1 cursor-pointer hover:border-[#7E22CE] transition-colors"
+        >
           <div className="flex items-center justify-between text-[#7E22CE]">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#5E5A52]">Attire</span>
             <Shirt className="w-4 h-4 text-[#7E22CE]" />
@@ -224,7 +304,10 @@ export const AdminEmployeeDetailPage: React.FC = () => {
         </div>
 
         {/* Outdoor Leads */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1">
+        <div
+          onClick={() => setActiveTab('outdoor')}
+          className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1 cursor-pointer hover:border-[#7E22CE] transition-colors"
+        >
           <div className="flex items-center justify-between text-[#21845F]">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#5E5A52]">Outdoor</span>
             <Compass className="w-4 h-4 text-[#21845F]" />
@@ -234,7 +317,10 @@ export const AdminEmployeeDetailPage: React.FC = () => {
         </div>
 
         {/* Form Media */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1">
+        <div
+          onClick={() => setActiveTab('gallery')}
+          className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-2xs space-y-1 cursor-pointer hover:border-[#7E22CE] transition-colors"
+        >
           <div className="flex items-center justify-between text-[#B97855]">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#5E5A52]">Closing Sheets</span>
             <FileText className="w-4 h-4 text-[#B97855]" />
@@ -262,6 +348,23 @@ export const AdminEmployeeDetailPage: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setActiveTab('calls')}
+            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'calls'
+                ? 'bg-[#7E22CE] text-white shadow-xs'
+                : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#FAF5FF] hover:text-[#7E22CE]'
+            }`}
+          >
+            <PhoneCall className="w-3.5 h-3.5" />
+            <span>Customer Calls ({totalCallsCount})</span>
+            {callsPendingList.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                {callsPendingList.length} Pending
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setActiveTab('schemes')}
             className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'schemes'
@@ -282,7 +385,7 @@ export const AdminEmployeeDetailPage: React.FC = () => {
             }`}
           >
             <Star className="w-3.5 h-3.5" />
-            <span>Google Reviews ({google_reviews.length})</span>
+            <span>Reviews & Feedback ({google_reviews.length + (customer_feedbacks?.length || 0)})</span>
           </button>
 
           <button
@@ -373,6 +476,185 @@ export const AdminEmployeeDetailPage: React.FC = () => {
           </div>
         )}
 
+        {/* ---------------- TAB: CUSTOMER CALLS (CALLS DONE & PENDING) ---------------- */}
+        {activeTab === 'calls' && (
+          <div className="space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-[#1D1D1B] flex items-center gap-2">
+                  <PhoneCall className="w-4 h-4 text-[#7E22CE]" />
+                  <span>Customer Calling Log (Calls Done & Pending)</span>
+                </h3>
+                <p className="text-xs text-[#5E5A52]">
+                  Live telephonic outreach, customer phone numbers, contact headcounts, and calling statuses.
+                </p>
+              </div>
+
+              {/* Status Filter Buttons */}
+              <div className="flex items-center gap-1.5 bg-[#FAF8F3] p-1 rounded-xl border border-[#E4DFD4]">
+                <button
+                  onClick={() => setCallStatusFilter('all')}
+                  className={`px-3 py-1 text-xs rounded-lg font-bold transition-all ${
+                    callStatusFilter === 'all'
+                      ? 'bg-[#7E22CE] text-white shadow-xs'
+                      : 'text-[#5E5A52] hover:text-[#1D1D1B]'
+                  }`}
+                >
+                  All ({totalCallsCount})
+                </button>
+                <button
+                  onClick={() => setCallStatusFilter('done')}
+                  className={`px-3 py-1 text-xs rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                    callStatusFilter === 'done'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-emerald-700 hover:text-emerald-800'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Calls Done ({callsDoneList.length})
+                </button>
+                <button
+                  onClick={() => setCallStatusFilter('pending')}
+                  className={`px-3 py-1 text-xs rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                    callStatusFilter === 'pending'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-amber-700 hover:text-amber-800'
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  Calls Pending ({callsPendingList.length})
+                </button>
+              </div>
+            </div>
+
+            {/* Quick KPI stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl p-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#5E5A52]">Total Calls Logged</span>
+                <p className="text-lg font-black text-[#1D1D1B] mt-0.5">{totalCallsCount}</p>
+                <p className="text-[10px] text-[#5E5A52] font-semibold">{totalCallsHeadcount} customer contacts</p>
+              </div>
+              <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Calls Done</span>
+                <p className="text-lg font-black text-emerald-700 mt-0.5">{callsDoneList.length}</p>
+                <p className="text-[10px] text-emerald-700 font-semibold">{callsDoneHeadcount} customers reached</p>
+              </div>
+              <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">Calls Pending</span>
+                <p className="text-lg font-black text-amber-700 mt-0.5">{callsPendingList.length}</p>
+                <p className="text-[10px] text-amber-700 font-semibold">{callsPendingHeadcount} awaiting follow-up</p>
+              </div>
+              <div className="bg-purple-50/60 border border-purple-200 rounded-xl p-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-800">Completion Ratio</span>
+                <p className="text-lg font-black text-purple-700 mt-0.5">{callCompletionPct}%</p>
+                <p className="text-[10px] text-purple-700 font-semibold">success rate</p>
+              </div>
+            </div>
+
+            {/* Search toolbar */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-[#8A8479] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search calls by customer name, phone number, purpose, or remarks..."
+                value={callSearchTerm}
+                onChange={(e) => setCallSearchTerm(e.target.value)}
+                className="w-full text-xs font-semibold select-luxury-beige rounded-xl pl-9 pr-3 py-2 border border-[#E4DFD4] bg-white focus:outline-none focus:border-[#7E22CE]"
+              />
+            </div>
+
+            {filteredCalls.length === 0 ? (
+              <EmptyState
+                title="No customer calls found"
+                description={
+                  callSearchTerm || callStatusFilter !== 'all'
+                    ? 'No calls match your active search or filter.'
+                    : 'No customer calls have been logged by this employee yet.'
+                }
+              />
+            ) : (
+              <div className="overflow-x-auto rounded-2xl border border-[#E4DFD4]">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-[#FAF8F3] border-b border-[#E4DFD4] text-[#5E5A52] uppercase font-bold text-[11px]">
+                    <tr>
+                      <th className="px-4 py-3">Call Date & Time</th>
+                      <th className="px-4 py-3">Customer Name</th>
+                      <th className="px-4 py-3">Phone Number</th>
+                      <th className="px-4 py-3 text-center">Customers Count</th>
+                      <th className="px-4 py-3">Call Status</th>
+                      <th className="px-4 py-3">Purpose / Subject</th>
+                      <th className="px-4 py-3">Discussion Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#EBE6DC] font-medium bg-white">
+                    {filteredCalls.map((c) => (
+                      <tr key={c.id} className="hover:bg-[#FAF5FF] transition-colors">
+                        <td className="px-4 py-3 font-mono text-[#5E5A52] whitespace-nowrap">
+                          <div className="font-bold text-[#1D1D1B]">{c.call_date}</div>
+                          {c.call_time && <div className="text-[10px] text-[#8A8479]">{c.call_time}</div>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-bold text-[#1D1D1B]">{c.customer_name}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {c.phone_number ? (
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={`tel:${c.phone_number}`}
+                                className="font-mono text-xs font-semibold text-[#7E22CE] hover:underline flex items-center gap-1"
+                              >
+                                <Phone className="w-3 h-3" />
+                                {c.phone_number}
+                              </a>
+                              <a
+                                href={`https://wa.me/91${c.phone_number.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#25D366]/10 text-[#128C7E] font-bold hover:bg-[#25D366]/20 transition-colors"
+                                title="Chat on WhatsApp"
+                              >
+                                WA
+                              </a>
+                            </div>
+                          ) : (
+                            <span className="text-[#8A8479]">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-flex items-center justify-center min-w-6 px-2 py-0.5 rounded-full bg-[#FAF5FF] text-[#7E22CE] border border-[#D8B4FE] font-black text-xs">
+                            {c.customers_count || 1}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {c.call_status === 'Done' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs shadow-2xs">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              Calls Done
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 font-bold text-xs shadow-2xs">
+                              <Clock className="w-3.5 h-3.5 text-amber-600" />
+                              Calls Pending
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-semibold text-[#1D1D1B] bg-[#FAF8F3] px-2 py-0.5 rounded-md border border-[#E4DFD4] text-[11px]">
+                            {c.purpose || 'General Follow-up'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-[#5E5A52] max-w-xs truncate" title={c.notes || undefined}>
+                          {c.notes || '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ---------------- TAB 2: GOLD SCHEMES ---------------- */}
         {activeTab === 'schemes' && (
           <div className="space-y-4">
@@ -414,29 +696,86 @@ export const AdminEmployeeDetailPage: React.FC = () => {
           </div>
         )}
 
-        {/* ---------------- TAB 3: GOOGLE REVIEWS ---------------- */}
+        {/* ---------------- TAB 3: REVIEWS & FEEDBACK ---------------- */}
         {activeTab === 'reviews' && (
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-[#1D1D1B]">Google Customer Reviews Collected</h3>
-            {google_reviews.length === 0 ? (
-              <EmptyState title="No reviews recorded" description="No verified Google reviews collected by this staff member." />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {google_reviews.map((r) => (
-                  <div key={r.id} className="bg-[#FAF8F3] border border-[#E4DFD4] rounded-2xl p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#1D1D1B] text-xs">{r.customer_name || 'Happy Customer'}</span>
-                      <div className="flex items-center gap-1 text-[#B97855] font-bold text-xs">
-                        <Star className="w-3.5 h-3.5 fill-[#B97855]" />
-                        <span>{r.rating}.0</span>
+          <div className="space-y-6">
+            {/* 1. In-Showroom Direct Customer Feedback */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-[#1D1D1B] flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#23815F]" />
+                <span>Showroom Customer Direct Feedback & Ratings ({customer_feedbacks.length})</span>
+              </h3>
+              {customer_feedbacks.length === 0 ? (
+                <p className="text-xs text-[#8A8479] italic p-4 bg-[#FAF8F3] rounded-2xl border border-[#E4DFD4]">
+                  No direct customer feedback logged for this employee yet. Showroom managers log direct reviews in the Manager Portal.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {customer_feedbacks.map((fb) => (
+                    <div key={fb.id} className="bg-white border-2 border-[#C5E3D5] rounded-2xl p-4 space-y-2 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-[#1D1D1B] text-xs">{fb.customer_name}</span>
+                        <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${
+                                i < fb.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200'
+                              }`}
+                            />
+                          ))}
+                          <span className="text-[#1D1D1B] ml-1">{fb.rating}.0</span>
+                        </div>
                       </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-[#5E5A52]">
+                        <span className="px-2 py-0.5 rounded-full bg-[#FAF6EB] text-[#9A782F] font-bold border border-[#C6A45C]/30 text-[10px]">
+                          {fb.category}
+                        </span>
+                        <span className="font-mono text-[10px] text-[#8A8479]">{fb.feedback_date}</span>
+                      </div>
+
+                      <p className="text-xs text-[#1D1D1B] italic bg-[#FAF8F3] p-2.5 rounded-xl border border-[#E4DFD4]">
+                        "{fb.feedback_text}"
+                      </p>
+
+                      {fb.notes && (
+                        <p className="text-[10px] text-[#5E5A52] italic">
+                          Manager Note: {fb.notes}
+                        </p>
+                      )}
                     </div>
-                    <p className="text-xs text-[#5E5A52] italic">{r.review_text || r.notes || 'Verified Google Review submitted on showroom floor.'}</p>
-                    <p className="text-[10px] text-[#8A8479] font-mono">{r.review_date}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 2. Google Maps Verified Reviews */}
+            <div className="space-y-3 pt-3 border-t border-[#E8E6E1]">
+              <h3 className="text-sm font-bold text-[#1D1D1B] flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <span>Google Maps Public Customer Reviews ({google_reviews.length})</span>
+              </h3>
+              {google_reviews.length === 0 ? (
+                <EmptyState title="No Google reviews recorded" description="No verified Google reviews collected by this staff member." />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {google_reviews.map((r) => (
+                    <div key={r.id} className="bg-[#FAF8F3] border border-[#E4DFD4] rounded-2xl p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[#1D1D1B] text-xs">{r.customer_name || 'Happy Customer'}</span>
+                        <div className="flex items-center gap-1 text-[#B97855] font-bold text-xs">
+                          <Star className="w-3.5 h-3.5 fill-[#B97855]" />
+                          <span>{r.rating}.0</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-[#5E5A52] italic">{r.review_text || r.notes || 'Verified Google Review submitted on showroom floor.'}</p>
+                      <p className="text-[10px] text-[#8A8479] font-mono">{r.review_date}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

@@ -23,10 +23,12 @@ import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { useToast } from '../../../context/ToastContext';
+import { useAdminBranch } from '../../../context/AdminBranchContext';
 import api from '../../../api/client';
 
 export const AdminBranchListPage: React.FC = () => {
   const navigate = useNavigate();
+  const { setSelectedBranchId } = useAdminBranch();
   const { success, error: toastError } = useToast();
 
   const [branches, setBranches] = useState<AdminBranchSummary[]>([]);
@@ -156,12 +158,20 @@ export const AdminBranchListPage: React.FC = () => {
               </div>
 
               {/* Manager Badges */}
-              <div className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4] space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] font-bold text-[#8A8479]">
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/admin/managers');
+                }}
+                className="p-3 rounded-2xl bg-[#FAF8F3] hover:bg-[#F3E8FF] border border-[#E4DFD4] hover:border-[#D8B4FE] space-y-1.5 transition-colors cursor-pointer group/mgr"
+                title="Manage Showroom Managers"
+              >
+                <div className="flex items-center justify-between text-[11px] font-bold text-[#8A8479] group-hover/mgr:text-[#7E22CE]">
                   <span className="flex items-center gap-1">
                     <Shield className="w-3 h-3 text-[#7E22CE]" />
                     <span>Assigned Managers ({b.managers.length})</span>
                   </span>
+                  <span className="text-[10px] text-[#7E22CE] font-bold">Manage →</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {b.managers.map((m) => (
@@ -177,10 +187,18 @@ export const AdminBranchListPage: React.FC = () => {
 
               {/* Key Metrics Grid */}
               <div className="grid grid-cols-2 gap-2.5 pt-2">
-                <div className="p-2.5 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-center">
-                  <span className="text-[10px] font-bold text-[#8A8479] uppercase block">Staff Floor</span>
-                  <span className="text-sm font-extrabold text-[#1D1D1B]">
-                    {b.active_employee_count} / {b.employee_count}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedBranchId(b.id);
+                    navigate('/admin/employees');
+                  }}
+                  className="p-2.5 rounded-xl bg-[#FAF8F3] hover:bg-[#F3E8FF] border border-[#E4DFD4] hover:border-[#D8B4FE] text-center cursor-pointer transition-colors shadow-2xs group/sf"
+                  title="View Showroom Staff Roster"
+                >
+                  <span className="text-[10px] font-bold text-[#8A8479] group-hover/sf:text-[#7E22CE] uppercase block">Staff Floor</span>
+                  <span className="text-sm font-extrabold text-[#1D1D1B] group-hover/sf:text-[#7E22CE]">
+                    {b.active_employee_count} / {b.employee_count} →
                   </span>
                 </div>
 

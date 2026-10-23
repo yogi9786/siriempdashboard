@@ -32,6 +32,7 @@ import { EmptyState } from '../../../components/ui/EmptyState';
 import { Button } from '../../../components/ui/Button';
 import { useAdminBranch } from '../../../context/AdminBranchContext';
 import { useToast } from '../../../context/ToastContext';
+import { SCHEMES } from '../../../constants/schemes';
 import api from '../../../api/client';
 
 // ----------------------------------------------------
@@ -50,6 +51,7 @@ interface AdminOutdoorCustomer {
   dob?: string;
   anniversary_date?: string;
   is_converted: boolean;
+  interested_in?: string;
   has_google_review: boolean;
   google_review_rating?: number;
   google_review_text?: string;
@@ -128,6 +130,7 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
   const [branchFilter, setBranchFilter] = useState<string>(selectedBranchId?.toString() || 'all');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [schemeFilter, setSchemeFilter] = useState<string>('all');
 
   // Modals
   const [viewDetailDuty, setViewDetailDuty] = useState<AdminOutdoorDuty | null>(null);
@@ -219,6 +222,7 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
 
   // Filtered lists
   const filteredCustomers = customers.filter((c) => {
+    if (schemeFilter !== 'all' && c.scheme_name !== schemeFilter) return false;
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
     return (
@@ -232,6 +236,7 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
   });
 
   const filteredDuties = duties.filter((d) => {
+    if (schemeFilter !== 'all' && d.scheme_name !== schemeFilter) return false;
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
     return (
@@ -286,6 +291,23 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
               {branches.map((b) => (
                 <option key={b.id} value={b.id.toString()}>
                   {b.name} Showroom
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Scheme Filter */}
+          <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-[#E4DFD4] shadow-2xs">
+            <Award className="w-4 h-4 text-[#9A782F] ml-1.5" />
+            <select
+              value={schemeFilter}
+              onChange={(e) => setSchemeFilter(e.target.value)}
+              className="bg-transparent text-xs font-bold text-[#9A782F] pr-2 focus:outline-none cursor-pointer"
+            >
+              <option value="all">All 3 Schemes</option>
+              {SCHEMES.map((sch) => (
+                <option key={sch} value={sch}>
+                  {sch}
                 </option>
               ))}
             </select>
@@ -516,11 +538,11 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
                           <div className="grid grid-cols-3 gap-2 text-center text-xs">
                             <div className="p-1.5 rounded-lg bg-[#E8F4EE]">
                               <span className="text-[9px] font-bold text-[#5E5A52] block">Attended</span>
-                              <span className="font-extrabold text-[#21845F]">{duty.customers_attended_count}</span>
+                              <span className="font-extrabold text-[#21845F]">{duty.customers_attended_count || duty.customers.length}</span>
                             </div>
                             <div className="p-1.5 rounded-lg bg-[#FAF6EB]">
-                              <span className="text-[9px] font-bold text-[#5E5A52] block">Converted</span>
-                              <span className="font-extrabold text-[#9A782F]">{duty.converted_customers_count}</span>
+                              <span className="text-[9px] font-bold text-[#5E5A52] block">Interested</span>
+                              <span className="font-extrabold text-[#9A782F]">{duty.customers.filter((c) => c.interested_in && c.interested_in.trim() !== '').length}</span>
                             </div>
                             <div className="p-1.5 rounded-lg bg-amber-50">
                               <span className="text-[9px] font-bold text-amber-800 block">Google ⭐</span>
@@ -584,7 +606,8 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
                       <th className="px-4 py-3.5">Google Review</th>
                       <th className="px-4 py-3.5">Staff Rep</th>
                       <th className="px-4 py-3.5">Area & Scheme</th>
-                      <th className="px-4 py-3.5">Status</th>
+                      <th className="px-4 py-3.5">Interested In</th>
+                      <th className="px-4 py-3.5">Notes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#EBE6DC] font-medium">
@@ -646,16 +669,22 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
                             <div className="text-[10px] text-[#9A782F] font-semibold truncate">{cust.scheme_name || 'Scheme'}</div>
                           </td>
                           <td className="px-4 py-3.5">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                cust.is_converted
-                                  ? 'bg-[#FAF6EB] text-[#9A782F] border border-[#C6A45C]/30'
-                                  : 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
-                              }`}
-                            >
-                              {cust.is_converted ? '🏆 Converted' : '👥 Attended'}
-                            </span>
+                            {cust.interested_in ? (
+                              <div className="flex flex-wrap gap-1">
+                                {cust.interested_in.split(',').map((item, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF6EB] text-[#9A782F] border border-[#C6A45C]/30"
+                                  >
+                                    {item.trim() === 'Gold' ? '🟡 Gold' : item.trim() === 'Diamond' ? '💎 Diamond' : item.trim() === 'Silver' ? '⚪ Silver' : item.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-[#8A8479] text-[11px]">—</span>
+                            )}
                           </td>
+                          <td className="px-4 py-3.5 text-[#5E5A52] text-[11px] max-w-xs">{cust.notes || '—'}</td>
                         </tr>
                       ))
                     )}
@@ -914,15 +943,22 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
                           <span className="text-xs font-extrabold text-[#1D1D1B]">
                             {cust.customer_name}
                           </span>
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              cust.is_converted
-                                ? 'bg-amber-100 text-[#9A782F] border border-[#C6A45C]/30'
-                                : 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
-                            }`}
-                          >
-                            {cust.is_converted ? '🏆 Converted' : '👥 Attended'}
-                          </span>
+                          {cust.interested_in ? (
+                            <div className="flex flex-wrap gap-1">
+                              {cust.interested_in.split(',').map((item, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-[#9A782F] border border-[#C6A45C]/30"
+                                >
+                                  {item.trim() === 'Gold' ? '🟡 Gold' : item.trim() === 'Diamond' ? '💎 Diamond' : item.trim() === 'Silver' ? '⚪ Silver' : item.trim()}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]">
+                              Attended
+                            </span>
+                          )}
                         </div>
 
                         <div className="text-xs text-[#5E5A52] font-mono flex items-center gap-1.5">

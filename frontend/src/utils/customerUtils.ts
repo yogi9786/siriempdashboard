@@ -29,6 +29,18 @@ export const parseCustomerBreakdown = (
           status: item.status || defaultStatus || 'Walkin',
           product_value: item.product_value !== undefined && item.product_value !== null ? item.product_value : '',
           notes: item.notes || '',
+          // Schemes Closed
+          has_scheme: Boolean(item.has_scheme || item.scheme_name),
+          scheme_name: item.scheme_name || '',
+          scheme_amount: item.scheme_amount !== undefined && item.scheme_amount !== null ? item.scheme_amount : '',
+          // Google Reviews
+          has_google_review: Boolean(item.has_google_review || item.google_review_text),
+          google_review_rating: item.google_review_rating ? Number(item.google_review_rating) : 5,
+          google_review_text: item.google_review_text || '',
+          // Customer Direct Feedback
+          has_customer_feedback: Boolean(item.has_customer_feedback || item.feedback_text),
+          feedback_rating: item.feedback_rating ? Number(item.feedback_rating) : 5,
+          feedback_text: item.feedback_text || '',
         }));
       }
     } catch {
@@ -50,6 +62,15 @@ export const parseCustomerBreakdown = (
             status: st || defaultStatus || 'Walkin',
             product_value: idx === 0 && fallbackVal ? fallbackVal : '',
             notes: '',
+            has_scheme: false,
+            scheme_name: '',
+            scheme_amount: '',
+            has_google_review: false,
+            google_review_rating: 5,
+            google_review_text: '',
+            has_customer_feedback: false,
+            feedback_rating: 5,
+            feedback_text: '',
           };
         });
       }
@@ -66,6 +87,15 @@ export const parseCustomerBreakdown = (
     status: defaultStatus || 'Walkin',
     product_value: i === 0 && fallbackVal ? fallbackVal : '',
     notes: '',
+    has_scheme: false,
+    scheme_name: '',
+    scheme_amount: '',
+    has_google_review: false,
+    google_review_rating: 5,
+    google_review_text: '',
+    has_customer_feedback: false,
+    feedback_rating: 5,
+    feedback_text: '',
   }));
 };
 
@@ -90,6 +120,12 @@ export const exportCustomerActivitiesToCSV = (
       'Anniversary Date',
       'Status / Outcome',
       'Product Value (INR)',
+      'Scheme Closed?',
+      'Scheme Name',
+      'Scheme Amount (INR)',
+      'Google Review Rating',
+      'Google Review Feedback',
+      'Customer Feedback Rating',
       'Customer Notes',
       'Overall Activity Notes',
     ],
@@ -122,6 +158,12 @@ export const exportCustomerActivitiesToCSV = (
         act.anniversary || '',
         act.status || 'Walkin',
         (act.product_value || 0).toString(),
+        'No',
+        '',
+        '',
+        '',
+        '',
+        '',
         '',
         act.notes || '',
       ]);
@@ -140,6 +182,12 @@ export const exportCustomerActivitiesToCSV = (
           item.anniversary || (idx === 0 ? act.anniversary || '' : ''),
           item.status || act.status || 'Walkin',
           (item.product_value !== '' && item.product_value !== undefined ? item.product_value : idx === 0 ? act.product_value || 0 : 0).toString(),
+          item.has_scheme ? 'Yes' : 'No',
+          item.scheme_name || '',
+          item.scheme_amount ? item.scheme_amount.toString() : '',
+          item.has_google_review ? `${item.google_review_rating || 5} Stars` : '',
+          item.google_review_text || '',
+          item.has_customer_feedback ? `${item.feedback_rating || 5} Stars` : '',
           item.notes || '',
           idx === 0 ? act.notes || '' : '',
         ]);

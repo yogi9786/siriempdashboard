@@ -74,6 +74,7 @@ class OutdoorMarketingCustomer(Base):
     google_review_rating = Column(Integer, default=5, nullable=True)
     google_review_text = Column(Text, nullable=True)
     status = Column(String(50), default="Lead", nullable=False)  # Lead, Contacted, Interested, Converted, Closed, Lost
+    interested_in = Column(String(100), default="", nullable=True)  # Gold, Diamond, Silver
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utcnow, nullable=False)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)

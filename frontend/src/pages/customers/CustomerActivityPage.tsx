@@ -22,6 +22,9 @@ import {
   RotateCcw,
   Building2,
   FileText,
+  Award,
+  Star,
+  MessageSquareHeart,
 } from 'lucide-react';
 import { CustomerActivity, Employee } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -50,6 +53,8 @@ export const CustomerActivityPage: React.FC = () => {
   const [selectedEmpFilter, setSelectedEmpFilter] = useState<string>('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
 
   // Modals
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
@@ -61,8 +66,15 @@ export const CustomerActivityPage: React.FC = () => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
+      const params: Record<string, any> = {};
+      if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom') {
+        params.date_filter = dateFilter;
+      }
+      if (fromDate) params.from_date = fromDate;
+      if (toDate) params.to_date = toDate;
+
       const [actRes, empRes] = await Promise.all([
-        api.get<CustomerActivity[]>('/api/v1/customers'),
+        api.get<CustomerActivity[]>('/api/v1/customers', { params }),
         api.get<Employee[]>('/api/v1/employees'),
       ]);
       setActivities(actRes.data);
@@ -77,20 +89,24 @@ export const CustomerActivityPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [dateFilter, fromDate, toDate]);
 
   const handleClearFilters = () => {
     setSearchTerm('');
     setSelectedEmpFilter('all');
     setSelectedStatusFilter('all');
     setDateFilter('all');
+    setFromDate('');
+    setToDate('');
   };
 
   const hasActiveFilters =
     searchTerm.trim() !== '' ||
     selectedEmpFilter !== 'all' ||
     selectedStatusFilter !== 'all' ||
-    dateFilter !== 'all';
+    dateFilter !== 'all' ||
+    fromDate !== '' ||
+    toDate !== '';
 
   // Filtered Activities
   const filteredActivities = activities.filter((act) => {
@@ -118,22 +134,32 @@ export const CustomerActivityPage: React.FC = () => {
 
     // 3. Date filter
     if (dateFilter !== 'all') {
-      const today = new Date().toISOString().split('T')[0];
-      if (dateFilter === 'today' && act.activity_date !== today) {
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const yest = new Date(today);
+      yest.setDate(yest.getDate() - 1);
+      const yestStr = yest.toISOString().split('T')[0];
+
+      if (dateFilter === 'today' && act.activity_date !== todayStr) {
+        return false;
+      }
+      if (dateFilter === 'yesterday' && act.activity_date !== yestStr) {
         return false;
       }
       if (dateFilter === 'this_week') {
         const d = new Date(act.activity_date);
-        const now = new Date();
-        const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 3600 * 24));
+        const diffDays = Math.floor((today.getTime() - d.getTime()) / (1000 * 3600 * 24));
         if (diffDays > 7 || diffDays < 0) return false;
       }
       if (dateFilter === 'this_month') {
         const d = new Date(act.activity_date);
-        const now = new Date();
-        if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) {
+        if (d.getMonth() !== today.getMonth() || d.getFullYear() !== today.getFullYear()) {
           return false;
         }
+      }
+      if (dateFilter === 'custom') {
+        if (fromDate && act.activity_date < fromDate) return false;
+        if (toDate && act.activity_date > toDate) return false;
       }
     }
 
@@ -434,9 +460,32 @@ export const CustomerActivityPage: React.FC = () => {
           >
             <option value="all">All Dates</option>
             <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
             <option value="this_week">This Week</option>
             <option value="this_month">This Month</option>
+            <option value="custom">Custom Date Range</option>
           </select>
+
+          {/* Custom Date Inputs when Custom is selected */}
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-1.5 w-full sm:w-auto">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                title="From Date"
+                className="w-full sm:w-auto px-2.5 py-2 input-luxury-beige rounded-xl text-xs font-medium cursor-pointer"
+              />
+              <span className="text-xs text-[#8A8479] font-bold">to</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                title="To Date"
+                className="w-full sm:w-auto px-2.5 py-2 input-luxury-beige rounded-xl text-xs font-medium cursor-pointer"
+              />
+            </div>
+          )}
 
           {/* Quick Refresh / Fetch Data Button */}
           <button
@@ -598,6 +647,28 @@ export const CustomerActivityPage: React.FC = () => {
                               {item.status}
                             </span>
                           </div>
+                          {(item.has_scheme || item.has_google_review || item.has_customer_feedback) && (
+                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                              {item.has_scheme && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+                                  <Award className="w-3 h-3 text-[#D97706]" />
+                                  <span>{item.scheme_name || 'Scheme Closed'}{item.scheme_amount ? ` (₹${item.scheme_amount})` : ''}</span>
+                                </span>
+                              )}
+                              {item.has_google_review && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]">
+                                  <Star className="w-3 h-3 fill-[#F59E0B] text-[#F59E0B]" />
+                                  <span>{item.google_review_rating || 5}★ Review</span>
+                                </span>
+                              )}
+                              {item.has_customer_feedback && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCFCE7] text-[#166534] border border-[#86EFAC]">
+                                  <MessageSquareHeart className="w-3 h-3 text-[#166534]" />
+                                  <span>{item.feedback_rating || 5}★ Feedback</span>
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {item.notes && (
                             <p className="text-[11px] text-[#525252] italic">
                               "{item.notes}"
@@ -680,6 +751,40 @@ export const CustomerActivityPage: React.FC = () => {
                             </a>
                           ) : (
                             <span className="text-[11px] text-[#8A8479]">No phone provided</span>
+                          )}
+                          {customerItems.some((i) => i.has_scheme || i.scheme_name) && (
+                            <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                              {customerItems
+                                .filter((i) => i.has_scheme || i.scheme_name)
+                                .map((s, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]"
+                                  >
+                                    <Award className="w-2.5 h-2.5 text-[#D97706]" />
+                                    <span>
+                                      {s.scheme_name || 'Scheme Closed'}
+                                      {s.scheme_amount ? ` (₹${Number(s.scheme_amount).toLocaleString('en-IN')})` : ''}
+                                    </span>
+                                  </span>
+                                ))}
+                            </div>
+                          )}
+                          {customerItems.some((i) => i.has_google_review || i.google_review_text) && (
+                            <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                              {customerItems
+                                .filter((i) => i.has_google_review || i.google_review_text)
+                                .map((r, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]"
+                                    title={r.google_review_text || undefined}
+                                  >
+                                    <Star className="w-2.5 h-2.5 fill-[#F59E0B] text-[#F59E0B]" />
+                                    <span>{r.google_review_rating || 5}★ Review</span>
+                                  </span>
+                                ))}
+                            </div>
                           )}
                         </div>
                       </td>

@@ -220,6 +220,7 @@ def format_duty_response(d: OutdoorMarketingDuty) -> OutdoorDutyResponse:
                 google_review_rating=c.google_review_rating or 5,
                 google_review_text=c.google_review_text,
                 status=c.status,
+                interested_in=getattr(c, "interested_in", None),
                 notes=c.notes,
                 created_at=c.created_at,
                 updated_at=c.updated_at,
@@ -397,6 +398,7 @@ def update_outdoor_duty(
                 google_review_rating=c.google_review_rating or 5,
                 google_review_text=c.google_review_text,
                 status="Converted" if c.is_converted else "Contacted",
+                interested_in=c.interested_in,
                 notes=c.notes,
             )
             db.add(new_cust)
@@ -558,8 +560,13 @@ def export_outdoor_customers_csv(
 @router.get("/customers", response_model=List[OutdoorCustomerResponse], summary="List outdoor customer leads")
 def list_outdoor_customers(
     employee_id: Optional[int] = Query(None, description="Filter by marketing employee"),
-    status: Optional[str] = Query(None, description="Filter by status: Lead, Contacted, Interested, Closed, Lost"),
-    search: Optional[str] = Query(None, description="Search customer name, area, or phone"),
+    status: Optional[str] = Query(None, description="Filter by status: Lead, Contacted, Interested, Converted, Closed, Lost"),
+    area: Optional[str] = Query(None, description="Filter by campaign area"),
+    scheme_name: Optional[str] = Query(None, description="Filter by scheme name"),
+    date_filter: Optional[date] = Query(None, description="Filter by specific date"),
+    from_date: Optional[date] = Query(None, description="Filter from date"),
+    to_date: Optional[date] = Query(None, description="Filter to date"),
+    search: Optional[str] = Query(None, description="Search customer name, area, phone, or employee"),
     current_user: User = Depends(get_current_manager),
     db: Session = Depends(get_db),
 ):
@@ -574,8 +581,23 @@ def list_outdoor_customers(
     if employee_id:
         query = query.filter(OutdoorMarketingCustomer.marketing_employee_id == employee_id)
 
-    if status:
+    if status and status != "all":
         query = query.filter(OutdoorMarketingCustomer.status == status)
+
+    if area and area != "all":
+        query = query.filter(OutdoorMarketingCustomer.area_name == area)
+
+    if scheme_name and scheme_name != "all":
+        query = query.filter(OutdoorMarketingCustomer.scheme_name == scheme_name)
+
+    if date_filter:
+        query = query.filter(OutdoorMarketingCustomer.date == date_filter)
+
+    if from_date:
+        query = query.filter(OutdoorMarketingCustomer.date >= from_date)
+
+    if to_date:
+        query = query.filter(OutdoorMarketingCustomer.date <= to_date)
 
     if search:
         term = f"%{search.strip()}%"
@@ -585,6 +607,9 @@ def list_outdoor_customers(
                 OutdoorMarketingCustomer.phone.ilike(term),
                 OutdoorMarketingCustomer.area_name.ilike(term),
                 OutdoorMarketingCustomer.scheme_name.ilike(term),
+                OutdoorMarketingCustomer.notes.ilike(term),
+                Employee.full_name.ilike(term),
+                Employee.employee_code.ilike(term),
             )
         )
 
@@ -592,18 +617,28 @@ def list_outdoor_customers(
 
     result = []
     for r in records:
-        emp_name = r.marketing_employee.full_name if r.marketing_employee else None
+        emp = r.marketing_employee
         res_item = OutdoorCustomerResponse(
             id=r.id,
             branch_id=r.branch_id,
             marketing_employee_id=r.marketing_employee_id,
-            marketing_employee_name=emp_name,
+            marketing_employee_name=emp.full_name if emp else None,
+            marketing_employee_code=emp.employee_code if emp else None,
+            marketing_employee_designation=emp.designation if emp else None,
+            duty_id=r.duty_id,
             customer_name=r.customer_name,
             phone=r.phone,
+            dob=r.dob,
+            anniversary_date=r.anniversary_date,
             area_name=r.area_name,
             scheme_name=r.scheme_name,
             date=r.date,
+            is_converted=r.is_converted or (r.status == "Converted"),
+            has_google_review=r.has_google_review,
+            google_review_rating=r.google_review_rating,
+            google_review_text=r.google_review_text,
             status=r.status,
+            interested_in=r.interested_in,
             notes=r.notes,
             created_at=r.created_at,
             updated_at=r.updated_at,
@@ -639,6 +674,7 @@ def create_outdoor_customer(
         scheme_name=customer_data.scheme_name.strip() if customer_data.scheme_name else None,
         date=customer_data.date or date.today(),
         status=customer_data.status or "Lead",
+        interested_in=customer_data.interested_in,
         notes=customer_data.notes,
     )
     try:
@@ -663,6 +699,7 @@ def create_outdoor_customer(
         scheme_name=record.scheme_name,
         date=record.date,
         status=record.status,
+        interested_in=record.interested_in,
         notes=record.notes,
         created_at=record.created_at,
         updated_at=record.updated_at,

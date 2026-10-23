@@ -20,6 +20,8 @@ import { GoogleReviewsPage } from '../pages/reviews/GoogleReviewsPage';
 import { AttirePage } from '../pages/attire/AttirePage';
 import { OutdoorMarketingPage } from '../pages/outdoor/OutdoorMarketingPage';
 import { AccountSettingsPage } from '../pages/account/AccountSettingsPage';
+import { ShowroomCustomerLogPage } from '../pages/customers/ShowroomCustomerLogPage';
+import { OutdoorCustomerLeadsPage } from '../pages/outdoor/OutdoorCustomerLeadsPage';
 
 // Super Admin Enterprise Module Pages
 import { AdminDashboardPage } from '../pages/admin/dashboard/AdminDashboardPage';
@@ -53,15 +55,18 @@ export const AppRoutes: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/customer-logs" element={<ShowroomCustomerLogPage />} />
           <Route path="/customers" element={<CustomerActivityPage />} />
-          <Route path="/customer-activity" element={<Navigate to="/customers" replace />} />
+          <Route path="/customer-activity" element={<Navigate to="/customer-logs" replace />} />
           <Route path="/employees" element={<EmployeeListPage />} />
           <Route path="/employees/add" element={<EmployeeAddPage />} />
           <Route path="/employees/:id" element={<EmployeeDetailPage />} />
+          <Route path="/attendance" element={<Navigate to="/dashboard" replace />} />
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/google-reviews" element={<GoogleReviewsPage />} />
           <Route path="/outdoor-marketing" element={<OutdoorMarketingPage />} />
           <Route path="/outdoor-marketing/daily" element={<OutdoorMarketingPage />} />
+          <Route path="/outdoor-customers" element={<OutdoorCustomerLeadsPage />} />
           <Route path="/account" element={<AccountSettingsPage />} />
 
           <Route path="/profile" element={<Navigate to="/account" replace />} />
@@ -77,11 +82,14 @@ export const AppRoutes: React.FC = () => {
           <Route path="/admin/managers" element={<AdminManagerPage />} />
           <Route path="/admin/employees" element={<AdminEmployeeListPage />} />
           <Route path="/admin/employees/:id" element={<AdminEmployeeDetailPage />} />
+          <Route path="/admin/attendance" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/performance" element={<AdminPerformancePage />} />
           <Route path="/admin/customers" element={<AdminCustomerPage />} />
           <Route path="/admin/customer-activities" element={<AdminCustomerActivitiesPage />} />
+          <Route path="/admin/customer-logs" element={<ShowroomCustomerLogPage />} />
           <Route path="/admin/gold-schemes" element={<AdminGoldSchemesPage />} />
           <Route path="/admin/outdoor-marketing" element={<AdminOutdoorMarketingPage />} />
+          <Route path="/admin/outdoor-customers" element={<OutdoorCustomerLeadsPage />} />
           <Route path="/admin/google-reviews" element={<AdminGoogleReviewsPage />} />
           <Route path="/admin/attire" element={<AdminAttirePage />} />
           <Route path="/admin/gallery" element={<AdminGalleryPage />} />

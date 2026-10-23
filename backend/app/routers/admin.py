@@ -18,7 +18,9 @@ from backend.app.models.activity import (
     EmployeeFormMedia,
     GoogleReview,
     AttireRecord,
+    EmployeeCallLog,
 )
+from backend.app.models.feedback import CustomerFeedback
 from backend.app.models.outdoor_marketing import (
     OutdoorMarketingArea,
     OutdoorMarketingDuty,
@@ -1435,16 +1437,64 @@ def get_admin_employee_detail(
         for os in outdoor_sch
     ]
 
+    feedbacks = (
+        db.query(CustomerFeedback)
+        .filter(CustomerFeedback.employee_id == emp.id)
+        .order_by(CustomerFeedback.feedback_date.desc(), CustomerFeedback.id.desc())
+        .all()
+    )
+    feedback_list = [
+        {
+            "id": fb.id,
+            "customer_name": fb.customer_name,
+            "customer_phone": fb.customer_phone,
+            "feedback_date": fb.feedback_date.strftime("%Y-%m-%d"),
+            "rating": fb.rating,
+            "category": fb.category,
+            "feedback_text": fb.feedback_text,
+            "notes": fb.notes,
+            "status": fb.status,
+        }
+        for fb in feedbacks
+    ]
+
+    calls_data = db.query(EmployeeCallLog).filter(EmployeeCallLog.employee_id == emp.id).order_by(EmployeeCallLog.call_date.desc(), EmployeeCallLog.id.desc()).all()
+    calls_done = sum(1 for c in calls_data if c.call_status == "Done")
+    calls_pending = sum(1 for c in calls_data if c.call_status == "Pending")
+    calls_list = [
+        {
+            "id": c.id,
+            "branch_id": c.branch_id,
+            "employee_id": c.employee_id,
+            "employee_name": emp.full_name,
+            "customer_name": c.customer_name,
+            "phone_number": c.phone_number,
+            "customers_count": c.customers_count or 1,
+            "call_status": c.call_status,
+            "call_date": c.call_date.strftime("%Y-%m-%d") if c.call_date else "",
+            "call_time": c.call_time,
+            "purpose": c.purpose,
+            "notes": c.notes,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+            "updated_at": c.updated_at.isoformat() if c.updated_at else None,
+        }
+        for c in calls_data
+    ]
+
     return AdminEmployeeDetailResponse(
         employee=emp_resp,
         customer_activities=cust_list,
         schemes=sch_list,
         google_reviews=rev_list,
+        customer_feedbacks=feedback_list,
         attire_records=att_list,
         gallery_media=media_list,
         outdoor_areas=out_areas_list,
         outdoor_customers=out_cust_list,
         outdoor_schemes=out_sch_list,
+        calls=calls_list,
+        calls_done_count=calls_done,
+        calls_pending_count=calls_pending,
     )
 
 
@@ -1654,9 +1704,14 @@ def list_admin_customer_activities(
     branch_id: Optional[int] = Query(None),
     employee_id: Optional[int] = Query(None),
     status_val: Optional[str] = Query(None, alias="status"),
+    from_date: Optional[date] = Query(None),
+    to_date: Optional[date] = Query(None),
+    date_filter: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
     db: Session = Depends(get_db),
 ):
+    from datetime import timedelta
     q = db.query(CustomerActivity)
     if branch_id:
         q = q.filter(CustomerActivity.branch_id == branch_id)
@@ -1664,6 +1719,33 @@ def list_admin_customer_activities(
         q = q.filter(CustomerActivity.employee_id == employee_id)
     if status_val and status_val != "all":
         q = q.filter(CustomerActivity.status == status_val)
+
+    # Date filter presets
+    today_dt = date.today()
+    if date_filter == "today":
+        q = q.filter(CustomerActivity.activity_date == today_dt)
+    elif date_filter == "yesterday":
+        q = q.filter(CustomerActivity.activity_date == today_dt - timedelta(days=1))
+    elif date_filter == "this_week":
+        q = q.filter(CustomerActivity.activity_date >= today_dt - timedelta(days=7))
+    elif date_filter == "this_month":
+        q = q.filter(CustomerActivity.activity_date >= today_dt.replace(day=1))
+
+    # Explicit custom date range
+    if from_date:
+        q = q.filter(CustomerActivity.activity_date >= from_date)
+    if to_date:
+        q = q.filter(CustomerActivity.activity_date <= to_date)
+
+    if search:
+        s = f"%{search.strip().lower()}%"
+        q = q.filter(
+            or_(
+                func.lower(CustomerActivity.customer_name).like(s),
+                func.lower(CustomerActivity.phone_number).like(s),
+                func.lower(CustomerActivity.notes).like(s),
+            )
+        )
 
     activities = q.order_by(CustomerActivity.activity_date.desc(), CustomerActivity.id.desc()).all()
     results = []
@@ -1702,12 +1784,25 @@ def list_admin_customer_activities(
 @router.get("/gold-schemes", summary="Organization-wide gold schemes analytics")
 def get_admin_gold_schemes(
     branch_id: Optional[int] = Query(None),
+    scheme_name: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
     db: Session = Depends(get_db),
 ):
     q = db.query(SchemeRecord)
     if branch_id:
         q = q.filter(SchemeRecord.branch_id == branch_id)
+    if scheme_name and scheme_name.strip() and scheme_name != "all":
+        q = q.filter(SchemeRecord.scheme_name == scheme_name.strip())
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        q = q.filter(
+            or_(
+                SchemeRecord.customer_name.ilike(term),
+                SchemeRecord.scheme_name.ilike(term),
+                SchemeRecord.notes.ilike(term),
+            )
+        )
 
     all_schemes = q.order_by(SchemeRecord.record_date.desc(), SchemeRecord.id.desc()).all()
     total_count = sum(s.customers_count or 1 for s in all_schemes)

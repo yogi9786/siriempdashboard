@@ -72,9 +72,11 @@ def auto_migrate_db_schema():
     # Import all models to ensure metadata is populated
     from backend.app.models.branch import Branch, User
     from backend.app.models.employee import Employee
-    from backend.app.models.activity import CustomerActivity, SchemeRecord, EmployeeFormMedia, GoogleReview, AttireRecord
+    from backend.app.models.activity import CustomerActivity, SchemeRecord, EmployeeFormMedia, GoogleReview, AttireRecord, EmployeeCallLog
     from backend.app.models.outdoor_marketing import OutdoorMarketingArea, OutdoorMarketingDuty, OutdoorMarketingCustomer, OutdoorMarketingScheme, OutdoorMarketingActivity
     from backend.app.models.audit import AuditLog
+    from backend.app.models.attendance import EmployeeAttendance
+    from backend.app.models.feedback import CustomerFeedback
 
     Base.metadata.create_all(bind=engine)
     inspector = inspect(engine)

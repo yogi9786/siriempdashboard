@@ -38,4 +38,6 @@ class Employee(Base):
     outdoor_activities = relationship("OutdoorMarketingActivity", back_populates="employee", cascade="all, delete-orphan")
     outdoor_schemes = relationship("OutdoorMarketingScheme", back_populates="employee", cascade="all, delete-orphan")
     outdoor_duties = relationship("OutdoorMarketingDuty", back_populates="employee", cascade="all, delete-orphan")
+    call_logs = relationship("EmployeeCallLog", back_populates="employee", cascade="all, delete-orphan")
+
 

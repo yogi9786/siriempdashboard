@@ -23,16 +23,33 @@ import api from '../../../api/client';
 
 export const AdminEmployeeListPage: React.FC = () => {
   const navigate = useNavigate();
-  const { branches } = useAdminBranch();
+  const { branches, selectedBranchId, setSelectedBranchId } = useAdminBranch();
   const { error: toastError } = useToast();
 
   const [employees, setEmployees] = useState<AdminEmployee[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [branchFilter, setBranchFilter] = useState<string>('all');
+  const [branchFilter, setBranchFilter] = useState<string>(selectedBranchId?.toString() || 'all');
   const [deptFilter, setDeptFilter] = useState<string>('all');
   const [outdoorFilter, setOutdoorFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  useEffect(() => {
+    if (selectedBranchId !== null) {
+      setBranchFilter(selectedBranchId.toString());
+    } else {
+      setBranchFilter('all');
+    }
+  }, [selectedBranchId]);
+
+  const handleBranchChange = (newVal: string) => {
+    setBranchFilter(newVal);
+    if (newVal === 'all') {
+      setSelectedBranchId(null);
+    } else {
+      setSelectedBranchId(parseInt(newVal));
+    }
+  };
 
   const fetchEmployees = async () => {
     try {
@@ -99,7 +116,7 @@ export const AdminEmployeeListPage: React.FC = () => {
         <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto">
           <select
             value={branchFilter}
-            onChange={(e) => setBranchFilter(e.target.value)}
+            onChange={(e) => handleBranchChange(e.target.value)}
             className="px-3 py-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs font-bold text-[#1D1D1B] focus:outline-none cursor-pointer"
           >
             <option value="all">All Branches</option>
@@ -200,9 +217,30 @@ export const AdminEmployeeListPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className="px-2.5 py-1 rounded-full bg-[#FAF8F3] border border-[#D8B4FE] text-[#7E22CE] font-bold text-[10px]">
-                        {emp.branch_name}
-                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedBranchId(emp.branch_id);
+                          navigate(`/admin/branches/${emp.branch_id}`);
+                        }}
+                        className="px-2.5 py-1 rounded-full bg-[#FAF8F3] hover:bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] font-bold text-[10px] inline-flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                        title="View Showroom Command Profile"
+                      >
+                        <Building2 className="w-3 h-3 text-[#7E22CE]" />
+                        <span>{emp.branch_name}</span>
+                      </button>
+                      {emp.manager_name && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/admin/managers');
+                          }}
+                          className="block text-[10px] text-[#8A8479] hover:text-[#7E22CE] hover:underline mt-1 cursor-pointer truncate max-w-[120px]"
+                          title="Manage Showroom Manager"
+                        >
+                          Mgr: {emp.manager_name}
+                        </button>
+                      )}
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="font-bold text-[#1D1D1B] block">{emp.designation}</span>

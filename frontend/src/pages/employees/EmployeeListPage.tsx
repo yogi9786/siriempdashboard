@@ -142,13 +142,13 @@ export const EmployeeListPage: React.FC = () => {
                 <span>Showroom Employees Directory</span>
               </h1>
               <p className="text-xs sm:text-sm text-[#536B8A] font-medium mt-1 max-w-2xl">
-                Manage showroom workforce, attendance rosters, sales floor assignments, and field marketing representatives for <span className="font-bold text-[#1D1D1B] underline decoration-[#536B8A]/40 underline-offset-2">{selectedBranch?.name || 'Showroom'}</span>
+                Manage showroom workforce, sales floor assignments, and field marketing representatives for <span className="font-bold text-[#1D1D1B] underline decoration-[#536B8A]/40 underline-offset-2">{selectedBranch?.name || 'Showroom'}</span>
               </p>
             </div>
           </div>
 
-          {/* Quick Action: Add Employee in Slate Blue */}
-          <div className="flex items-center gap-3 self-start md:self-auto shrink-0">
+          {/* Quick Actions: Add Employee */}
+          <div className="flex items-center gap-3 self-start md:self-auto shrink-0 flex-wrap">
             <button
               onClick={() => navigate('/employees/add')}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#536B8A] hover:bg-[#40546D] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02]"

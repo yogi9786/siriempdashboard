@@ -117,3 +117,44 @@ class AttireRecord(Base):
     # Relationships
     branch = relationship("Branch", back_populates="attire_records")
     employee = relationship("Employee", back_populates="attire_records")
+
+
+class EmployeeCallLog(Base):
+    """Tracks customer calls made by employees (calls done vs pending)."""
+    __tablename__ = "employee_call_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    branch_id = Column(Integer, ForeignKey("branches.id"), index=True, nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.id"), index=True, nullable=False)
+    customer_name = Column(String(150), nullable=False)
+    phone_number = Column(String(50), nullable=False, default="")
+    customers_count = Column(Integer, default=1, nullable=False)  # select how many customers
+    call_status = Column(String(50), default="Done", nullable=False)  # Done, Pending
+    call_date = Column(Date, default=date.today, index=True, nullable=False)
+    call_time = Column(String(50), nullable=True)  # e.g., "11:30 AM"
+    purpose = Column(String(100), default="Follow-up Call", nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    # Relationships
+    branch = relationship("Branch")
+    employee = relationship("Employee", back_populates="call_logs")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "branch_id": self.branch_id,
+            "employee_id": self.employee_id,
+            "customer_name": self.customer_name,
+            "phone_number": self.phone_number,
+            "customers_count": self.customers_count or 1,
+            "call_status": self.call_status,
+            "call_date": self.call_date.strftime("%Y-%m-%d") if self.call_date else None,
+            "call_time": self.call_time,
+            "purpose": self.purpose,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+

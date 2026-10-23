@@ -66,6 +66,51 @@ class EmployeeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class EmployeeCallLogBase(BaseModel):
+    customer_name: str = Field(..., min_length=1, max_length=150)
+    phone_number: str = Field(..., min_length=1, max_length=50)
+    customers_count: int = Field(default=1, ge=1, description="Number of customers attended/called")
+    call_status: str = Field(default="Done", description="Call status: Done or Pending")
+    call_date: Optional[date] = None
+    call_time: Optional[str] = None
+    purpose: Optional[str] = "Follow-up Call"
+    notes: Optional[str] = None
+
+
+class EmployeeCallLogCreate(EmployeeCallLogBase):
+    pass
+
+
+class EmployeeCallLogUpdate(BaseModel):
+    customer_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    customers_count: Optional[int] = None
+    call_status: Optional[str] = None
+    call_date: Optional[date] = None
+    call_time: Optional[str] = None
+    purpose: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class EmployeeCallLogResponse(BaseModel):
+    id: int
+    branch_id: int
+    employee_id: int
+    employee_name: Optional[str] = None
+    customer_name: str
+    phone_number: str
+    customers_count: int = 1
+    call_status: str = "Done"
+    call_date: date
+    call_time: Optional[str] = None
+    purpose: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class EmployeeDetailResponse(EmployeeResponse):
     customers_attended_count: int = 0
     customers_closed_count: int = 0
@@ -74,6 +119,12 @@ class EmployeeDetailResponse(EmployeeResponse):
     attire_records_count: int = 0
     google_reviews_count: int = 0
     average_rating: float = 0.0
+    customer_feedbacks_count: int = 0
+    customer_feedbacks_avg_rating: float = 5.0
+    calls_count: int = 0
+    calls_done_count: int = 0
+    calls_pending_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
+
 

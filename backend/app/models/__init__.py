@@ -8,6 +8,7 @@ from backend.app.models.activity import (
     EmployeeFormMedia,
     GoogleReview,
     AttireRecord,
+    EmployeeCallLog,
 )
 from backend.app.models.outdoor_marketing import (
     OutdoorMarketingArea,
@@ -16,6 +17,8 @@ from backend.app.models.outdoor_marketing import (
     OutdoorMarketingActivity,
 )
 from backend.app.models.audit import AuditLog
+from backend.app.models.attendance import EmployeeAttendance
+from backend.app.models.feedback import CustomerFeedback
 
 __all__ = [
     "Base",
@@ -29,9 +32,13 @@ __all__ = [
     "EmployeeFormMedia",
     "GoogleReview",
     "AttireRecord",
+    "EmployeeCallLog",
     "OutdoorMarketingArea",
     "OutdoorMarketingCustomer",
     "OutdoorMarketingScheme",
     "OutdoorMarketingActivity",
     "AuditLog",
+    "EmployeeAttendance",
+    "CustomerFeedback",
 ]
+

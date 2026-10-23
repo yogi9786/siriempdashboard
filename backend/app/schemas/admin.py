@@ -394,5 +394,10 @@ class AdminEmployeeDetailResponse(BaseModel):
     outdoor_areas: List[Dict[str, Any]] = []
     outdoor_customers: List[Dict[str, Any]] = []
     outdoor_schemes: List[Dict[str, Any]] = []
+    customer_feedbacks: List[Dict[str, Any]] = []
+    calls: List[Dict[str, Any]] = []
+    calls_done_count: int = 0
+    calls_pending_count: int = 0
     performance: Optional[AdminEmployeePerformance] = None
+
 

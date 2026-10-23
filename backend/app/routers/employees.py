@@ -6,12 +6,16 @@ from sqlalchemy import or_
 from backend.app.core.database import get_db
 from backend.app.models.branch import User, Branch
 from backend.app.models.employee import Employee
-from backend.app.models.activity import CustomerActivity, SchemeRecord, EmployeeFormMedia, AttireRecord, GoogleReview
+from backend.app.models.activity import CustomerActivity, SchemeRecord, EmployeeFormMedia, AttireRecord, GoogleReview, EmployeeCallLog
+from backend.app.models.feedback import CustomerFeedback
 from backend.app.schemas.employee import (
     EmployeeCreate,
     EmployeeUpdate,
     EmployeeResponse,
     EmployeeDetailResponse,
+    EmployeeCallLogCreate,
+    EmployeeCallLogUpdate,
+    EmployeeCallLogResponse,
 )
 from backend.app.dependencies.auth import get_current_manager
 
@@ -150,11 +154,46 @@ def get_employee(
 
     customers_closed = sum(get_closed_count(c) for c in all_cust)
 
+    # Count schemes from SchemeRecord and CustomerActivity breakdown
     schemes = db.query(SchemeRecord).filter(
         SchemeRecord.employee_id == employee.id,
         SchemeRecord.branch_id == current_user.branch_id,
     ).all()
-    schemes_closed = sum(s.customers_count or 1 for s in schemes)
+    schemes_count_records = sum(s.customers_count or 1 for s in schemes)
+
+    reviews = db.query(GoogleReview).filter(
+        GoogleReview.employee_id == employee.id,
+        GoogleReview.branch_id == current_user.branch_id,
+    ).all()
+    reviews_count_records = sum(r.customers_count or 1 for r in reviews)
+
+    direct_feedbacks = db.query(CustomerFeedback).filter(
+        CustomerFeedback.employee_id == employee.id,
+        CustomerFeedback.branch_id == current_user.branch_id,
+    ).all()
+    feedbacks_count_records = len(direct_feedbacks)
+
+    # Also inspect customer activity breakdowns directly
+    import json
+    schemes_from_breakdown = 0
+    reviews_from_breakdown = 0
+    feedbacks_from_breakdown = 0
+    for c in all_cust:
+        if c.breakdown:
+            try:
+                c_items = json.loads(c.breakdown)
+                if isinstance(c_items, list):
+                    for item in c_items:
+                        if item.get("has_scheme") or item.get("scheme_name"):
+                            schemes_from_breakdown += 1
+                        if item.get("has_google_review") or item.get("google_review_text"):
+                            reviews_from_breakdown += 1
+                        if item.get("has_customer_feedback") or item.get("feedback_text"):
+                            feedbacks_from_breakdown += 1
+            except Exception:
+                pass
+
+    schemes_closed = max(schemes_count_records, schemes_from_breakdown)
 
     form_media_count = db.query(EmployeeFormMedia).filter(
         EmployeeFormMedia.employee_id == employee.id,
@@ -166,12 +205,23 @@ def get_employee(
         AttireRecord.branch_id == current_user.branch_id,
     ).count()
 
-    reviews = db.query(GoogleReview).filter(
-        GoogleReview.employee_id == employee.id,
-        GoogleReview.branch_id == current_user.branch_id,
+    google_reviews_count = max(reviews_count_records, reviews_from_breakdown)
+    average_rating = round(sum(r.rating for r in reviews) / len(reviews), 1) if len(reviews) > 0 else 5.0
+
+    customer_feedbacks_count = max(feedbacks_count_records, feedbacks_from_breakdown)
+    customer_feedbacks_avg_rating = (
+        round(sum(f.rating for f in direct_feedbacks) / len(direct_feedbacks), 1)
+        if direct_feedbacks
+        else 5.0
+    )
+
+    calls = db.query(EmployeeCallLog).filter(
+        EmployeeCallLog.employee_id == employee.id,
+        EmployeeCallLog.branch_id == current_user.branch_id,
     ).all()
-    google_reviews_count = sum(r.customers_count or 1 for r in reviews)
-    average_rating = round(sum(r.rating for r in reviews) / len(reviews), 1) if len(reviews) > 0 else 0.0
+    calls_count = len(calls)
+    calls_done_count = sum(1 for c in calls if c.call_status == "Done")
+    calls_pending_count = sum(1 for c in calls if c.call_status == "Pending")
 
     return EmployeeDetailResponse(
         id=employee.id,
@@ -197,6 +247,11 @@ def get_employee(
         attire_records_count=attire_records_count,
         google_reviews_count=google_reviews_count,
         average_rating=average_rating,
+        customer_feedbacks_count=customer_feedbacks_count,
+        customer_feedbacks_avg_rating=customer_feedbacks_avg_rating,
+        calls_count=calls_count,
+        calls_done_count=calls_done_count,
+        calls_pending_count=calls_pending_count,
     )
 
 
@@ -297,3 +352,242 @@ def delete_employee(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete employee: {str(e)}",
         )
+
+
+# =========================================================================
+# Employee Customer Call Logs (Calls Done & Pending)
+# =========================================================================
+@router.get("/{employee_id}/calls", response_model=List[EmployeeCallLogResponse], summary="Get employee customer call logs")
+def list_employee_calls(
+    employee_id: int,
+    status: Optional[str] = Query(None, description="Filter: all, Done, Pending"),
+    search: Optional[str] = Query(None, description="Search by customer name or phone"),
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    emp = db.query(Employee).filter(
+        Employee.id == employee_id,
+        Employee.branch_id == current_user.branch_id,
+    ).first()
+    if not emp:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
+
+    query = db.query(EmployeeCallLog).filter(
+        EmployeeCallLog.employee_id == employee_id,
+        EmployeeCallLog.branch_id == current_user.branch_id,
+    )
+
+    if status and status.lower() != "all":
+        query = query.filter(EmployeeCallLog.call_status.ilike(status.strip()))
+
+    if search and search.strip():
+        s = f"%{search.strip().lower()}%"
+        query = query.filter(
+            or_(
+                EmployeeCallLog.customer_name.ilike(s),
+                EmployeeCallLog.phone_number.ilike(s),
+                EmployeeCallLog.notes.ilike(s),
+                EmployeeCallLog.purpose.ilike(s),
+            )
+        )
+
+    records = query.order_by(EmployeeCallLog.call_date.desc(), EmployeeCallLog.id.desc()).all()
+    return [
+        EmployeeCallLogResponse(
+            id=r.id,
+            branch_id=r.branch_id,
+            employee_id=r.employee_id,
+            employee_name=emp.full_name,
+            customer_name=r.customer_name,
+            phone_number=r.phone_number,
+            customers_count=r.customers_count or 1,
+            call_status=r.call_status,
+            call_date=r.call_date,
+            call_time=r.call_time,
+            purpose=r.purpose,
+            notes=r.notes,
+            created_at=r.created_at,
+            updated_at=r.updated_at,
+        )
+        for r in records
+    ]
+
+
+@router.post("/{employee_id}/calls", response_model=EmployeeCallLogResponse, summary="Create a customer call log for an employee")
+def create_employee_call(
+    employee_id: int,
+    call_in: EmployeeCallLogCreate,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    emp = db.query(Employee).filter(
+        Employee.id == employee_id,
+        Employee.branch_id == current_user.branch_id,
+    ).first()
+    if not emp:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
+
+    st = "Done" if call_in.call_status.strip().lower() in ["done", "completed"] else "Pending"
+    call_dt = call_in.call_date
+    if isinstance(call_dt, str):
+        try:
+            from datetime import datetime as dt
+            call_dt = dt.strptime(call_dt, "%Y-%m-%d").date()
+        except Exception:
+            call_dt = date.today()
+    elif not call_dt:
+        call_dt = date.today()
+
+    log = EmployeeCallLog(
+        branch_id=current_user.branch_id,
+        employee_id=emp.id,
+        customer_name=call_in.customer_name.strip(),
+        phone_number=call_in.phone_number.strip(),
+        customers_count=call_in.customers_count or 1,
+        call_status=st,
+        call_date=call_dt,
+        call_time=call_in.call_time,
+        purpose=call_in.purpose or "Follow-up Call",
+        notes=call_in.notes,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+
+    return EmployeeCallLogResponse(
+        id=log.id,
+        branch_id=log.branch_id,
+        employee_id=log.employee_id,
+        employee_name=emp.full_name,
+        customer_name=log.customer_name,
+        phone_number=log.phone_number,
+        customers_count=log.customers_count,
+        call_status=log.call_status,
+        call_date=log.call_date,
+        call_time=log.call_time,
+        purpose=log.purpose,
+        notes=log.notes,
+        created_at=log.created_at,
+        updated_at=log.updated_at,
+    )
+
+
+@router.put("/{employee_id}/calls/{call_id}", response_model=EmployeeCallLogResponse, summary="Update a customer call log")
+def update_employee_call(
+    employee_id: int,
+    call_id: int,
+    call_in: EmployeeCallLogUpdate,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    log = db.query(EmployeeCallLog).filter(
+        EmployeeCallLog.id == call_id,
+        EmployeeCallLog.employee_id == employee_id,
+        EmployeeCallLog.branch_id == current_user.branch_id,
+    ).first()
+    if not log:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Call log not found.")
+
+    if call_in.customer_name is not None:
+        log.customer_name = call_in.customer_name.strip()
+    if call_in.phone_number is not None:
+        log.phone_number = call_in.phone_number.strip()
+    if call_in.customers_count is not None:
+        log.customers_count = max(1, call_in.customers_count)
+    if call_in.call_status is not None:
+        log.call_status = "Done" if call_in.call_status.strip().lower() in ["done", "completed"] else "Pending"
+    if call_in.call_date is not None:
+        call_dt = call_in.call_date
+        if isinstance(call_dt, str):
+            try:
+                from datetime import datetime as dt
+                call_dt = dt.strptime(call_dt, "%Y-%m-%d").date()
+            except Exception:
+                call_dt = date.today()
+        log.call_date = call_dt
+    if call_in.call_time is not None:
+        log.call_time = call_in.call_time
+    if call_in.purpose is not None:
+        log.purpose = call_in.purpose
+    if call_in.notes is not None:
+        log.notes = call_in.notes
+
+    db.commit()
+    db.refresh(log)
+
+    emp = db.query(Employee).filter(Employee.id == employee_id).first()
+    return EmployeeCallLogResponse(
+        id=log.id,
+        branch_id=log.branch_id,
+        employee_id=log.employee_id,
+        employee_name=emp.full_name if emp else "",
+        customer_name=log.customer_name,
+        phone_number=log.phone_number,
+        customers_count=log.customers_count,
+        call_status=log.call_status,
+        call_date=log.call_date,
+        call_time=log.call_time,
+        purpose=log.purpose,
+        notes=log.notes,
+        created_at=log.created_at,
+        updated_at=log.updated_at,
+    )
+
+
+@router.patch("/{employee_id}/calls/{call_id}/toggle", response_model=EmployeeCallLogResponse, summary="Toggle call status between Done and Pending")
+def toggle_employee_call_status(
+    employee_id: int,
+    call_id: int,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    log = db.query(EmployeeCallLog).filter(
+        EmployeeCallLog.id == call_id,
+        EmployeeCallLog.employee_id == employee_id,
+        EmployeeCallLog.branch_id == current_user.branch_id,
+    ).first()
+    if not log:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Call log not found.")
+
+    log.call_status = "Pending" if log.call_status == "Done" else "Done"
+    db.commit()
+    db.refresh(log)
+
+    emp = db.query(Employee).filter(Employee.id == employee_id).first()
+    return EmployeeCallLogResponse(
+        id=log.id,
+        branch_id=log.branch_id,
+        employee_id=log.employee_id,
+        employee_name=emp.full_name if emp else "",
+        customer_name=log.customer_name,
+        phone_number=log.phone_number,
+        customers_count=log.customers_count,
+        call_status=log.call_status,
+        call_date=log.call_date,
+        call_time=log.call_time,
+        purpose=log.purpose,
+        notes=log.notes,
+        created_at=log.created_at,
+        updated_at=log.updated_at,
+    )
+
+
+@router.delete("/{employee_id}/calls/{call_id}", status_code=status.HTTP_200_OK, summary="Delete a customer call log")
+def delete_employee_call(
+    employee_id: int,
+    call_id: int,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    log = db.query(EmployeeCallLog).filter(
+        EmployeeCallLog.id == call_id,
+        EmployeeCallLog.employee_id == employee_id,
+        EmployeeCallLog.branch_id == current_user.branch_id,
+    ).first()
+    if not log:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Call log not found.")
+
+    db.delete(log)
+    db.commit()
+    return {"message": "Call log deleted successfully."}
+

@@ -15,12 +15,16 @@ import {
   Sparkles,
   UserCheck,
   Check,
+  Award,
+  Star,
+  MessageSquareHeart,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useToast } from '../../context/ToastContext';
 import { CustomerActivity, CustomerDetailItem, Employee } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
+import { SCHEMES, DEFAULT_SCHEME } from '../../constants/schemes';
 import api from '../../api/client';
 
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
@@ -121,6 +125,15 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
             status: 'Walkin',
             product_value: '',
             notes: '',
+            has_scheme: false,
+            scheme_name: DEFAULT_SCHEME,
+            scheme_amount: '',
+            has_google_review: false,
+            google_review_rating: 5,
+            google_review_text: '',
+            has_customer_feedback: false,
+            feedback_rating: 5,
+            feedback_text: '',
           });
         }
       } else if (updated.length > validCount) {
@@ -750,6 +763,224 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                       placeholder="e.g. Looked at 22kt antique gold necklace, asked for festival discount & exchange estimate"
                       className="w-full text-xs input-luxury-beige rounded-xl px-3 py-2"
                     />
+                  </div>
+
+                  {/* 1. Schemes Closed Section for This Customer */}
+                  <div className="p-3 rounded-xl bg-[#FAF8F3] border border-[#E8E4D9] space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={item.has_scheme || false}
+                          onChange={(e) =>
+                            handleCustomerFieldChange(idx, 'has_scheme', e.target.checked)
+                          }
+                          className="w-4 h-4 rounded text-[#23815F] focus:ring-[#23815F] border-[#CBD5E1] cursor-pointer"
+                        />
+                        <span className="text-xs font-bold text-[#1D1D1B] flex items-center gap-1.5">
+                          <Award className="w-4 h-4 text-[#D97706]" />
+                          <span>Scheme Closed / Enrolled</span>
+                        </span>
+                      </label>
+                      {item.has_scheme && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+                          ✨ Scheme Closed
+                        </span>
+                      )}
+                    </div>
+
+                    {item.has_scheme && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        <div>
+                          <label className="text-[11px] font-bold text-[#536B8A] mb-1 block">
+                            Scheme Name *
+                          </label>
+                          <select
+                            value={item.scheme_name || DEFAULT_SCHEME}
+                            onChange={(e) =>
+                              handleCustomerFieldChange(idx, 'scheme_name', e.target.value)
+                            }
+                            className="w-full text-xs font-semibold select-luxury-slate rounded-xl px-2.5 py-1.5 cursor-pointer"
+                          >
+                            {SCHEMES.map((sch) => (
+                              <option key={sch} value={sch}>
+                                {sch}
+                              </option>
+                            ))}
+                          </select>
+
+                          {/* Quick Select Buttons / Pills */}
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {SCHEMES.map((sch) => {
+                              const isSelected = (item.scheme_name || DEFAULT_SCHEME) === sch;
+                              return (
+                                <button
+                                  key={sch}
+                                  type="button"
+                                  onClick={() => handleCustomerFieldChange(idx, 'scheme_name', sch)}
+                                  className={`px-2 py-0.5 text-[9px] font-bold rounded-lg border transition-all text-left ${
+                                    isSelected
+                                      ? 'bg-[#FEF3C7] border-[#D97706] text-[#92400E] shadow-2xs font-extrabold'
+                                      : 'bg-white border-[#E4DFD4] text-[#5E5A52] hover:bg-[#FAF8F3]'
+                                  }`}
+                                >
+                                  {isSelected ? '✓ ' : ''}{sch}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-bold text-[#536B8A] mb-1 block">
+                            Scheme Amount / Installment (₹) *
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={item.scheme_amount || ''}
+                            onChange={(e) =>
+                              handleCustomerFieldChange(idx, 'scheme_amount', e.target.value)
+                            }
+                            placeholder="e.g. 5000"
+                            className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-1.5 font-mono"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. Google Reviews Section for This Customer */}
+                  <div className="p-3 rounded-xl bg-[#FAF9F6] border border-[#E8E6E1] space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={item.has_google_review || false}
+                          onChange={(e) =>
+                            handleCustomerFieldChange(idx, 'has_google_review', e.target.checked)
+                          }
+                          className="w-4 h-4 rounded text-[#536B8A] focus:ring-[#536B8A] border-[#CBD5E1] cursor-pointer"
+                        />
+                        <span className="text-xs font-bold text-[#1D1D1B] flex items-center gap-1.5">
+                          <Star className="w-4 h-4 text-[#F59E0B] fill-[#F59E0B]" />
+                          <span>Google Review Received</span>
+                        </span>
+                      </label>
+                      {item.has_google_review && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+                          ⭐ {item.google_review_rating || 5}★ Google Review
+                        </span>
+                      )}
+                    </div>
+
+                    {item.has_google_review && (
+                      <div className="space-y-2 pt-1">
+                        <div className="flex items-center gap-2">
+                          <label className="text-[11px] font-bold text-[#536B8A]">Rating:</label>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() =>
+                                  handleCustomerFieldChange(idx, 'google_review_rating', star)
+                                }
+                                className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
+                              >
+                                <Star
+                                  className={`w-4 h-4 ${
+                                    star <= (item.google_review_rating || 5)
+                                      ? 'fill-[#F59E0B] text-[#F59E0B]'
+                                      : 'text-[#D4D4D8]'
+                                  }`}
+                                />
+                              </button>
+                            ))}
+                            <span className="text-xs font-bold text-[#F59E0B] ml-1">
+                              {item.google_review_rating || 5} Stars
+                            </span>
+                          </div>
+                        </div>
+
+                        <input
+                          type="text"
+                          value={item.google_review_text || ''}
+                          onChange={(e) =>
+                            handleCustomerFieldChange(idx, 'google_review_text', e.target.value)
+                          }
+                          placeholder="e.g. Excellent service by staff, great hospitality and collection!"
+                          className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-1.5"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 3. Customer Direct Feedback Section for This Customer */}
+                  <div className="p-3 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7] space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={item.has_customer_feedback || false}
+                          onChange={(e) =>
+                            handleCustomerFieldChange(idx, 'has_customer_feedback', e.target.checked)
+                          }
+                          className="w-4 h-4 rounded text-[#23815F] focus:ring-[#23815F] border-[#CBD5E1] cursor-pointer"
+                        />
+                        <span className="text-xs font-bold text-[#1D1D1B] flex items-center gap-1.5">
+                          <MessageSquareHeart className="w-4 h-4 text-[#23815F]" />
+                          <span>Customer Feedback & Rating</span>
+                        </span>
+                      </label>
+                      {item.has_customer_feedback && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0]">
+                          💬 {item.feedback_rating || 5}★ Feedback
+                        </span>
+                      )}
+                    </div>
+
+                    {item.has_customer_feedback && (
+                      <div className="space-y-2 pt-1">
+                        <div className="flex items-center gap-2">
+                          <label className="text-[11px] font-bold text-[#536B8A]">Staff Rating:</label>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() =>
+                                  handleCustomerFieldChange(idx, 'feedback_rating', star)
+                                }
+                                className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
+                              >
+                                <Star
+                                  className={`w-4 h-4 ${
+                                    star <= (item.feedback_rating || 5)
+                                      ? 'fill-[#23815F] text-[#23815F]'
+                                      : 'text-[#D4D4D8]'
+                                  }`}
+                                />
+                              </button>
+                            ))}
+                            <span className="text-xs font-bold text-[#23815F] ml-1">
+                              {item.feedback_rating || 5}.0 Score
+                            </span>
+                          </div>
+                        </div>
+
+                        <input
+                          type="text"
+                          value={item.feedback_text || ''}
+                          onChange={(e) =>
+                            handleCustomerFieldChange(idx, 'feedback_text', e.target.value)
+                          }
+                          placeholder="e.g. Very patient in showing all designs and billing was smooth!"
+                          className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-1.5"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

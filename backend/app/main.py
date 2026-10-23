@@ -35,6 +35,8 @@ from backend.app.routers import (
     attire,
     outdoor_marketing,
     audit,
+    attendance,
+    feedback,
 )
 
 # Setup structured logging
@@ -193,3 +195,5 @@ app.include_router(google_reviews.router)
 app.include_router(attire.router)
 app.include_router(outdoor_marketing.router)
 app.include_router(audit.router)
+app.include_router(attendance.router)
+app.include_router(feedback.router)

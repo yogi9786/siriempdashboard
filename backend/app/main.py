@@ -37,6 +37,8 @@ from backend.app.routers import (
     audit,
     attendance,
     feedback,
+    employee_portal,
+    video_reviews,
 )
 
 # Setup structured logging
@@ -192,8 +194,11 @@ app.include_router(customers.router)
 app.include_router(schemes.router)
 app.include_router(forms.router)
 app.include_router(google_reviews.router)
+app.include_router(video_reviews.router)
 app.include_router(attire.router)
 app.include_router(outdoor_marketing.router)
 app.include_router(audit.router)
 app.include_router(attendance.router)
 app.include_router(feedback.router)
+app.include_router(employee_portal.router)
+

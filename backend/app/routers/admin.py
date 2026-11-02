@@ -17,6 +17,7 @@ from backend.app.models.activity import (
     SchemeRecord,
     EmployeeFormMedia,
     GoogleReview,
+    VideoReview,
     AttireRecord,
     EmployeeCallLog,
 )
@@ -1270,6 +1271,76 @@ def reassign_employee_branch(
     return list_admin_employees(branch_id=new_branch.id, search=emp.employee_code, current_admin=current_admin, db=db)[0]
 
 
+# =========================================================================
+# 10b. Employee Point-Wise Ranking Leaderboard (Review & Video Points)
+# =========================================================================
+@router.get("/employees/points-ranking", summary="Get showroom employees ranked point-wise by review contributions")
+@router.get("/points-leaderboard", summary="Get showroom employees ranked point-wise by review contributions")
+def get_admin_employee_points_ranking(
+    branch_id: Optional[int] = Query(None, description="Filter by showroom branch"),
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Returns showroom staff ranked point-wise (1st, 2nd, 3rd...) by total review and video points."""
+    clean_branch_id: Optional[int] = None
+    if branch_id is not None and isinstance(branch_id, (int, str)):
+        try:
+            clean_branch_id = int(branch_id)
+        except Exception:
+            clean_branch_id = None
+
+    q = db.query(Employee).filter(Employee.status == "active")
+    if clean_branch_id and clean_branch_id > 0:
+        q = q.filter(Employee.branch_id == clean_branch_id)
+
+    employees = q.all()
+    results = []
+
+    for emp in employees:
+        branch = emp.branch or db.query(Branch).filter(Branch.id == emp.branch_id).first()
+        g_pts = emp.google_review_points
+        v_pts = emp.video_review_points
+        t_pts = emp.total_points
+
+        # Count pending reviews
+        pending_g = db.query(GoogleReview).filter(
+            GoogleReview.employee_id == emp.id,
+            func.upper(GoogleReview.status) == "PENDING"
+        ).count()
+        pending_v = db.query(VideoReview).filter(
+            VideoReview.employee_id == emp.id,
+            func.upper(VideoReview.status) == "PENDING"
+        ).count()
+
+        results.append({
+            "employee_id": emp.id,
+            "employee_code": emp.employee_code,
+            "full_name": emp.full_name,
+            "designation": emp.designation or "Sales Staff",
+            "department": emp.department or "Floor",
+            "branch_id": emp.branch_id,
+            "branch_name": branch.name if branch else "Showroom",
+            "branch_code": branch.code if branch else "N/A",
+            "city": branch.city if branch else "Showroom",
+            "google_review_points": g_pts,
+            "video_review_points": v_pts,
+            "total_points": t_pts,
+            "pending_points": pending_g + pending_v,
+            "rank": 0,
+        })
+
+    # Sort point-wise descending (highest total_points first, then google_review_points, then video_review_points)
+    results.sort(
+        key=lambda x: (x["total_points"], x["google_review_points"], x["video_review_points"], -x["employee_id"]),
+        reverse=True
+    )
+
+    for idx, item in enumerate(results, start=1):
+        item["rank"] = idx
+
+    return results
+
+
 @router.get("/employees/{employee_id}", response_model=AdminEmployeeDetailResponse, summary="Get 360 employee details and activity history for admin")
 def get_admin_employee_detail(
     employee_id: int,
@@ -2108,6 +2179,101 @@ def verify_admin_google_review(
     db.commit()
 
     return MessageResponse(message="Google review marked as verified.")
+
+
+@router.get("/video-reviews", summary="Organization-wide Video reviews & points")
+def get_admin_video_reviews(
+    branch_id: Optional[int] = Query(None),
+    status_val: Optional[str] = Query(None, alias="status"),
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    q = db.query(VideoReview)
+    if branch_id:
+        q = q.filter(VideoReview.branch_id == branch_id)
+    if status_val and status_val != "all":
+        st_clean = status_val.strip().upper()
+        if st_clean in ["APPROVED", "VERIFIED", "PUBLISHED"]:
+            q = q.filter(func.upper(VideoReview.status).in_(["APPROVED", "VERIFIED", "PUBLISHED"]))
+        elif st_clean == "PENDING":
+            q = q.filter(func.upper(VideoReview.status) == "PENDING")
+        elif st_clean == "REJECTED":
+            q = q.filter(func.upper(VideoReview.status) == "REJECTED")
+        else:
+            q = q.filter(VideoReview.status == status_val)
+
+    reviews = q.order_by(VideoReview.review_date.desc(), VideoReview.id.desc()).all()
+    total_videos = sum(r.videos_count or 1 for r in reviews)
+
+    rev_items = []
+    for r in reviews:
+        b = db.query(Branch).filter(Branch.id == r.branch_id).first()
+        emp = db.query(Employee).filter(Employee.id == r.employee_id).first() if r.employee_id else None
+        rev_items.append(
+            {
+                "id": r.id,
+                "branch_id": r.branch_id,
+                "branch_name": b.name if b else "Showroom",
+                "employee_id": r.employee_id,
+                "employee_name": emp.full_name if emp else "Unassigned",
+                "customer_name": r.customer_name,
+                "videos_count": r.videos_count or 1,
+                "video_title": r.video_title,
+                "video_url": r.video_url,
+                "review_date": r.review_date.strftime("%Y-%m-%d"),
+                "notes": r.notes,
+                "screenshot_url": r.screenshot_url,
+                "status": r.status,
+                "points": r.points,
+                "rejection_reason": r.rejection_reason,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+        )
+
+    verified_count = sum(r.videos_count or 1 for r in reviews if (r.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
+    pending_count = sum(r.videos_count or 1 for r in reviews if (r.status or "").upper() == "PENDING")
+
+    return {
+        "total_reviews": len(reviews),
+        "total_videos": total_videos,
+        "verified_count": verified_count,
+        "pending_count": pending_count,
+        "reviews": rev_items,
+    }
+
+
+@router.post("/video-reviews/{review_id}/verify", response_model=MessageResponse, summary="Verify Video Review")
+def verify_admin_video_review(
+    review_id: int,
+    request: Request,
+    current_admin: SuperAdminIdentity = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+):
+    rev = db.query(VideoReview).filter(VideoReview.id == review_id).first()
+    if not rev:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Video review not found.")
+
+    rev.status = "APPROVED"
+    rev.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+
+    client_ip = request.client.host if request.client else None
+    audit = AuditLog(
+        branch_id=rev.branch_id,
+        admin_id=None,
+        admin_username=current_admin.email,
+        action="Verify Video Review",
+        entity="VideoReview",
+        entity_id=str(rev.id),
+        ip_address=client_ip,
+        details=f"Admin verified video review by {rev.customer_name} ({rev.videos_count} pts)",
+    )
+    db.add(audit)
+    db.commit()
+
+    return MessageResponse(message="Video review marked as verified & approved.")
+
+
 
 
 # =========================================================================

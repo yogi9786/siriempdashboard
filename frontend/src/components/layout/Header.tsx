@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Menu,
   Building2,
   LogOut,
   Sparkles,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SignOutConfirmModal } from '../auth/SignOutConfirmModal';
@@ -58,6 +60,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenMobileMenu }
 
         {/* Right Section: Manager Avatar & Logout */}
         <div className="flex items-center gap-1.5 sm:gap-3.5 shrink-0">
+          {/* Review Points Ledger Shortcut */}
+          <Link
+            to="/google-reviews"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#222226] hover:bg-[#2C2C32] border border-[#3E3E44] text-[#FBBF24] shadow-xs transition-all cursor-pointer group"
+            title="Showroom Reviews & Points Ledger"
+          >
+            <Star className="w-3.5 h-3.5 fill-[#F59E0B] text-[#F59E0B] group-hover:scale-110 transition-transform" />
+            <span className="text-[11px] sm:text-xs font-black text-[#FEF3C7] tracking-tight hidden xs:inline">
+              Reviews & Points
+            </span>
+          </Link>
+
           {/* Manager User Chip */}
           <div className="flex items-center gap-2 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#222226] border border-[#2E2E33] shadow-xs shrink-0">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-linear-to-br from-[#3B0764] to-[#7E22CE] text-[#F3E8FF] flex items-center justify-center font-extrabold text-xs shadow-xs border border-[#A855F7]/60 shrink-0">

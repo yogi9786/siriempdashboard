@@ -115,7 +115,7 @@ export const CustomerActivityPage: React.FC = () => {
       return false;
     }
 
-    // 2. Status filter
+    // 2. Status filter (Sold, Interested, Lost, all) across all employees
     if (selectedStatusFilter !== 'all') {
       const breakdownItems = parseCustomerBreakdown(
         act.breakdown,
@@ -124,11 +124,15 @@ export const CustomerActivityPage: React.FC = () => {
         act.customer_name,
         act.phone_number
       );
-      const matchesStatus =
-        act.status.toLowerCase() === selectedStatusFilter.toLowerCase() ||
-        breakdownItems.some(
-          (b) => b.status.toLowerCase() === selectedStatusFilter.toLowerCase()
-        );
+      const target = selectedStatusFilter.toLowerCase();
+      const checkStatus = (st: string) => {
+        const s = (st || '').toLowerCase();
+        if (target === 'sold') return s.includes('sold') || s.includes('closed');
+        if (target === 'interested') return s.includes('interested') || s.includes('hold') || s.includes('follow');
+        if (target === 'lost') return s.includes('lost');
+        return s === target;
+      };
+      const matchesStatus = checkStatus(act.status) || breakdownItems.some((b) => checkStatus(b.status));
       if (!matchesStatus) return false;
     }
 
@@ -408,6 +412,38 @@ export const CustomerActivityPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Status Filter Pills (Requirement 6: Lost, Interested, Sold across all employees) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-[#FAF8F5] border border-[#E6E1D6] p-2.5 rounded-2xl shadow-2xs">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs font-bold text-[#6B6559] mr-1 uppercase tracking-wider text-[10px]">Filter Status:</span>
+          {[
+            { id: 'all', label: 'All Customers', count: activities.length, color: 'text-[#1D1D1B] bg-white border-[#CBD5E1]' },
+            { id: 'Sold', label: 'Sold', count: totalSold, color: 'text-[#166534] bg-[#F0FDF4] border-[#BBF7D0]' },
+            { id: 'Interested', label: 'Interested', count: totalInHold, color: 'text-[#92400E] bg-[#FEF3C7] border-[#FDE68A]' },
+            { id: 'Lost', label: 'Lost', count: activities.filter(a => (a.status || '').toLowerCase().includes('lost')).length, color: 'text-[#991B1B] bg-[#FEF2F2] border-[#FECACA]' },
+          ].map((pill) => {
+            const isSelected = selectedStatusFilter.toLowerCase() === pill.id.toLowerCase();
+            return (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => setSelectedStatusFilter(pill.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'ring-2 ring-[#7E22CE] shadow-xs scale-102 ' + pill.color
+                    : 'bg-white text-[#6B6559] border-[#E6E1D6] hover:bg-[#FAF8F5]'
+                }`}
+              >
+                <span>{pill.label}</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/5 font-mono">
+                  {pill.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* 3. Toolbar: Search & Filters (Responsive Layout) */}
       <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-4 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         {/* Search */}
@@ -445,11 +481,12 @@ export const CustomerActivityPage: React.FC = () => {
             className="w-full lg:w-auto select-luxury-slate rounded-xl px-3 py-2.5 text-xs font-semibold cursor-pointer"
           >
             <option value="all">All Outcomes</option>
-            <option value="Sold">Sold (Purchased)</option>
+            <option value="Sold">Sold</option>
+            <option value="Interested">Interested</option>
+            <option value="Lost">Lost</option>
             <option value="Exchange">Exchange</option>
             <option value="In Hold / Follow Up">In Hold / Follow Up</option>
             <option value="Walkin">Walkin (General)</option>
-            <option value="Lost">Lost</option>
           </select>
 
           {/* Date Range Filter */}

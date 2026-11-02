@@ -24,7 +24,7 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const effectiveLeftIcon = leftIcon || icon;
   const baseStyles =
-    'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 disabled:opacity-40 disabled:cursor-not-allowed select-none cursor-pointer active:scale-[0.98]';
+    'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#C8A951]/30 disabled:opacity-40 disabled:cursor-not-allowed select-none cursor-pointer active:scale-[0.98] whitespace-nowrap shrink-0';
 
   const sizeStyles = {
     sm: 'px-3 py-1.5 text-xs gap-1.5 font-semibold h-8',
@@ -67,7 +67,7 @@ export const Button: React.FC<ButtonProps> = ({
     >
       {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />}
       {!isLoading && effectiveLeftIcon && <span className="shrink-0">{effectiveLeftIcon}</span>}
-      <span>{children}</span>
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{children}</span>
       {!isLoading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
     </button>
   );

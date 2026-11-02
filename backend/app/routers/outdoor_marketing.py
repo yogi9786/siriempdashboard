@@ -4,7 +4,7 @@ import io
 import json
 import uuid
 from typing import List, Optional
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
@@ -219,6 +219,9 @@ def format_duty_response(d: OutdoorMarketingDuty) -> OutdoorDutyResponse:
                 has_google_review=c.has_google_review or False,
                 google_review_rating=c.google_review_rating or 5,
                 google_review_text=c.google_review_text,
+                has_customer_feedback=getattr(c, "has_customer_feedback", False) or False,
+                feedback_rating=getattr(c, "feedback_rating", 5) or 5,
+                feedback_text=getattr(c, "feedback_text", None),
                 status=c.status,
                 interested_in=getattr(c, "interested_in", None),
                 notes=c.notes,
@@ -397,6 +400,9 @@ def update_outdoor_duty(
                 has_google_review=c.has_google_review,
                 google_review_rating=c.google_review_rating or 5,
                 google_review_text=c.google_review_text,
+                has_customer_feedback=getattr(c, "has_customer_feedback", False) or False,
+                feedback_rating=getattr(c, "feedback_rating", 5) or 5,
+                feedback_text=getattr(c, "feedback_text", None),
                 status="Converted" if c.is_converted else "Contacted",
                 interested_in=c.interested_in,
                 notes=c.notes,
@@ -490,7 +496,9 @@ def toggle_outdoor_employee(
 # ----------------------------------------------------
 @router.get("/customers/export-csv", summary="Export outdoor marketing customers to CSV")
 def export_outdoor_customers_csv(
-    date_filter: Optional[date] = Query(None, description="Filter by date"),
+    date_filter: Optional[str] = Query(None, description="Filter by preset: today, yesterday, this_week, this_month or specific date"),
+    from_date: Optional[date] = Query(None, description="Filter from date"),
+    to_date: Optional[date] = Query(None, description="Filter to date"),
     employee_id: Optional[int] = Query(None, description="Filter by employee"),
     current_user: User = Depends(get_current_manager),
     db: Session = Depends(get_db),
@@ -501,9 +509,26 @@ def export_outdoor_customers_csv(
         .filter(OutdoorMarketingCustomer.branch_id == current_user.branch_id)
     )
 
-    if date_filter:
-        query = query.filter(OutdoorMarketingCustomer.date == date_filter)
+    today_dt = date.today()
+    if date_filter == "today":
+        query = query.filter(OutdoorMarketingCustomer.date == today_dt)
+    elif date_filter == "yesterday":
+        query = query.filter(OutdoorMarketingCustomer.date == today_dt - timedelta(days=1))
+    elif date_filter == "this_week":
+        query = query.filter(OutdoorMarketingCustomer.date >= today_dt - timedelta(days=7))
+    elif date_filter == "this_month":
+        query = query.filter(OutdoorMarketingCustomer.date >= today_dt.replace(day=1))
+    elif date_filter and date_filter not in ("all", "custom"):
+        try:
+            parsed_d = date.fromisoformat(date_filter)
+            query = query.filter(OutdoorMarketingCustomer.date == parsed_d)
+        except Exception:
+            pass
 
+    if from_date:
+        query = query.filter(OutdoorMarketingCustomer.date >= from_date)
+    if to_date:
+        query = query.filter(OutdoorMarketingCustomer.date <= to_date)
     if employee_id:
         query = query.filter(OutdoorMarketingCustomer.marketing_employee_id == employee_id)
 
@@ -524,6 +549,9 @@ def export_outdoor_customers_csv(
         "Google Review Given",
         "Google Rating (Stars)",
         "Google Review Feedback",
+        "Customer Feedback Given",
+        "Customer Rating",
+        "Customer Feedback Remarks",
         "Date",
         "Notes",
     ])
@@ -543,6 +571,9 @@ def export_outdoor_customers_csv(
             "Yes" if r.has_google_review else "No",
             r.google_review_rating if r.has_google_review else "",
             r.google_review_text or "",
+            "Yes" if getattr(r, "has_customer_feedback", False) else "No",
+            getattr(r, "feedback_rating", "") if getattr(r, "has_customer_feedback", False) else "",
+            getattr(r, "feedback_text", "") or "",
             str(r.date) if r.date else "",
             r.notes or "",
         ])
@@ -563,7 +594,7 @@ def list_outdoor_customers(
     status: Optional[str] = Query(None, description="Filter by status: Lead, Contacted, Interested, Converted, Closed, Lost"),
     area: Optional[str] = Query(None, description="Filter by campaign area"),
     scheme_name: Optional[str] = Query(None, description="Filter by scheme name"),
-    date_filter: Optional[date] = Query(None, description="Filter by specific date"),
+    date_filter: Optional[str] = Query(None, description="Filter by preset (today, yesterday, this_week, this_month) or specific date YYYY-MM-DD"),
     from_date: Optional[date] = Query(None, description="Filter from date"),
     to_date: Optional[date] = Query(None, description="Filter to date"),
     search: Optional[str] = Query(None, description="Search customer name, area, phone, or employee"),
@@ -590,8 +621,22 @@ def list_outdoor_customers(
     if scheme_name and scheme_name != "all":
         query = query.filter(OutdoorMarketingCustomer.scheme_name == scheme_name)
 
-    if date_filter:
-        query = query.filter(OutdoorMarketingCustomer.date == date_filter)
+    # Date filter presets & specific date
+    today_dt = date.today()
+    if date_filter == "today":
+        query = query.filter(OutdoorMarketingCustomer.date == today_dt)
+    elif date_filter == "yesterday":
+        query = query.filter(OutdoorMarketingCustomer.date == today_dt - timedelta(days=1))
+    elif date_filter == "this_week":
+        query = query.filter(OutdoorMarketingCustomer.date >= today_dt - timedelta(days=7))
+    elif date_filter == "this_month":
+        query = query.filter(OutdoorMarketingCustomer.date >= today_dt.replace(day=1))
+    elif date_filter and date_filter not in ("all", "custom"):
+        try:
+            parsed_d = date.fromisoformat(date_filter)
+            query = query.filter(OutdoorMarketingCustomer.date == parsed_d)
+        except Exception:
+            pass
 
     if from_date:
         query = query.filter(OutdoorMarketingCustomer.date >= from_date)
@@ -637,6 +682,9 @@ def list_outdoor_customers(
             has_google_review=r.has_google_review,
             google_review_rating=r.google_review_rating,
             google_review_text=r.google_review_text,
+            has_customer_feedback=getattr(r, "has_customer_feedback", False) or False,
+            feedback_rating=getattr(r, "feedback_rating", None),
+            feedback_text=getattr(r, "feedback_text", None),
             status=r.status,
             interested_in=r.interested_in,
             notes=r.notes,
@@ -669,10 +717,18 @@ def create_outdoor_customer(
         branch_id=current_user.branch_id,
         marketing_employee_id=employee.id,
         customer_name=customer_data.customer_name.strip(),
-        phone=customer_data.phone.strip(),
-        area_name=customer_data.area_name.strip(),
+        phone=customer_data.phone.strip() if customer_data.phone else None,
+        dob=customer_data.dob,
+        anniversary_date=customer_data.anniversary_date,
+        area_name=customer_data.area_name.strip() if customer_data.area_name else None,
         scheme_name=customer_data.scheme_name.strip() if customer_data.scheme_name else None,
         date=customer_data.date or date.today(),
+        has_google_review=customer_data.has_google_review,
+        google_review_rating=customer_data.google_review_rating or 5,
+        google_review_text=customer_data.google_review_text,
+        has_customer_feedback=customer_data.has_customer_feedback,
+        feedback_rating=customer_data.feedback_rating or 5,
+        feedback_text=customer_data.feedback_text,
         status=customer_data.status or "Lead",
         interested_in=customer_data.interested_in,
         notes=customer_data.notes,
@@ -695,9 +751,17 @@ def create_outdoor_customer(
         marketing_employee_name=employee.full_name,
         customer_name=record.customer_name,
         phone=record.phone,
+        dob=record.dob,
+        anniversary_date=record.anniversary_date,
         area_name=record.area_name,
         scheme_name=record.scheme_name,
         date=record.date,
+        has_google_review=record.has_google_review,
+        google_review_rating=record.google_review_rating,
+        google_review_text=record.google_review_text,
+        has_customer_feedback=record.has_customer_feedback,
+        feedback_rating=record.feedback_rating,
+        feedback_text=record.feedback_text,
         status=record.status,
         interested_in=record.interested_in,
         notes=record.notes,
@@ -730,14 +794,32 @@ def update_outdoor_customer(
         record.customer_name = update_data.customer_name.strip()
     if update_data.phone is not None:
         record.phone = update_data.phone.strip()
+    if update_data.dob is not None:
+        record.dob = update_data.dob
+    if update_data.anniversary_date is not None:
+        record.anniversary_date = update_data.anniversary_date
     if update_data.area_name is not None:
         record.area_name = update_data.area_name.strip()
     if update_data.scheme_name is not None:
         record.scheme_name = update_data.scheme_name.strip() if update_data.scheme_name else None
     if update_data.date is not None:
         record.date = update_data.date
+    if update_data.has_google_review is not None:
+        record.has_google_review = update_data.has_google_review
+    if update_data.google_review_rating is not None:
+        record.google_review_rating = update_data.google_review_rating
+    if update_data.google_review_text is not None:
+        record.google_review_text = update_data.google_review_text
+    if update_data.has_customer_feedback is not None:
+        record.has_customer_feedback = update_data.has_customer_feedback
+    if update_data.feedback_rating is not None:
+        record.feedback_rating = update_data.feedback_rating
+    if update_data.feedback_text is not None:
+        record.feedback_text = update_data.feedback_text
     if update_data.status is not None:
         record.status = update_data.status
+    if update_data.interested_in is not None:
+        record.interested_in = update_data.interested_in
     if update_data.notes is not None:
         record.notes = update_data.notes
 
@@ -759,10 +841,19 @@ def update_outdoor_customer(
         marketing_employee_name=emp_name,
         customer_name=record.customer_name,
         phone=record.phone,
+        dob=record.dob,
+        anniversary_date=record.anniversary_date,
         area_name=record.area_name,
         scheme_name=record.scheme_name,
         date=record.date,
+        has_google_review=record.has_google_review,
+        google_review_rating=record.google_review_rating,
+        google_review_text=record.google_review_text,
+        has_customer_feedback=record.has_customer_feedback,
+        feedback_rating=record.feedback_rating,
+        feedback_text=record.feedback_text,
         status=record.status,
+        interested_in=record.interested_in,
         notes=record.notes,
         created_at=record.created_at,
         updated_at=record.updated_at,

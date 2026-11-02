@@ -18,6 +18,7 @@ from backend.app.core.security import (
 )
 from backend.app.core.config import Settings
 from backend.app.models.branch import Branch, User
+from backend.app.models.employee import Employee
 from backend.app.models.audit import AuditLog
 from backend.app.schemas.auth import LoginRequest, TokenResponse, ManagerProfile
 
@@ -42,6 +43,7 @@ def get_env_manager_by_username(username: str) -> Optional[dict]:
         {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_3_USERNAME, "password": settings.MANAGER_3_PASSWORD, "full_name": settings.MANAGER_3_NAME},
         {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_4_USERNAME, "password": settings.MANAGER_4_PASSWORD, "full_name": settings.MANAGER_4_NAME},
         {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_5_USERNAME, "password": settings.MANAGER_5_PASSWORD, "full_name": settings.MANAGER_5_NAME},
+        {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_6_USERNAME, "password": settings.MANAGER_6_PASSWORD, "full_name": settings.MANAGER_6_NAME},
         # Kolar
         {"branch_code": "KOLAR", "branch_name": "Kolar", "username": settings.KOLAR_MANAGER_1_USERNAME, "password": settings.KOLAR_MANAGER_1_PASSWORD, "full_name": settings.KOLAR_MANAGER_1_NAME},
         {"branch_code": "KOLAR", "branch_name": "Kolar", "username": settings.KOLAR_MANAGER_2_USERNAME, "password": settings.KOLAR_MANAGER_2_PASSWORD, "full_name": settings.KOLAR_MANAGER_2_NAME},
@@ -59,6 +61,88 @@ def get_env_manager_by_username(username: str) -> Optional[dict]:
             return m
 
     return None
+
+
+def get_env_employee_password(identifier: str, emp: Optional[Employee] = None) -> str:
+    """
+    Look up employee password configured in server-side .env.
+    Checks:
+    1. Direct match on EMP_{NAME}_USERNAME (e.g. TULASI68, SHYLAJA8)
+    2. Employee ID matching digits in EMP_{NAME}_USERNAME (e.g. ID 68 -> TULASI68)
+    3. Employee code matching digits (e.g. EMP-YEL-068 -> 68 -> TULASI68)
+    4. First name matching EMP_{NAME}_USERNAME
+    5. Fallback to DEFAULT_EMPLOYEE_PASSWORD from .env
+    """
+    from backend.app.core.config import settings
+
+    target = (identifier or "").strip().lower()
+
+    # Search live .env file
+    env_paths = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "env"),
+        ".env",
+        "backend/.env",
+    ]
+    raw_env = {}
+    for p in env_paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            k, v = line.split("=", 1)
+                            raw_env[k.strip()] = v.strip()
+                if raw_env:
+                    break
+            except Exception:
+                pass
+
+    user_keys = [k for k in raw_env if k.startswith("EMP_") and k.endswith("_USERNAME")]
+
+    # 1. Direct match on EMP_*_USERNAME value
+    for uk in user_keys:
+        u_val = raw_env.get(uk, "").strip()
+        pwd_key = uk.replace("_USERNAME", "_PASSWORD")
+        if u_val.lower() == target and pwd_key in raw_env:
+            return raw_env[pwd_key]
+
+    # 2. Match by Employee Object (ID / First Name)
+    if emp:
+        emp_id_str = str(emp.id)
+        for uk in user_keys:
+            u_val = raw_env.get(uk, "").strip()
+            pwd_key = uk.replace("_USERNAME", "_PASSWORD")
+            digits = "".join(c for c in u_val if c.isdigit())
+            if digits == emp_id_str and pwd_key in raw_env:
+                return raw_env[pwd_key]
+
+        first_name = emp.full_name.strip().split()[0].lower() if emp.full_name else ""
+        if len(first_name) >= 3:
+            for uk in user_keys:
+                u_val = raw_env.get(uk, "").strip()
+                pwd_key = uk.replace("_USERNAME", "_PASSWORD")
+                if (first_name in u_val.lower() or first_name in uk.lower()) and pwd_key in raw_env:
+                    return raw_env[pwd_key]
+
+    # 3. Match by digits in target identifier (e.g. EMP-YEL-068 -> digits "068" -> int 68)
+    digits_in_target = "".join(c for c in target if c.isdigit())
+    if digits_in_target:
+        try:
+            target_int_str = str(int(digits_in_target))
+            for uk in user_keys:
+                u_val = raw_env.get(uk, "").strip()
+                pwd_key = uk.replace("_USERNAME", "_PASSWORD")
+                digits = "".join(c for c in u_val if c.isdigit())
+                if digits == target_int_str and pwd_key in raw_env:
+                    return raw_env[pwd_key]
+        except Exception:
+            pass
+
+    # 4. Return default configured employee password
+    return raw_env.get("DEFAULT_EMPLOYEE_PASSWORD") or getattr(settings, "DEFAULT_EMPLOYEE_PASSWORD", "Siri@Emp2026!")
+
 
 
 def sync_managers_from_env(db: Session):
@@ -384,6 +468,179 @@ class AuthService:
             branch_code=branch.code,
             branch_name=f"{branch.name} Showroom",
         )
+
+    def authenticate_employee(self, login_data: LoginRequest, ip_address: Optional[str] = None) -> TokenResponse:
+        """
+        Authenticate showroom employee against server-side .env credentials
+        and active employee record in the database.
+        """
+        live_settings = get_live_env_settings()
+        username_cleaned = login_data.username.strip()
+        password_cleaned = login_data.password.strip()
+        client_key = ip_address or "employee_login"
+        user_key = f"emp_{username_cleaned.lower()}"
+
+        # 1. Rate Limiting Protection (Brute-force shield)
+        is_allowed_ip, remaining_ip = check_login_rate_limit(client_key)
+        is_allowed_user, remaining_user = check_login_rate_limit(user_key)
+        if not is_allowed_ip or not is_allowed_user:
+            wait_time = max(remaining_ip, remaining_user)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Too many failed login attempts. Please wait {wait_time} seconds before trying again.",
+            )
+
+        # 2. Branch Resolution
+        target_branch = None
+        if login_data.branch_code:
+            target_branch = self.db.query(Branch).filter(Branch.code == login_data.branch_code.upper()).first()
+
+        # 3. Lookup Employee
+        emp_query = self.db.query(Employee).filter(Employee.status == "active")
+        if target_branch:
+            emp_query = emp_query.filter(Employee.branch_id == target_branch.id)
+
+        # Try match by employee code (e.g. EMP-YEL-008), full_name, or numeric ID
+        emp = emp_query.filter(func.lower(Employee.employee_code) == username_cleaned.lower()).first()
+        if not emp:
+            emp = emp_query.filter(func.lower(Employee.full_name) == username_cleaned.lower()).first()
+        if not emp and username_cleaned.isdigit():
+            emp = emp_query.filter(Employee.id == int(username_cleaned)).first()
+        if not emp:
+            # Extract digits if username has embedded ID (e.g. TULASI68 or EMP-YEL-068)
+            digits = "".join(c for c in username_cleaned if c.isdigit())
+            if digits:
+                try:
+                    emp = emp_query.filter(Employee.id == int(digits)).first()
+                except Exception:
+                    pass
+        if not emp:
+            # Fallback across all active employees in DB
+            emp = self.db.query(Employee).filter(
+                (func.lower(Employee.employee_code) == username_cleaned.lower()) |
+                (func.lower(Employee.full_name) == username_cleaned.lower())
+            ).filter(Employee.status == "active").first()
+            if not emp:
+                digits = "".join(c for c in username_cleaned if c.isdigit())
+                if digits:
+                    try:
+                        emp = self.db.query(Employee).filter(Employee.id == int(digits), Employee.status == "active").first()
+                    except Exception:
+                        pass
+
+        if not emp:
+            record_failed_login(client_key)
+            record_failed_login(user_key)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Employee '{username_cleaned}' not found in the selected branch.",
+            )
+
+        # STRICT ISOLATION: Showroom Managers must NOT log in through the Employee portal
+        if "manager" in (emp.designation or "").lower():
+            record_failed_login(client_key)
+            record_failed_login(user_key)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Showroom Managers cannot log in via the Employee portal. Please use the Showroom Manager login tab.",
+            )
+
+        is_manager_user = self.db.query(User).filter(
+            User.branch_id == emp.branch_id,
+            User.role == "MANAGER",
+            func.lower(User.username) == username_cleaned.lower(),
+        ).first()
+        if is_manager_user:
+            record_failed_login(client_key)
+            record_failed_login(user_key)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Showroom Managers cannot log in via the Employee portal. Please use the Showroom Manager login tab.",
+            )
+
+        # 4. Verify Password from .env (both specific designated password and default fallback password)
+        expected_pwd = get_env_employee_password(username_cleaned, emp)
+        default_pwd = getattr(live_settings, "DEFAULT_EMPLOYEE_PASSWORD", "Siri@Emp2026!")
+
+        pwd_match = (
+            hmac.compare_digest(password_cleaned, expected_pwd)
+            or (default_pwd and hmac.compare_digest(password_cleaned, default_pwd))
+        )
+
+        if not pwd_match:
+            record_failed_login(client_key)
+            record_failed_login(user_key)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid employee password. Please verify your credentials.",
+            )
+
+        reset_failed_login(client_key)
+        reset_failed_login(user_key)
+
+        emp_branch = self.db.query(Branch).filter(Branch.id == emp.branch_id).first()
+        b_code = emp_branch.code if emp_branch else (login_data.branch_code or "YELAHANKA")
+        b_name = emp_branch.name if emp_branch else "Showroom"
+
+        expire_mins = max(2880, live_settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta = (
+            timedelta(days=7)
+            if login_data.remember_me
+            else timedelta(minutes=expire_mins)
+        )
+
+        token = create_access_token(
+            subject=emp.id,
+            branch_id=emp.branch_id,
+            branch_code=b_code,
+            role="EMPLOYEE",
+            user_type="employee",
+            expires_delta=expires_delta,
+            extra_claims={
+                "branch_name": b_name,
+                "branch_code": b_code,
+                "full_name": emp.full_name,
+                "username": emp.employee_code,
+                "employee_code": emp.employee_code,
+                "employee_id": emp.id,
+                "email": emp.email or f"{emp.employee_code.lower()}@sirisamruddhigold.com",
+                "role": "EMPLOYEE",
+                "user_type": "employee",
+            },
+        )
+
+        # Audit log
+        try:
+            audit = AuditLog(
+                branch_id=emp.branch_id,
+                admin_id=emp.id,
+                admin_username=emp.employee_code,
+                action="Employee Login",
+                entity="Auth",
+                ip_address=ip_address,
+                details=f"Employee {emp.full_name} ({emp.employee_code}) logged into {b_name} showroom.",
+            )
+            self.db.add(audit)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+
+        return TokenResponse(
+            access_token=token,
+            token_type="bearer",
+            expires_in=int(expires_delta.total_seconds()),
+            user_id=emp.id,
+            username=emp.employee_code,
+            full_name=emp.full_name,
+            employee_code=emp.employee_code,
+            email=emp.email or f"{emp.employee_code.lower()}@sirisamruddhigold.com",
+            role="EMPLOYEE",
+            user_type="employee",
+            branch_id=emp.branch_id,
+            branch_code=b_code,
+            branch_name=f"{b_name} Showroom",
+        )
+
 
     def authenticate_super_admin(self, login_data: LoginRequest, ip_address: Optional[str] = None) -> TokenResponse:
         """

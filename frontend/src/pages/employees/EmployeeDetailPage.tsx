@@ -3090,35 +3090,6 @@ export const EmployeeDetailPage: React.FC = () => {
         }
       >
         <form onSubmit={handleSaveCall} className="space-y-4">
-          {/* Quick select from recent customer activity if available */}
-          {!editingCall && (customerActivities?.length ?? 0) > 0 && (
-            <div className="p-2.5 bg-[#FAF7F2] rounded-xl border border-[#D4AF37]/20">
-              <p className="text-[11px] font-semibold text-[#8C7A5B] uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" /> Quick Pick from Recent Customer Activity:
-              </p>
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-                {customerActivities.slice(0, 8).map((act) => (
-                  <button
-                    key={act.id}
-                    type="button"
-                    onClick={() => {
-                      setCallForm((prev) => ({
-                        ...prev,
-                        customer_name: act.customer_name || prev.customer_name,
-                        phone_number: act.phone_number || prev.phone_number,
-                        purpose: act.notes || prev.purpose,
-                      }));
-                    }}
-                    className="text-xs px-2.5 py-1 bg-white hover:bg-[#D4AF37]/15 rounded-lg border border-[#D4AF37]/30 text-[#1D1D1B] font-medium transition-colors flex items-center gap-1.5 shadow-xs"
-                  >
-                    <span>{act.customer_name}</span>
-                    {act.phone_number && <span className="text-[#8C7A5B] font-mono text-[10px]">({act.phone_number})</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Customer Name & Phone Number */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

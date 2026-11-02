@@ -8,6 +8,7 @@ from backend.app.core.security import decode_access_token
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.models.branch import User, Branch
+from backend.app.models.employee import Employee
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
@@ -62,7 +63,6 @@ def get_current_manager(
 
     user: Optional[User] = None
 
-    # Strategy 1: Lookup by database User ID
     if user_id_raw:
         try:
             user_id_int = int(user_id_raw)
@@ -70,13 +70,11 @@ def get_current_manager(
         except (ValueError, TypeError):
             user = None
 
-    # Strategy 2: Fallback lookup by username if ID shifted or reseeded
     if user is None and token_username:
         user = db.query(User).filter(
             func.lower(User.username) == token_username.strip().lower()
         ).first()
 
-    # Strategy 3: Auto-heal/sync if manager is defined in live environment
     if user is None and token_username:
         from backend.app.services.auth_service import get_env_manager_by_username
         from backend.app.core.security import get_password_hash
@@ -185,3 +183,56 @@ def get_current_super_admin(
 require_super_admin = get_current_super_admin
 get_current_admin = get_current_super_admin
 get_current_user = get_current_manager
+
+
+def get_current_employee(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> Employee:
+    """
+    Authenticate request via JWT and enforce Employee role.
+    Returns the authenticated Employee database entity.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate employee credentials or session has expired.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if not token:
+        raise credentials_exception
+
+    payload = decode_access_token(token)
+    if payload is None:
+        raise credentials_exception
+
+    role = payload.get("role")
+    if role not in ["EMPLOYEE", "employee"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Only Showroom Employees can access this endpoint.",
+        )
+
+    emp_id_raw = payload.get("sub") or payload.get("employee_id")
+    token_branch_id = payload.get("branch_id")
+
+    if not emp_id_raw:
+        raise credentials_exception
+
+    try:
+        emp_id = int(emp_id_raw)
+        emp = db.query(Employee).filter(Employee.id == emp_id).first()
+    except Exception:
+        emp = None
+
+    if not emp or emp.status != "active":
+        raise credentials_exception
+
+    if token_branch_id is not None and emp.branch_id != token_branch_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Security violation: Employee branch mismatch.",
+        )
+
+    return emp
+

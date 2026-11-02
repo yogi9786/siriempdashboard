@@ -155,7 +155,7 @@ export const AdminSettingsPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-sm font-bold text-[#1D1D1B]">Media & Storage Directory</h2>
-              <p className="text-xs text-[#8A8479]">Closing forms, reviews screenshots, and attire uploads</p>
+              <p className="text-xs text-[#8A8479]">Closing forms, review photo proofs, and attire uploads</p>
             </div>
           </div>
 

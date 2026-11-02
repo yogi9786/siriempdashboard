@@ -15,23 +15,29 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Branch, ManagerPublicOption } from '../../types';
+import { Branch, ManagerPublicOption, EmployeePublicOption } from '../../types';
 import api from '../../api/client';
 import logoImg from '../../assets/siri samruddhi logo.png';
 
 export const LoginPage: React.FC = () => {
-  const { login, isAuthenticated } = useAuth();
+  const { login, loginEmployee, isAuthenticated, isEmployee } = useAuth();
   const { success, error: toastError } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Branch and Manager states from Backend
+  // Portal Mode: 'manager' vs 'employee'
+  const [portalMode, setPortalMode] = useState<'manager' | 'employee'>('manager');
+
+  // Branch, Manager, and Employee states from Backend
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranchCode, setSelectedBranchCode] = useState<string>(
     searchParams.get('branch')?.toUpperCase() || 'YELAHANKA'
   );
   const [managers, setManagers] = useState<ManagerPublicOption[]>([]);
   const [selectedManagerUsername, setSelectedManagerUsername] = useState<string>('');
+
+  const [employees, setEmployees] = useState<EmployeePublicOption[]>([]);
+  const [selectedEmployeeUsername, setSelectedEmployeeUsername] = useState<string>('');
 
   // Form State
   const [password, setPassword] = useState<string>('');
@@ -53,9 +59,13 @@ export const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      if (isEmployee) {
+        navigate('/employee/activity');
+      } else {
+        navigate('/dashboard');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isEmployee, navigate]);
 
   // Fetch branches with their live managers directly from backend API
   const fetchBranches = async () => {
@@ -74,11 +84,33 @@ export const LoginPage: React.FC = () => {
           setManagers(defaultBranch.managers);
           setSelectedManagerUsername(defaultBranch.managers[0].username);
         }
+
+        // Also prefetch employees for this branch
+        fetchEmployees(defaultBranch.code);
       }
     } catch (err) {
       console.error('Failed to load branches from backend:', err);
     } finally {
       setIsFetchingData(false);
+    }
+  };
+
+  const fetchEmployees = async (branchCode: string) => {
+    try {
+      const res = await api.get<EmployeePublicOption[]>(`/api/v1/auth/branches/${branchCode.toUpperCase()}/employees`);
+      // Strictly exclude managers from employee login
+      const salesEmployees = (res.data || []).filter(
+        (emp) => !emp.designation?.toLowerCase().includes('manager')
+      );
+      if (salesEmployees.length > 0) {
+        setEmployees(salesEmployees);
+        setSelectedEmployeeUsername(salesEmployees[0].employee_code);
+      } else {
+        setEmployees([]);
+        setSelectedEmployeeUsername('');
+      }
+    } catch (err) {
+      console.error('Failed to load employees for branch:', err);
     }
   };
 
@@ -92,7 +124,7 @@ export const LoginPage: React.FC = () => {
     setErrorMessage('');
     setPassword('');
 
-    // INSTANT ZERO-LATENCY SWITCH: Immediately populate managers from already-cached branches list
+    // Update managers
     const targetBranch = branches.find((b) => b.code.toUpperCase() === cleanCode);
     if (targetBranch && targetBranch.managers && targetBranch.managers.length > 0) {
       setManagers(targetBranch.managers);
@@ -102,21 +134,21 @@ export const LoginPage: React.FC = () => {
       setSelectedManagerUsername('');
     }
 
+    // Sync employees for this branch
+    fetchEmployees(cleanCode);
+
     // Non-blocking background sync from .env endpoint
     api.get<ManagerPublicOption[]>(`/api/v1/auth/branches/${cleanCode}/managers`)
       .then((res) => {
         if (res.data && res.data.length > 0) {
           setManagers(res.data);
-          // Preserve selection if valid or default to first
           setSelectedManagerUsername((curr) => {
             const exists = res.data.some((m) => m.username === curr);
             return exists ? curr : res.data[0].username;
           });
         }
       })
-      .catch(() => {
-        // Handled silently since local state is already applied
-      });
+      .catch(() => {});
   };
 
   const handleManagerChange = (username: string) => {
@@ -124,11 +156,24 @@ export const LoginPage: React.FC = () => {
     setErrorMessage('');
   };
 
+  const handleEmployeeChange = (empCode: string) => {
+    setSelectedEmployeeUsername(empCode);
+    setErrorMessage('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedManagerUsername.trim() || !password.trim()) {
-      setErrorMessage('Please select a manager and enter your password.');
-      return;
+
+    if (portalMode === 'manager') {
+      if (!selectedManagerUsername.trim() || !password.trim()) {
+        setErrorMessage('Please select a manager and enter your password.');
+        return;
+      }
+    } else {
+      if (!selectedEmployeeUsername.trim() || !password.trim()) {
+        setErrorMessage('Please select an employee and enter your password.');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -138,13 +183,21 @@ export const LoginPage: React.FC = () => {
       const activeBranch = branches.find((b) => b.code === selectedBranchCode);
       const branchName = activeBranch ? activeBranch.name : selectedBranchCode;
 
-      await login(selectedManagerUsername.trim(), password.trim(), selectedBranchCode, rememberMe);
-      success(`Welcome to ${branchName} Showroom Portal`);
-      navigate('/dashboard');
+      if (portalMode === 'manager') {
+        await login(selectedManagerUsername.trim(), password.trim(), selectedBranchCode, rememberMe);
+        success(`Welcome to ${branchName} Showroom Portal`);
+        navigate('/dashboard');
+      } else {
+        await loginEmployee(selectedEmployeeUsername.trim(), password.trim(), selectedBranchCode, rememberMe);
+        success(`Welcome to ${branchName} Employee Portal`);
+        navigate('/employee/activity');
+      }
     } catch (err: any) {
       const msg =
         err.response?.data?.detail ||
-        'Invalid manager credentials. Please verify your password.';
+        (portalMode === 'manager'
+          ? 'Invalid manager credentials. Please verify your password.'
+          : 'Invalid employee credentials. Please check your password.');
       setErrorMessage(msg);
       toastError(msg);
     } finally {
@@ -153,6 +206,7 @@ export const LoginPage: React.FC = () => {
   };
 
   const currentBranch = branches.find((b) => b.code === selectedBranchCode);
+
 
   return (
     <div
@@ -195,13 +249,56 @@ export const LoginPage: React.FC = () => {
             />
           </div>
 
-          {/* Showroom Portal Badge in Purple */}
-          <div className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-[#7E22CE]" />
+          {/* Showroom Portal Badge */}
+          <div className={`mt-2 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full shadow-2xs transition-colors ${
+            portalMode === 'manager'
+              ? 'bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE]'
+              : 'bg-[#EFF6FF] border border-[#BFDBFE] text-[#2563EB]'
+          }`}>
+            <Sparkles className="w-3.5 h-3.5" />
             <span className="text-[11px] font-bold uppercase tracking-wider">
-              Employee Management Portal
+              {portalMode === 'manager' ? 'Showroom Manager Portal' : 'Showroom Employee Portal'}
             </span>
           </div>
+        </div>
+
+        {/* -------------------------------------------------------------
+            PORTAL ROLE TOGGLE: MANAGER vs EMPLOYEE
+        ------------------------------------------------------------- */}
+        <div className="grid grid-cols-2 p-1.5 rounded-2xl bg-[#F4F1EA] border border-[#E6E1D6] gap-1.5 shadow-inner">
+          <button
+            type="button"
+            onClick={() => {
+              setPortalMode('manager');
+              setErrorMessage('');
+              setPassword('');
+            }}
+            className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              portalMode === 'manager'
+                ? 'bg-white text-[#7E22CE] shadow-sm border border-[#E4DFD4] scale-[1.02]'
+                : 'text-[#6B6559] hover:text-[#1D1D1B] hover:bg-white/40'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Showroom Manager</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPortalMode('employee');
+              setErrorMessage('');
+              setPassword('');
+              fetchEmployees(selectedBranchCode);
+            }}
+            className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              portalMode === 'employee'
+                ? 'bg-white text-[#2563EB] shadow-sm border border-[#E4DFD4] scale-[1.02]'
+                : 'text-[#6B6559] hover:text-[#1D1D1B] hover:bg-white/40'
+            }`}
+          >
+            <UserIcon className="w-4 h-4" />
+            <span>Showroom Employee</span>
+          </button>
         </div>
 
         {/* -------------------------------------------------------------
@@ -210,7 +307,11 @@ export const LoginPage: React.FC = () => {
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <label className="text-xs font-semibold text-[#5E5A52] tracking-wide flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] text-[10px] flex items-center justify-center font-bold">
+              <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold ${
+                portalMode === 'manager'
+                  ? 'bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE]'
+                  : 'bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]'
+              }`}>
                 1
               </span>
               <span>Select Showroom Branch</span>
@@ -219,7 +320,9 @@ export const LoginPage: React.FC = () => {
               type="button"
               onClick={fetchBranches}
               title="Sync branches from server"
-              className="text-[11px] font-semibold text-[#7E22CE] hover:text-[#581C87] inline-flex items-center gap-1 cursor-pointer transition-colors"
+              className={`text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors ${
+                portalMode === 'manager' ? 'text-[#7E22CE] hover:text-[#581C87]' : 'text-[#2563EB] hover:text-[#1D4ED8]'
+              }`}
             >
               <RefreshCw className={`w-3 h-3 ${isFetchingData ? 'animate-spin' : ''}`} />
               <span>Sync</span>
@@ -229,7 +332,6 @@ export const LoginPage: React.FC = () => {
           <div className="grid grid-cols-3 gap-2.5">
             {branches.map((b, index) => {
               const isSelected = selectedBranchCode === b.code;
-              // Distinct solid palettes (No Gradients): 0 = Slate Blue (Employees), 1 = Emerald Green (Outdoor), 2 = Amber Terracotta
               const branchThemes = [
                 {
                   selected: 'bg-[#536B8A] text-white border-[#3E526B] shadow-sm scale-[1.02]',
@@ -300,62 +402,103 @@ export const LoginPage: React.FC = () => {
         )}
 
         {/* -------------------------------------------------------------
-            STEP 2: MANAGER CREDENTIALS & SIGN IN FORM
+            STEP 2: CREDENTIALS & SIGN IN FORM
         ------------------------------------------------------------- */}
         <form onSubmit={handleSubmit} className="space-y-4 pt-1 border-t border-[#EBE6DC]">
           <label className="text-xs font-semibold text-[#5E5A52] tracking-wide flex items-center gap-2 pt-1">
-            <span className="w-5 h-5 rounded-full bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] text-[10px] flex items-center justify-center font-bold">
+            <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold ${
+              portalMode === 'manager'
+                ? 'bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE]'
+                : 'bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]'
+            }`}>
               2
             </span>
-            <span>Manager Credentials</span>
+            <span>{portalMode === 'manager' ? 'Manager Credentials' : 'Employee Credentials'}</span>
           </label>
 
-          {/* Manager Dropdown from Backend */}
-          <div>
-            <label className="text-xs font-medium text-[#5E5A52] block mb-1.5">
-              Select Manager Name *
-            </label>
-            <div className="relative flex items-center">
-              <UserIcon className="absolute left-3.5 w-4 h-4 text-[#7E22CE] pointer-events-none" />
-              <select
-                value={selectedManagerUsername}
-                onChange={(e) => handleManagerChange(e.target.value)}
-                className="w-full select-luxury-purple rounded-2xl pl-9 pr-9 py-2.5 text-xs sm:text-sm appearance-none transition-all font-semibold cursor-pointer shadow-2xs"
-                required
-              >
-                {managers.length === 0 ? (
-                  <option value="">Fetching managers from showroom...</option>
-                ) : (
-                  managers.map((mgr) => (
-                    <option key={mgr.id} value={mgr.username}>
-                      {mgr.full_name} ({mgr.username})
-                    </option>
-                  ))
-                )}
-              </select>
-              <ChevronDown className="absolute right-3.5 w-4 h-4 text-[#8A8479] pointer-events-none" />
+          {portalMode === 'manager' ? (
+            /* Manager Dropdown */
+            <div>
+              <label className="text-xs font-medium text-[#5E5A52] block mb-1.5">
+                Select Manager Name *
+              </label>
+              <div className="relative flex items-center">
+                <UserIcon className="absolute left-3.5 w-4 h-4 text-[#7E22CE] pointer-events-none" />
+                <select
+                  value={selectedManagerUsername}
+                  onChange={(e) => handleManagerChange(e.target.value)}
+                  className="w-full select-luxury-purple rounded-2xl pl-9 pr-9 py-2.5 text-xs sm:text-sm appearance-none transition-all font-semibold cursor-pointer shadow-2xs"
+                  required
+                >
+                  {managers.length === 0 ? (
+                    <option value="">Fetching managers from showroom...</option>
+                  ) : (
+                    managers.map((mgr) => (
+                      <option key={mgr.id} value={mgr.username}>
+                        {mgr.full_name} ({mgr.username})
+                      </option>
+                    ))
+                  )}
+                </select>
+                <ChevronDown className="absolute right-3.5 w-4 h-4 text-[#8A8479] pointer-events-none" />
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Employee Dropdown */
+            <div>
+              <label className="text-xs font-medium text-[#5E5A52] block mb-1.5">
+                Select Sales Employee *
+              </label>
+              <div className="relative flex items-center">
+                <UserIcon className="absolute left-3.5 w-4 h-4 text-[#2563EB] pointer-events-none" />
+                <select
+                  value={selectedEmployeeUsername}
+                  onChange={(e) => handleEmployeeChange(e.target.value)}
+                  className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-2xl pl-9 pr-9 py-2.5 text-xs sm:text-sm appearance-none transition-all font-semibold cursor-pointer shadow-2xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 text-[#1E293B]"
+                  required
+                >
+                  {employees.filter((emp) => !emp.designation?.toLowerCase().includes('manager')).length === 0 ? (
+                    <option value="">No sales employees found for this showroom</option>
+                  ) : (
+                    employees
+                      .filter((emp) => !emp.designation?.toLowerCase().includes('manager'))
+                      .map((emp) => (
+                        <option key={emp.id} value={emp.employee_code}>
+                          {emp.full_name} ({emp.employee_code}) - {emp.designation}
+                        </option>
+                      ))
+                  )}
+                </select>
+                <ChevronDown className="absolute right-3.5 w-4 h-4 text-[#8A8479] pointer-events-none" />
+              </div>
+            </div>
+          )}
 
           {/* Password Input */}
           <div>
             <label className="text-xs font-medium text-[#5E5A52] block mb-1.5">
-              Manager Password *
+              {portalMode === 'manager' ? 'Manager Password *' : 'Employee Password *'}
             </label>
             <div className="relative flex items-center">
-              <Lock className="absolute left-3.5 w-4 h-4 text-[#7E22CE]" />
+              <Lock className={`absolute left-3.5 w-4 h-4 ${portalMode === 'manager' ? 'text-[#7E22CE]' : 'text-[#2563EB]'}`} />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter showroom manager password"
-                className="w-full input-luxury-purple rounded-2xl pl-9 pr-10 py-2.5 text-xs sm:text-sm transition-all font-semibold shadow-2xs"
+                placeholder={portalMode === 'manager' ? "Enter showroom manager password" : "Enter employee password"}
+                className={`w-full rounded-2xl pl-9 pr-10 py-2.5 text-xs sm:text-sm transition-all font-semibold shadow-2xs ${
+                  portalMode === 'manager'
+                    ? 'input-luxury-purple'
+                    : 'bg-[#F8FAFC] border border-[#CBD5E1] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 text-[#1E293B]'
+                }`}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 text-[#8A8479] hover:text-[#7E22CE] transition-colors p-1 cursor-pointer"
+                className={`absolute right-3 transition-colors p-1 cursor-pointer ${
+                  portalMode === 'manager' ? 'text-[#8A8479] hover:text-[#7E22CE]' : 'text-[#8A8479] hover:text-[#2563EB]'
+                }`}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -369,22 +512,30 @@ export const LoginPage: React.FC = () => {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-[#E4DFD4] text-[#7E22CE] focus:ring-[#7E22CE] accent-[#7E22CE]"
+                className={`w-4 h-4 rounded border-[#E4DFD4] ${portalMode === 'manager' ? 'text-[#7E22CE] focus:ring-[#7E22CE] accent-[#7E22CE]' : 'text-[#2563EB] focus:ring-[#2563EB] accent-[#2563EB]'}`}
               />
               <span>Remember session</span>
             </label>
 
-            <span className="text-[11px] font-semibold text-[#7E22CE] bg-[#F3E8FF] px-2.5 py-0.5 rounded-full border border-[#D8B4FE]">
+            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
+              portalMode === 'manager'
+                ? 'text-[#7E22CE] bg-[#F3E8FF] border-[#D8B4FE]'
+                : 'text-[#2563EB] bg-[#EFF6FF] border-[#BFDBFE]'
+            }`}>
               {currentBranch?.name} Branch
             </span>
           </div>
 
-          {/* Submit Action: Royal Purple Action Button */}
+          {/* Submit Action */}
           <div className="pt-2">
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 rounded-2xl bg-linear-to-r from-[#7E22CE] via-[#6B21A8] to-[#581C87] hover:from-[#6B21A8] hover:to-[#4C1D95] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 btn-login-purple flex items-center justify-center gap-2"
+              className={`w-full py-3.5 rounded-2xl text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+                portalMode === 'manager'
+                  ? 'bg-linear-to-r from-[#7E22CE] via-[#6B21A8] to-[#581C87] hover:from-[#6B21A8] hover:to-[#4C1D95] btn-login-purple'
+                  : 'bg-linear-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E40AF] hover:from-[#1D4ED8] hover:to-[#1E3A8A]'
+              }`}
             >
               {isLoading ? (
                 <>
@@ -393,8 +544,12 @@ export const LoginPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <span>Sign In to {currentBranch?.name || 'Showroom'} Portal</span>
-                  <ArrowRight className="w-4 h-4 text-[#D8B4FE]" />
+                  <span>
+                    {portalMode === 'manager'
+                      ? `Sign In to ${currentBranch?.name || 'Showroom'} Manager Portal`
+                      : `Sign In to ${currentBranch?.name || 'Showroom'} Employee Portal`}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-white/80" />
                 </>
               )}
             </button>
@@ -403,4 +558,5 @@ export const LoginPage: React.FC = () => {
       </div>
     </div>
   );
+
 };

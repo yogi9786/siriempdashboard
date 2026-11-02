@@ -137,6 +137,10 @@ class Settings(BaseSettings):
     MANAGER_5_USERNAME: str = "VIJAY0987"
     MANAGER_5_PASSWORD: str = "VIJAY@siri7890"
 
+    MANAGER_6_NAME: str = "GAGAN"
+    MANAGER_6_USERNAME: str = "GAGAN1234"
+    MANAGER_6_PASSWORD: str = "Gagan@siri1234"
+
     # Kolar Manager Accounts (Unique Names & Strong Passwords)
     KOLAR_MANAGER_1_NAME: str = "PRADEEP KUMAR B N"
     KOLAR_MANAGER_1_USERNAME: str = "PRADEEP1234"
@@ -158,6 +162,9 @@ class Settings(BaseSettings):
     UDUPI_MANAGER_2_NAME: str = "PRITHVIRAJ"
     UDUPI_MANAGER_2_USERNAME: str = "PRITHVIRAJ1234"
     UDUPI_MANAGER_2_PASSWORD: str = "PRITHVIRAJ@siri1234"
+
+    # Default Employee Password for Showroom Sales Staff
+    DEFAULT_EMPLOYEE_PASSWORD: str = "Siri@Emp2026!"
 
 
 def validate_security_configuration(s: Settings) -> None:

@@ -8,13 +8,16 @@ interface AuthContextType {
   selectedBranch: Branch | null;
   isAuthenticated: boolean;
   isSuperAdmin: boolean;
+  isEmployee: boolean;
   isLoading: boolean;
   login: (username: string, password: string, branchCode?: string, rememberMe?: boolean) => Promise<boolean>;
+  loginEmployee: (username: string, password: string, branchCode?: string, rememberMe?: boolean) => Promise<boolean>;
   loginAdmin: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
   setSelectedBranch: (branch: Branch | null) => void;
 }
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -79,6 +82,61 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // Calculate cache lifetime: minimum 2 days (172,800 seconds)
       const durationSeconds = data.expires_in || (2 * 24 * 60 * 60);
+      const expiresAt = Date.now() + durationSeconds * 1000;
+
+      setToken(data.access_token);
+      setUser(userProfile);
+      setSelectedBranch(branchObj);
+
+      localStorage.setItem('siri_auth_token', data.access_token);
+      localStorage.setItem('siri_auth_user', JSON.stringify(userProfile));
+      localStorage.setItem('siri_selected_branch', JSON.stringify(branchObj));
+      localStorage.setItem('siri_auth_expires_at', expiresAt.toString());
+      localStorage.setItem('siri_auth_timestamp', Date.now().toString());
+
+      return true;
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  const loginEmployee = async (
+    username: string,
+    password: string,
+    branchCode = 'YELAHANKA',
+    rememberMe = false
+  ): Promise<boolean> => {
+    try {
+      const response = await api.post('/api/v1/auth/employee/login', {
+        username: username.trim(),
+        password: password.trim(),
+        branch_code: branchCode,
+        remember_me: rememberMe,
+      });
+
+      const data = response.data;
+      const userProfile: User = {
+        id: data.user_id,
+        username: data.username,
+        full_name: data.full_name,
+        employee_code: data.employee_code,
+        email: data.email,
+        role: 'EMPLOYEE',
+        branch_id: data.branch_id,
+        branch_code: data.branch_code,
+        branch_name: data.branch_name,
+        is_active: true,
+      };
+
+      const branchObj: Branch = {
+        id: data.branch_id,
+        code: data.branch_code,
+        name: data.branch_name,
+        city: data.branch_name,
+        is_active: true,
+      };
+
+      const durationSeconds = data.expires_in || 2 * 24 * 60 * 60;
       const expiresAt = Date.now() + durationSeconds * 1000;
 
       setToken(data.access_token);
@@ -174,10 +232,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refreshProfile = async () => {
     if (!token) return;
     try {
-      const endpoint = user?.role === 'SUPER_ADMIN' ? '/api/v1/admin/auth/me' : '/api/v1/auth/me';
-      const res = await api.get<User>(endpoint);
-      setUser(res.data);
-      if (res.data.role === 'SUPER_ADMIN') {
+      const endpoint =
+        user?.role === 'SUPER_ADMIN'
+          ? '/api/v1/admin/auth/me'
+          : user?.role === 'EMPLOYEE'
+            ? '/api/v1/auth/employee/me'
+            : '/api/v1/auth/me';
+      const res = await api.get<any>(endpoint);
+      const userObj: User = {
+        ...res.data,
+        role: user?.role || res.data.role || (res.data.employee_code ? 'EMPLOYEE' : 'MANAGER'),
+      };
+      setUser(userObj);
+      if (userObj.role === 'SUPER_ADMIN') {
         const branchObj: Branch = {
           id: 0,
           code: 'ALL',
@@ -188,15 +255,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSelectedBranch(branchObj);
       } else {
         const branchObj: Branch = {
-          id: res.data.branch_id,
-          code: res.data.branch_code,
-          name: res.data.branch_name,
-          city: res.data.branch_name,
+          id: userObj.branch_id,
+          code: userObj.branch_code,
+          name: userObj.branch_name,
+          city: userObj.branch_name,
           is_active: true,
         };
         setSelectedBranch(branchObj);
       }
-      localStorage.setItem('siri_auth_user', JSON.stringify(res.data));
+      localStorage.setItem('siri_auth_user', JSON.stringify(userObj));
     } catch (err: any) {
       // Only force logout on genuine 401 token invalidation, not on temporary network glitch
       if (err.response?.status === 401) {
@@ -227,12 +294,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setToken(storedToken);
 
           // Non-blocking background sync
-          const endpoint = parsedUser.role === 'SUPER_ADMIN' ? '/api/v1/admin/auth/me' : '/api/v1/auth/me';
-          api.get<User>(endpoint)
+          const endpoint =
+            parsedUser.role === 'SUPER_ADMIN'
+              ? '/api/v1/admin/auth/me'
+              : parsedUser.role === 'EMPLOYEE'
+                ? '/api/v1/auth/employee/me'
+                : '/api/v1/auth/me';
+          api.get<any>(endpoint)
             .then((res) => {
               if (res.data) {
-                setUser(res.data);
-                localStorage.setItem('siri_auth_user', JSON.stringify(res.data));
+                const refreshedUser: User = {
+                  ...res.data,
+                  role: parsedUser.role || res.data.role || (res.data.employee_code ? 'EMPLOYEE' : 'MANAGER'),
+                };
+                setUser(refreshedUser);
+                localStorage.setItem('siri_auth_user', JSON.stringify(refreshedUser));
               }
             })
             .catch((err) => {
@@ -258,13 +334,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         selectedBranch,
         isAuthenticated: !!token && !!user,
         isSuperAdmin: user?.role === 'SUPER_ADMIN',
+        isEmployee: user?.role === 'EMPLOYEE',
         isLoading,
         login,
+        loginEmployee,
         loginAdmin,
         logout,
         refreshProfile,
         setSelectedBranch,
       }}
+
     >
       {children}
     </AuthContext.Provider>

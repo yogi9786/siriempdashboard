@@ -53,7 +53,14 @@ def list_employees(
             )
         )
 
-    return query.order_by(Employee.id.asc()).all()
+    employees = query.order_by(Employee.id.asc()).all()
+    for emp in employees:
+        g_pts = sum(max(1, r.customers_count or 1) for r in (emp.google_reviews or []) if (r.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
+        v_pts = sum(max(1, v.videos_count or 1) * 5 for v in (emp.video_reviews or []) if (v.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
+        emp.google_review_points = g_pts
+        emp.video_review_points = v_pts
+        emp.total_points = g_pts + v_pts
+    return employees
 
 
 @router.post("", response_model=EmployeeResponse, status_code=status.HTTP_201_CREATED, summary="Create a new employee in current manager's branch")
@@ -118,6 +125,51 @@ def create_employee(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create employee: {str(e)}",
         )
+
+
+@router.get("/points-ranking", summary="Get showroom staff ranked point-wise by review contributions")
+def get_showroom_employee_points_ranking(
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    """Returns staff in manager's showroom ranked point-wise by review and video points."""
+    employees = db.query(Employee).filter(
+        Employee.branch_id == current_user.branch_id,
+        Employee.status == "active",
+    ).all()
+
+    results = []
+    for emp in employees:
+        branch = emp.branch
+        g_pts = emp.google_review_points
+        v_pts = emp.video_review_points
+        t_pts = emp.total_points
+
+        results.append({
+            "employee_id": emp.id,
+            "employee_code": emp.employee_code,
+            "full_name": emp.full_name,
+            "designation": emp.designation or "Sales Staff",
+            "department": emp.department or "Floor",
+            "branch_id": emp.branch_id,
+            "branch_name": branch.name if branch else "Showroom",
+            "branch_code": branch.code if branch else "N/A",
+            "city": branch.city if branch else "Showroom",
+            "google_review_points": g_pts,
+            "video_review_points": v_pts,
+            "total_points": t_pts,
+            "pending_points": 0,
+            "rank": 0,
+        })
+
+    results.sort(
+        key=lambda x: (x["total_points"], x["google_review_points"], x["video_review_points"], -x["employee_id"]),
+        reverse=True
+    )
+    for idx, item in enumerate(results, start=1):
+        item["rank"] = idx
+
+    return results
 
 
 @router.get("/{employee_id}", response_model=EmployeeDetailResponse, summary="Get employee details and calculated activity metrics")
@@ -223,6 +275,9 @@ def get_employee(
     calls_done_count = sum(1 for c in calls if c.call_status == "Done")
     calls_pending_count = sum(1 for c in calls if c.call_status == "Pending")
 
+    g_pts = sum(max(1, r.customers_count or 1) for r in (employee.google_reviews or []) if (r.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
+    v_pts = sum(max(1, v.videos_count or 1) * 5 for v in (employee.video_reviews or []) if (v.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
+
     return EmployeeDetailResponse(
         id=employee.id,
         branch_id=employee.branch_id,
@@ -240,6 +295,9 @@ def get_employee(
         notes=employee.notes,
         created_at=employee.created_at,
         updated_at=employee.updated_at,
+        google_review_points=g_pts,
+        video_review_points=v_pts,
+        total_points=g_pts + v_pts,
         customers_attended_count=customers_attended,
         customers_closed_count=customers_closed,
         schemes_closed_count=schemes_closed,
@@ -590,4 +648,7 @@ def delete_employee_call(
     db.delete(log)
     db.commit()
     return {"message": "Call log deleted successfully."}
+
+
+
 

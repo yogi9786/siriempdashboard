@@ -1,6 +1,6 @@
 import json
 from typing import List, Optional, Dict, Any
-from datetime import date
+from datetime import date, datetime, timezone
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -8,12 +8,13 @@ from sqlalchemy import or_
 from backend.app.core.database import get_db
 from backend.app.models.branch import User
 from backend.app.models.employee import Employee
-from backend.app.models.activity import CustomerActivity, SchemeRecord, GoogleReview
+from backend.app.models.activity import CustomerActivity, SchemeRecord, GoogleReview, VideoReview
 from backend.app.models.feedback import CustomerFeedback
 from backend.app.schemas.activity import (
     CustomerActivityCreate,
     CustomerActivityUpdate,
     CustomerActivityResponse,
+    CustomerApprovalAction,
 )
 from backend.app.services.aisensy_service import AiSensyService
 from backend.app.dependencies.auth import get_current_manager
@@ -23,6 +24,7 @@ class SendWhatsAppRequest(BaseModel):
     customer_index: Optional[int] = None
 
 
+
 router = APIRouter(prefix="/api/v1/customers", tags=["Customer Activity"])
 
 
@@ -30,6 +32,7 @@ router = APIRouter(prefix="/api/v1/customers", tags=["Customer Activity"])
 def list_customer_activities(
     employee_id: Optional[int] = Query(None, description="Filter by employee ID"),
     status: Optional[str] = Query(None, description="Filter by status: Attended, Closed, Follow-up, Lost"),
+    approval_status: Optional[str] = Query(None, description="Filter by approval status: PENDING, APPROVED, REJECTED, all"),
     search: Optional[str] = Query(None, description="Search by customer name or phone"),
     from_date: Optional[date] = Query(None, description="Filter activities from date (YYYY-MM-DD)"),
     to_date: Optional[date] = Query(None, description="Filter activities to date (YYYY-MM-DD)"),
@@ -50,8 +53,19 @@ def list_customer_activities(
     if employee_id:
         query = query.filter(CustomerActivity.employee_id == employee_id)
 
-    if status and status != "all":
-        query = query.filter(CustomerActivity.status == status)
+    if status and status.lower() != "all":
+        st_clean = status.strip().lower()
+        if st_clean == "sold":
+            query = query.filter(or_(CustomerActivity.status.ilike("%sold%"), CustomerActivity.status.ilike("%closed%")))
+        elif st_clean == "interested":
+            query = query.filter(or_(CustomerActivity.status.ilike("%interested%"), CustomerActivity.status.ilike("%hold%"), CustomerActivity.status.ilike("%follow%"), CustomerActivity.status.ilike("%exchange%")))
+        elif st_clean == "lost":
+            query = query.filter(CustomerActivity.status.ilike("%lost%"))
+        else:
+            query = query.filter(CustomerActivity.status == status)
+
+    if approval_status and approval_status != "all":
+        query = query.filter(CustomerActivity.approval_status == approval_status.upper())
 
     # Date filter presets
     today_dt = date.today()
@@ -81,37 +95,107 @@ def list_customer_activities(
         )
 
     records = query.order_by(CustomerActivity.activity_date.desc(), CustomerActivity.id.desc()).all()
+    return [_build_activity_response(r) for r in records]
 
-    result = []
-    for r in records:
-        emp_name = r.employee.full_name if r.employee else None
-        emp_code = r.employee.employee_code if r.employee else None
-        b_name = r.branch.name if r.branch else None
-        b_code = r.branch.code if r.branch else None
-        res_item = CustomerActivityResponse(
-            id=r.id,
-            branch_id=r.branch_id,
-            branch_code=b_code,
-            branch_name=b_name,
-            employee_id=r.employee_id,
-            employee_name=emp_name,
-            employee_code=emp_code,
-            customers_count=getattr(r, 'customers_count', 1) or 1,
-            breakdown=getattr(r, 'breakdown', None),
-            customer_name=r.customer_name or "Customer Interaction",
-            phone_number=r.phone_number or "",
-            dob=getattr(r, 'dob', None),
-            anniversary=getattr(r, 'anniversary', None),
-            product_value=getattr(r, 'product_value', 0.0) or 0.0,
-            activity_date=r.activity_date,
-            status=r.status,
-            notes=r.notes,
-            created_at=r.created_at,
-            updated_at=r.updated_at,
+
+@router.get("/pending", response_model=List[CustomerActivityResponse], summary="List employee-submitted customer activities for manager review")
+def list_pending_customer_activities(
+    status_filter: Optional[str] = Query("PENDING", description="Filter: PENDING, APPROVED, REJECTED, all"),
+    employee_id: Optional[int] = Query(None, description="Filter by employee ID"),
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    query = (
+        db.query(CustomerActivity)
+        .join(Employee, CustomerActivity.employee_id == Employee.id)
+        .filter(CustomerActivity.branch_id == current_user.branch_id)
+    )
+
+    if status_filter and status_filter.upper() != "ALL":
+        query = query.filter(CustomerActivity.approval_status == status_filter.upper())
+
+    if employee_id:
+        query = query.filter(CustomerActivity.employee_id == employee_id)
+
+    records = query.order_by(CustomerActivity.id.desc()).all()
+    return [_build_activity_response(r) for r in records]
+
+
+@router.post("/{record_id}/review", response_model=CustomerActivityResponse, summary="Approve or Reject an employee-submitted customer activity")
+def review_customer_activity(
+    record_id: int,
+    action_data: CustomerApprovalAction,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(CustomerActivity)
+        .join(Employee, CustomerActivity.employee_id == Employee.id)
+        .filter(
+            CustomerActivity.id == record_id,
+            CustomerActivity.branch_id == current_user.branch_id,
         )
-        result.append(res_item)
+        .first()
+    )
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer activity not found.")
 
-    return result
+    act = action_data.action.strip().upper()
+    if act not in ["APPROVE", "REJECT"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Action must be APPROVE or REJECT.")
+
+    if act == "APPROVE":
+        record.approval_status = "APPROVED"
+        record.rejection_reason = None
+        record.reviewed_by_id = current_user.id
+        record.reviewed_at = datetime.now(timezone.utc)
+        if action_data.notes:
+            existing_notes = record.notes or ""
+            record.notes = f"{existing_notes}\n[Manager Approval Note]: {action_data.notes}".strip()
+        db.commit()
+        db.refresh(record)
+        _sync_activity_subrecords(record, db)
+
+        # Check if WhatsApp dispatch was requested on manager approval
+        should_send_wa = False
+        if record.notes and "[WhatsApp Dispatch Queued on Manager Approval]" in record.notes:
+            should_send_wa = True
+        if not should_send_wa and record.breakdown:
+            try:
+                bd_items = json.loads(record.breakdown)
+                if isinstance(bd_items, list):
+                    for item in bd_items:
+                        if isinstance(item, dict) and (item.get("send_whatsapp_on_approval") or item.get("queued_whatsapp")):
+                            should_send_wa = True
+                            break
+            except Exception:
+                pass
+
+        if should_send_wa:
+            try:
+                wa_results = AiSensyService.send_activity_whatsapp_notifications(record)
+                sent_count = sum(1 for r in wa_results if r.get("success"))
+                clean_notes = (record.notes or "").replace("[WhatsApp Dispatch Queued on Manager Approval]", "").strip()
+                record.notes = f"{clean_notes}\n[WhatsApp System]: {sent_count} message(s) sent automatically upon Manager Approval.".strip()
+                db.commit()
+                db.refresh(record)
+            except Exception as wa_err:
+                import logging
+                logging.getLogger("aisensy_service").error(f"Failed to auto-send WhatsApp on approval for activity #{record.id}: {wa_err}")
+    else:
+        record.approval_status = "REJECTED"
+        record.rejection_reason = action_data.rejection_reason or "Rejected by Showroom Manager."
+        record.reviewed_by_id = current_user.id
+        record.reviewed_at = datetime.now(timezone.utc)
+        if action_data.notes:
+            existing_notes = record.notes or ""
+            record.notes = f"{existing_notes}\n[Manager Rejection Note]: {action_data.notes}".strip()
+        db.commit()
+        db.refresh(record)
+        _sync_activity_subrecords(record, db)
+
+    return _build_activity_response(record)
+
 
 
 @router.post("", response_model=CustomerActivityResponse, status_code=status.HTTP_201_CREATED, summary="Record a customer attended by an employee")
@@ -196,6 +280,24 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
 
         tag = f"Activity #{record.id}"
 
+        # Collect existing review statuses to preserve manual approvals if already verified
+        existing_gr_statuses = {
+            r.customer_name: (r.status or "").upper()
+            for r in db.query(GoogleReview).filter(
+                GoogleReview.branch_id == record.branch_id,
+                GoogleReview.employee_id == record.employee_id,
+                GoogleReview.notes.like(f"%{tag}%")
+            ).all()
+        }
+        existing_vr_statuses = {
+            r.customer_name: (r.status or "").upper()
+            for r in db.query(VideoReview).filter(
+                VideoReview.branch_id == record.branch_id,
+                VideoReview.employee_id == record.employee_id,
+                VideoReview.notes.like(f"%{tag}%")
+            ).all()
+        }
+
         # Remove previous subrecords generated by this customer activity
         db.query(SchemeRecord).filter(
             SchemeRecord.branch_id == record.branch_id,
@@ -213,6 +315,12 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
             CustomerFeedback.branch_id == record.branch_id,
             CustomerFeedback.employee_id == record.employee_id,
             CustomerFeedback.notes.like(f"%{tag}%")
+        ).delete(synchronize_session=False)
+
+        db.query(VideoReview).filter(
+            VideoReview.branch_id == record.branch_id,
+            VideoReview.employee_id == record.employee_id,
+            VideoReview.notes.like(f"%{tag}%")
         ).delete(synchronize_session=False)
 
         for item in items:
@@ -252,7 +360,18 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
                     gr_rating = int(item.get("google_review_rating") or 5)
                 except (ValueError, TypeError):
                     gr_rating = 5
-                gr_text = item.get("google_review_text") or "Customer left a 5-star Google Review!"
+                gr_text = (item.get("google_review_text") or "Customer left a 5-star Google Review!").strip()
+                proof_url = (item.get("google_review_screenshot") or item.get("screenshot_url") or "").strip() or None
+
+                is_act_approved = (record.approval_status or "").upper() == "APPROVED"
+                is_act_rejected = (record.approval_status or "").upper() == "REJECTED"
+
+                if is_act_approved or existing_gr_statuses.get(c_name) in ["APPROVED", "VERIFIED", "PUBLISHED"]:
+                    gr_status = "APPROVED"
+                elif is_act_rejected:
+                    gr_status = "REJECTED"
+                else:
+                    gr_status = "PENDING"
 
                 gr = GoogleReview(
                     branch_id=record.branch_id,
@@ -262,8 +381,12 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
                     review_date=act_date,
                     rating=gr_rating,
                     review_text=gr_text,
+                    screenshot_url=proof_url,
                     notes=f"Google review from customer interaction. Linked to {tag}",
-                    status="Verified",
+                    status=gr_status,
+                    submitted_by_role=record.created_by_role or "EMPLOYEE",
+                    reviewed_by_id=record.reviewed_by_id if gr_status == "APPROVED" else None,
+                    reviewed_at=record.reviewed_at if gr_status == "APPROVED" else None,
                 )
                 db.add(gr)
 
@@ -288,6 +411,43 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
                     status="Verified",
                 )
                 db.add(cf)
+
+            # 4. Video Review (5 points per video)
+            if item.get("has_video_review") or item.get("video_title") or item.get("video_screenshot"):
+                try:
+                    v_count = max(1, int(item.get("videos_count") or 1))
+                except (ValueError, TypeError):
+                    v_count = 1
+                v_title = (item.get("video_title") or f"Customer Review Video - {c_name}").strip()
+                v_url = (item.get("video_url") or "").strip() or None
+                v_proof = (item.get("video_screenshot") or item.get("video_proof_url") or item.get("screenshot_url") or "").strip() or None
+
+                is_act_approved = (record.approval_status or "").upper() == "APPROVED"
+                is_act_rejected = (record.approval_status or "").upper() == "REJECTED"
+
+                if is_act_approved or existing_vr_statuses.get(c_name) in ["APPROVED", "VERIFIED", "PUBLISHED"]:
+                    vr_status = "APPROVED"
+                elif is_act_rejected:
+                    vr_status = "REJECTED"
+                else:
+                    vr_status = "PENDING"
+
+                vr = VideoReview(
+                    branch_id=record.branch_id,
+                    employee_id=record.employee_id,
+                    customer_name=c_name,
+                    videos_count=v_count,
+                    video_title=v_title,
+                    video_url=v_url,
+                    review_date=act_date,
+                    screenshot_url=v_proof,
+                    notes=f"Video review from customer interaction. Linked to {tag}",
+                    status=vr_status,
+                    submitted_by_role=record.created_by_role or "EMPLOYEE",
+                    reviewed_by_id=record.reviewed_by_id if vr_status == "APPROVED" else None,
+                    reviewed_at=record.reviewed_at if vr_status == "APPROVED" else None,
+                )
+                db.add(vr)
 
         db.commit()
     except Exception as err:
@@ -355,10 +515,17 @@ def _build_activity_response(record: CustomerActivity) -> CustomerActivityRespon
         product_value=getattr(record, 'product_value', 0.0) or 0.0,
         activity_date=record.activity_date,
         status=record.status,
+        approval_status=getattr(record, 'approval_status', 'APPROVED') or 'APPROVED',
+        created_by_role=getattr(record, 'created_by_role', 'MANAGER') or 'MANAGER',
+        created_by_id=getattr(record, 'created_by_id', None),
+        rejection_reason=getattr(record, 'rejection_reason', None),
+        reviewed_by_id=getattr(record, 'reviewed_by_id', None),
+        reviewed_at=getattr(record, 'reviewed_at', None),
         notes=record.notes,
         created_at=record.created_at,
         updated_at=record.updated_at,
     )
+
 
 
 @router.put("/{record_id}", response_model=CustomerActivityResponse, summary="Update a customer activity record (full replace)")
@@ -470,6 +637,35 @@ def delete_customer_activity(
     )
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Record not found.")
+
+    # Clean up linked subrecords
+    tag = f"Activity #{record.id}"
+    try:
+        db.query(SchemeRecord).filter(
+            SchemeRecord.branch_id == record.branch_id,
+            SchemeRecord.employee_id == record.employee_id,
+            SchemeRecord.notes.like(f"%{tag}%")
+        ).delete(synchronize_session=False)
+
+        db.query(GoogleReview).filter(
+            GoogleReview.branch_id == record.branch_id,
+            GoogleReview.employee_id == record.employee_id,
+            GoogleReview.notes.like(f"%{tag}%")
+        ).delete(synchronize_session=False)
+
+        db.query(VideoReview).filter(
+            VideoReview.branch_id == record.branch_id,
+            VideoReview.employee_id == record.employee_id,
+            VideoReview.notes.like(f"%{tag}%")
+        ).delete(synchronize_session=False)
+
+        db.query(CustomerFeedback).filter(
+            CustomerFeedback.branch_id == record.branch_id,
+            CustomerFeedback.employee_id == record.employee_id,
+            CustomerFeedback.notes.like(f"%{tag}%")
+        ).delete(synchronize_session=False)
+    except Exception as cleanup_err:
+        print(f"Warning cleaning subrecords for activity #{record.id}: {cleanup_err}")
 
     try:
         db.delete(record)

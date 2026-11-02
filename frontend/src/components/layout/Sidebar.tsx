@@ -14,6 +14,8 @@ import {
   Settings,
   FileSpreadsheet,
   MapPin,
+  Clock,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SignOutConfirmModal } from '../auth/SignOutConfirmModal';
@@ -180,6 +182,78 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
               </div>
               {isActive && (
                 <div className="w-1.5 h-1.5 rounded-full bg-[#818CF8] ml-1 shrink-0" />
+              )}
+            </>
+          )}
+        </NavLink>
+
+        {/* 3b. Pending Customer Activity (Warm Amber / Gold on Dark Grey - Verification and review of employee logs) */}
+        <NavLink
+          to="/pending-customer-activity"
+          onClick={onCloseMobile}
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 relative group ${
+              isActive
+                ? 'bg-[#78350F]/50 text-[#FEF3C7] font-bold border-l-[3px] border-l-[#F59E0B] border border-[#D97706]/40 shadow-xs pl-2.5'
+                : 'text-[#D4D4D8] hover:text-white hover:bg-white/5'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <div
+                className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                  isActive
+                    ? 'bg-[#92400E] text-[#FDE68A] border border-[#F59E0B]/50 shadow-2xs'
+                    : 'bg-[#27272A] text-[#FBBF24] group-hover:bg-[#3F3F46]'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 flex items-center justify-between min-w-0">
+                <span className="truncate">Pending Activity</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-[#D97706]/30 text-[#FDE68A] border border-[#D97706]/40 font-bold uppercase tracking-wider ml-1 shrink-0">
+                  Review
+                </span>
+              </div>
+              {isActive && (
+                <div className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] ml-1 shrink-0" />
+              )}
+            </>
+          )}
+        </NavLink>
+
+        {/* 3c. Reviews & Employee Points Verification (Warm Amber / Gold on Dark Grey) */}
+        <NavLink
+          to="/google-reviews"
+          onClick={onCloseMobile}
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 relative group ${
+              isActive
+                ? 'bg-[#78350F]/60 text-[#FEF3C7] font-bold border-l-[3px] border-l-[#F59E0B] border border-[#D97706]/40 shadow-xs pl-2.5'
+                : 'text-[#D4D4D8] hover:text-white hover:bg-white/5'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <div
+                className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                  isActive
+                    ? 'bg-[#92400E] text-[#FDE68A] border border-[#F59E0B]/50 shadow-2xs'
+                    : 'bg-[#27272A] text-[#FBBF24] group-hover:bg-[#3F3F46]'
+                }`}
+              >
+                <Star className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 flex items-center justify-between min-w-0">
+                <span className="truncate">Reviews & Points</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-[#D97706]/30 text-[#FDE68A] border border-[#D97706]/40 font-bold uppercase tracking-wider ml-1 shrink-0">
+                  Points
+                </span>
+              </div>
+              {isActive && (
+                <div className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] ml-1 shrink-0" />
               )}
             </>
           )}

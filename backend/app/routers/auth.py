@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from backend.app.core.database import get_db
 from backend.app.core.config import Settings
 from backend.app.models.branch import User, Branch
+from backend.app.models.employee import Employee
 from backend.app.models.audit import AuditLog
 from backend.app.schemas.auth import (
     LoginRequest,
@@ -14,11 +15,13 @@ from backend.app.schemas.auth import (
     MessageResponse,
     BranchPublicResponse,
     ManagerPublicOption,
+    EmployeePublicOption,
 )
 from backend.app.services.auth_service import AuthService, sync_managers_from_env, get_live_env_settings
-from backend.app.dependencies.auth import get_current_manager
+from backend.app.dependencies.auth import get_current_manager, get_current_employee
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+
 
 
 def get_env_branches_and_managers(db: Optional[Session] = None) -> List[BranchPublicResponse]:
@@ -153,11 +156,92 @@ def get_branch_managers(branch_code: str, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/branches/{branch_code}/employees", response_model=List[EmployeePublicOption], summary="List active showroom employees for a specific branch")
+def get_branch_employees(branch_code: str, db: Session = Depends(get_db)):
+    """Instantly return active showroom employees for the specified branch, strictly excluding Showroom Managers."""
+    clean_code = branch_code.strip().upper()
+    branch = db.query(Branch).filter(Branch.code == clean_code).first()
+    if not branch:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Branch code '{branch_code}' not found in database.",
+        )
+
+    # Gather manager names and usernames to strictly filter them out
+    manager_names = {
+        m.full_name.strip().lower()
+        for m in db.query(User).filter(User.branch_id == branch.id, User.role == "MANAGER").all()
+        if m.full_name
+    }
+    all_branches = get_env_branches_and_managers(db)
+    for b in all_branches:
+        if b.code == clean_code:
+            for m in b.managers:
+                if m.full_name:
+                    manager_names.add(m.full_name.strip().lower())
+                if m.username:
+                    manager_names.add(m.username.strip().lower())
+
+    employees = (
+        db.query(Employee)
+        .filter(Employee.branch_id == branch.id, Employee.status == "active")
+        .order_by(Employee.full_name.asc())
+        .all()
+    )
+
+    non_manager_employees = []
+    for e in employees:
+        desig = (e.designation or "").lower()
+        name = (e.full_name or "").strip().lower()
+        code = (e.employee_code or "").strip().lower()
+        # Strictly exclude anyone with Manager designation or matching manager names/codes
+        if "manager" in desig or name in manager_names or code in manager_names:
+            continue
+        non_manager_employees.append(e)
+
+    return [
+        EmployeePublicOption(
+            id=e.id,
+            full_name=e.full_name,
+            employee_code=e.employee_code,
+            username=e.employee_code,
+            designation=e.designation or "Sales Executive",
+            department=e.department or "Sales & Showroom Operations",
+            branch_id=branch.id,
+            branch_code=branch.code,
+        )
+        for e in non_manager_employees
+    ]
+
+
+@router.post("/employee/login", response_model=TokenResponse, summary="Authenticate showroom employee via credentials configured in .env")
+def employee_login(login_data: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    auth_service = AuthService(db)
+    client_ip = request.client.host if request.client else None
+    return auth_service.authenticate_employee(login_data, ip_address=client_ip)
+
+
+@router.get("/employee/me", response_model=EmployeePublicOption, summary="Get current logged in employee profile")
+def get_employee_me(current_employee: Employee = Depends(get_current_employee), db: Session = Depends(get_db)):
+    branch = db.query(Branch).filter(Branch.id == current_employee.branch_id).first()
+    return EmployeePublicOption(
+        id=current_employee.id,
+        full_name=current_employee.full_name,
+        employee_code=current_employee.employee_code,
+        username=current_employee.employee_code,
+        designation=current_employee.designation or "Sales Executive",
+        department=current_employee.department or "Sales & Showroom Operations",
+        branch_id=current_employee.branch_id,
+        branch_code=branch.code if branch else "SHOWROOM",
+    )
+
+
 @router.post("/login", response_model=TokenResponse, summary="Authenticate manager via username and password with security protection")
 def login(login_data: LoginRequest, request: Request, db: Session = Depends(get_db)):
     auth_service = AuthService(db)
     client_ip = request.client.host if request.client else None
     return auth_service.authenticate_manager(login_data, ip_address=client_ip)
+
 
 
 @router.get("/me", response_model=ManagerProfile, summary="Get current logged in manager profile")

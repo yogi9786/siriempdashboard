@@ -32,6 +32,7 @@ import {
   ChevronRight,
   ZoomIn,
   Sparkles,
+  MessageSquareHeart,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -58,6 +59,9 @@ interface CustomerEntryState {
   has_google_review: boolean;
   google_review_rating: number;
   google_review_text: string;
+  has_customer_feedback: boolean;
+  feedback_rating: number;
+  feedback_text: string;
   scheme_name: string;
   interested_gold: boolean;
   interested_diamond: boolean;
@@ -411,6 +415,9 @@ export const OutdoorMarketingPage: React.FC = () => {
             has_google_review: existing?.has_google_review || false,
             google_review_rating: existing?.google_review_rating || 5,
             google_review_text: existing?.google_review_text || '',
+            has_customer_feedback: existing?.has_customer_feedback || false,
+            feedback_rating: existing?.feedback_rating || 5,
+            feedback_text: existing?.feedback_text || '',
             scheme_name: existing?.scheme_name || duty.scheme_name || '',
             interested_gold: intStr.includes('gold'),
             interested_diamond: intStr.includes('diamond'),
@@ -540,6 +547,9 @@ export const OutdoorMarketingPage: React.FC = () => {
             has_google_review: false,
             google_review_rating: 5,
             google_review_text: '',
+            has_customer_feedback: false,
+            feedback_rating: 5,
+            feedback_text: '',
             scheme_name: form.scheme_name || '',
             interested_gold: false,
             interested_diamond: false,
@@ -579,6 +589,9 @@ export const OutdoorMarketingPage: React.FC = () => {
             has_google_review: false,
             google_review_rating: 5,
             google_review_text: '',
+            has_customer_feedback: false,
+            feedback_rating: 5,
+            feedback_text: '',
             scheme_name: form.scheme_name || STANDARD_SCHEMES[0],
             interested_gold: false,
             interested_diamond: false,
@@ -783,6 +796,9 @@ export const OutdoorMarketingPage: React.FC = () => {
             has_google_review: c.has_google_review,
             google_review_rating: c.google_review_rating || 5,
             google_review_text: c.google_review_text.trim() || undefined,
+            has_customer_feedback: c.has_customer_feedback,
+            feedback_rating: c.has_customer_feedback ? (c.feedback_rating || 5) : undefined,
+            feedback_text: c.has_customer_feedback && c.feedback_text.trim() ? c.feedback_text.trim() : undefined,
             scheme_name: c.scheme_name || form.scheme_name,
             area_name: form.area,
             interested_in: interestedArr.length > 0 ? interestedArr.join(', ') : undefined,
@@ -862,6 +878,9 @@ export const OutdoorMarketingPage: React.FC = () => {
       'Google Review Given',
       'Google Rating (Stars)',
       'Google Review Feedback',
+      'Customer Feedback Given',
+      'Customer Rating (Stars)',
+      'Customer Feedback Remarks',
       'Date',
       'Notes',
     ];
@@ -885,6 +904,9 @@ export const OutdoorMarketingPage: React.FC = () => {
       escapeCsv(c.has_google_review ? 'Yes' : 'No'),
       escapeCsv(c.has_google_review ? (c.google_review_rating || 5) : ''),
       escapeCsv(c.google_review_text || ''),
+      escapeCsv(c.has_customer_feedback ? 'Yes' : 'No'),
+      escapeCsv(c.has_customer_feedback ? (c.feedback_rating || 5) : ''),
+      escapeCsv(c.feedback_text || ''),
       escapeCsv(c.date || selectedDate),
       escapeCsv(c.notes || ''),
     ]);
@@ -1488,45 +1510,91 @@ export const OutdoorMarketingPage: React.FC = () => {
                                   </div>
                                 </div>
 
-                                {/* Customer Google Review Toggle */}
-                                <div className="p-2.5 rounded-xl bg-[#FAFDFB] border border-[#C5E3D5] space-y-2">
-                                  <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-[#1D1D1B]">
-                                    <input
-                                      type="checkbox"
-                                      checked={cust.has_google_review}
-                                      onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'has_google_review', e.target.checked)}
-                                      className="rounded text-[#23815F] focus:ring-[#23815F]"
-                                    />
-                                    <span className="flex items-center gap-1 text-amber-600">
-                                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-                                      <span>Customer Gave Google Review?</span>
-                                    </span>
-                                  </label>
+                                {/* Google Review & Customer Feedback Sections Side by Side */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                  {/* Customer Google Review Toggle */}
+                                  <div className="p-2.5 rounded-xl bg-[#FAFDFB] border border-[#C5E3D5] space-y-2">
+                                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-[#1D1D1B]">
+                                      <input
+                                        type="checkbox"
+                                        checked={cust.has_google_review}
+                                        onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'has_google_review', e.target.checked)}
+                                        className="rounded text-[#23815F] focus:ring-[#23815F]"
+                                      />
+                                      <span className="flex items-center gap-1 text-amber-600">
+                                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                                        <span>Customer Gave Google Review?</span>
+                                      </span>
+                                    </label>
 
-                                  {cust.has_google_review && (
-                                    <div className="grid grid-cols-3 gap-2 pt-1">
-                                      <div>
-                                        <select
-                                          value={cust.google_review_rating}
-                                          onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'google_review_rating', parseInt(e.target.value) || 5)}
-                                          className="w-full px-2 py-1 select-luxury-slate rounded-lg text-xs font-bold"
-                                        >
-                                          <option value="5">⭐⭐⭐⭐⭐ (5 Star)</option>
-                                          <option value="4">⭐⭐⭐⭐ (4 Star)</option>
-                                          <option value="3">⭐⭐⭐ (3 Star)</option>
-                                        </select>
+                                    {cust.has_google_review && (
+                                      <div className="grid grid-cols-3 gap-2 pt-1">
+                                        <div>
+                                          <select
+                                            value={cust.google_review_rating}
+                                            onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'google_review_rating', parseInt(e.target.value) || 5)}
+                                            className="w-full px-2 py-1 select-luxury-slate rounded-lg text-xs font-bold"
+                                          >
+                                            <option value="5">⭐⭐⭐⭐⭐ (5 Star)</option>
+                                            <option value="4">⭐⭐⭐⭐ (4 Star)</option>
+                                            <option value="3">⭐⭐⭐ (3 Star)</option>
+                                          </select>
+                                        </div>
+                                        <div className="col-span-2">
+                                          <input
+                                            type="text"
+                                            value={cust.google_review_text}
+                                            onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'google_review_text', e.target.value)}
+                                            placeholder="Review remark / feedback snippet..."
+                                            className="w-full px-2.5 py-1 input-luxury-beige rounded-lg text-xs"
+                                          />
+                                        </div>
                                       </div>
-                                      <div className="col-span-2">
-                                        <input
-                                          type="text"
-                                          value={cust.google_review_text}
-                                          onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'google_review_text', e.target.value)}
-                                          placeholder="Review remark / feedback snippet..."
-                                          className="w-full px-2.5 py-1 input-luxury-beige rounded-lg text-xs"
-                                        />
+                                    )}
+                                  </div>
+
+                                  {/* Customer Direct Feedback Section */}
+                                  <div className="p-2.5 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7] space-y-2">
+                                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-[#1D1D1B]">
+                                      <input
+                                        type="checkbox"
+                                        checked={cust.has_customer_feedback || false}
+                                        onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'has_customer_feedback', e.target.checked)}
+                                        className="rounded text-[#23815F] focus:ring-[#23815F]"
+                                      />
+                                      <span className="flex items-center gap-1 text-[#166534]">
+                                        <MessageSquareHeart className="w-3.5 h-3.5 text-[#23815F]" />
+                                        <span>Customer Feedback & Rating?</span>
+                                      </span>
+                                    </label>
+
+                                    {cust.has_customer_feedback && (
+                                      <div className="grid grid-cols-3 gap-2 pt-1">
+                                        <div>
+                                          <select
+                                            value={cust.feedback_rating || 5}
+                                            onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'feedback_rating', parseInt(e.target.value) || 5)}
+                                            className="w-full px-2 py-1 select-luxury-slate rounded-lg text-xs font-bold"
+                                          >
+                                            <option value="5">⭐⭐⭐⭐⭐ (5 Star)</option>
+                                            <option value="4">⭐⭐⭐⭐ (4 Star)</option>
+                                            <option value="3">⭐⭐⭐ (3 Star)</option>
+                                            <option value="2">⭐⭐ (2 Star)</option>
+                                            <option value="1">⭐ (1 Star)</option>
+                                          </select>
+                                        </div>
+                                        <div className="col-span-2">
+                                          <input
+                                            type="text"
+                                            value={cust.feedback_text || ''}
+                                            onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'feedback_text', e.target.value)}
+                                            placeholder="Customer feedback / remark notes..."
+                                            className="w-full px-2.5 py-1 input-luxury-beige rounded-lg text-xs"
+                                          />
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
+                                    )}
+                                  </div>
                                 </div>
 
                                 {/* Interested In Section */}
@@ -2028,6 +2096,18 @@ export const OutdoorMarketingPage: React.FC = () => {
                                 </p>
                               )}
                             </div>
+                          ) : cust.has_customer_feedback ? (
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700">
+                                <MessageSquareHeart className="w-3.5 h-3.5 text-emerald-600" />
+                                {cust.feedback_rating || 5}★ Feedback
+                              </span>
+                              {cust.feedback_text && (
+                                <p className="text-[10px] text-[#5E5A52] italic max-w-xs truncate">
+                                  "{cust.feedback_text}"
+                                </p>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-[#8A8479] text-[11px]">No review</span>
                           )}
@@ -2199,6 +2279,20 @@ export const OutdoorMarketingPage: React.FC = () => {
                               {cust.google_review_text && (
                                 <p className="text-[10px] text-[#5E5A52] italic mt-0.5">
                                   "{cust.google_review_text}"
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {cust.has_customer_feedback && (
+                          <div className="p-2 bg-white rounded-xl border border-emerald-200 text-xs text-emerald-800 flex items-start gap-1.5">
+                            <MessageSquareHeart className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
+                            <div>
+                              <strong>Customer Feedback: {cust.feedback_rating || 5} Stars</strong>
+                              {cust.feedback_text && (
+                                <p className="text-[10px] text-[#5E5A52] italic mt-0.5">
+                                  "{cust.feedback_text}"
                                 </p>
                               )}
                             </div>

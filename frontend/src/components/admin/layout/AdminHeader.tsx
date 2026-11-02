@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Menu,
   Clock,
   Shield,
   LogOut,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { BranchSelector } from '../ui/BranchSelector';
@@ -55,6 +57,23 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobile }) => {
 
       {/* Right: Global Branch Filter & Profile */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Staff Points Leaderboard Shortcut */}
+        <Link
+          to="/admin/dashboard"
+          onClick={() => {
+            setTimeout(() => {
+              const el = document.getElementById('staff-points-ranking');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }}
+          className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-linear-to-r from-[#FEF3C7] to-[#FDE68A] hover:from-[#FDE68A] hover:to-[#FCD34D] text-[#78350F] border border-[#F59E0B]/50 text-xs font-black transition-all shadow-2xs cursor-pointer group shrink-0"
+          title="Jump to Staff Points Ranking Leaderboard"
+        >
+          <Star className="w-3.5 h-3.5 fill-[#D97706] text-[#D97706] group-hover:scale-110 transition-transform" />
+          <span className="hidden sm:inline">Points Ranking</span>
+          <span className="sm:hidden text-[11px] font-bold">Ranking</span>
+        </Link>
+
         {/* Global Branch Selector Dropdown */}
         <BranchSelector variant="header" />
 

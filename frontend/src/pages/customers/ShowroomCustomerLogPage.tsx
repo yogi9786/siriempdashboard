@@ -215,7 +215,39 @@ export const ShowroomCustomerLogPage: React.FC = () => {
       if (reviewFilter === 'reviewed' && !r.hasGoogleReview) return false;
       if (reviewFilter === '5stars' && (!r.hasGoogleReview || r.googleReviewRating !== 5)) return false;
 
-      // 5. Text Search
+      // 5. Date Period Filter (Preset and Custom)
+      if (dateFilter !== 'all') {
+        const rowDate = r.activityDate ? r.activityDate.slice(0, 10) : '';
+        const now = new Date();
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const toLocalDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        const todayStr = toLocalDateStr(now);
+
+        if (dateFilter === 'today') {
+          if (rowDate !== todayStr) return false;
+        } else if (dateFilter === 'yesterday') {
+          const yest = new Date(now);
+          yest.setDate(yest.getDate() - 1);
+          if (rowDate !== toLocalDateStr(yest)) return false;
+        } else if (dateFilter === 'this_week') {
+          const weekAgo = new Date(now);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          const weekAgoStr = toLocalDateStr(weekAgo);
+          if (rowDate < weekAgoStr || rowDate > todayStr) return false;
+        } else if (dateFilter === 'this_month') {
+          const monthStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
+          if (rowDate < monthStart || rowDate > todayStr) return false;
+        } else if (dateFilter === 'custom') {
+          if (fromDate && rowDate < fromDate) return false;
+          if (toDate && rowDate > toDate) return false;
+        }
+      }
+
+      // Explicit from/to date check if set
+      if (fromDate && r.activityDate.slice(0, 10) < fromDate) return false;
+      if (toDate && r.activityDate.slice(0, 10) > toDate) return false;
+
+      // 6. Text Search
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase();
         const matchesName = r.customerName.toLowerCase().includes(q);
@@ -230,16 +262,16 @@ export const ShowroomCustomerLogPage: React.FC = () => {
 
       return true;
     });
-  }, [allCustomerRows, selectedEmpFilter, selectedStatusFilter, selectedSchemeFilter, reviewFilter, searchTerm]);
+  }, [allCustomerRows, selectedEmpFilter, selectedStatusFilter, selectedSchemeFilter, reviewFilter, searchTerm, dateFilter, fromDate, toDate]);
 
-  // Overall Statistics
+  // Overall Statistics calculated from the filtered customer rows
   const stats = useMemo(() => {
-    const totalCustomers = allCustomerRows.length;
-    const convertedCount = allCustomerRows.filter((r) => r.status.toLowerCase().includes('converted') || r.status.toLowerCase().includes('billing')).length;
-    const schemesList = allCustomerRows.filter((r) => r.hasScheme);
+    const totalCustomers = filteredRows.length;
+    const convertedCount = filteredRows.filter((r) => r.status.toLowerCase().includes('converted') || r.status.toLowerCase().includes('billing') || r.status.toLowerCase().includes('sold')).length;
+    const schemesList = filteredRows.filter((r) => r.hasScheme);
     const schemesCount = schemesList.length;
     const schemesValue = schemesList.reduce((acc, r) => acc + (Number(r.schemeAmount) || 0), 0);
-    const googleReviewsCount = allCustomerRows.filter((r) => r.hasGoogleReview).length;
+    const googleReviewsCount = filteredRows.filter((r) => r.hasGoogleReview).length;
     const conversionRate = totalCustomers > 0 ? Math.round((convertedCount / totalCustomers) * 100) : 0;
 
     return {
@@ -250,7 +282,7 @@ export const ShowroomCustomerLogPage: React.FC = () => {
       schemesValue,
       googleReviewsCount,
     };
-  }, [allCustomerRows]);
+  }, [filteredRows]);
 
   // Export to CSV
   const handleExportCSV = () => {
@@ -369,25 +401,25 @@ export const ShowroomCustomerLogPage: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 cursor-pointer shadow-2xs border-[#E4DFD4] text-[#1D1D1B] hover:bg-[#FAF8F3]"
+            leftIcon={<Download className="w-4 h-4 text-[#0284C7]" />}
+            className="cursor-pointer shadow-2xs border-[#E4DFD4] text-[#1D1D1B] hover:bg-[#FAF8F3] whitespace-nowrap shrink-0"
           >
-            <Download className="w-4 h-4 text-[#0284C7]" />
-            <span>Export Customer CSV ({filteredRows.length})</span>
+            Export Customer CSV ({filteredRows.length})
           </Button>
 
           <Button
             variant="primary"
             size="sm"
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 cursor-pointer shadow-xs bg-[#0284C7] hover:bg-[#0369A1]"
+            leftIcon={<Plus className="w-4 h-4 text-white" />}
+            className="cursor-pointer shadow-xs bg-[#0284C7] hover:bg-[#0369A1] text-white whitespace-nowrap shrink-0"
           >
-            <Plus className="w-4 h-4" />
-            <span>+ Log Customer Interaction</span>
+            Log Customer Interaction
           </Button>
         </div>
       </div>

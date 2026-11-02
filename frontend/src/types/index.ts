@@ -6,8 +6,9 @@ export interface User {
   username: string;
   full_name: string;
   manager_code?: string;
+  employee_code?: string;
   email?: string;
-  role: string; // "MANAGER"
+  role: string; // "MANAGER" | "SUPER_ADMIN" | "EMPLOYEE"
   is_active: boolean;
 }
 
@@ -22,6 +23,18 @@ export interface ManagerPublicOption {
   branch_id: number;
   branch_code: string;
 }
+
+export interface EmployeePublicOption {
+  id: number;
+  full_name: string;
+  employee_code: string;
+  username?: string;
+  designation?: string;
+  department?: string;
+  branch_id: number;
+  branch_code: string;
+}
+
 
 export interface Branch {
   id: number;
@@ -50,6 +63,9 @@ export interface Employee {
   is_outdoor_marketing_employee: boolean;
   profile_photo_url?: string;
   notes?: string;
+  google_review_points?: number;
+  video_review_points?: number;
+  total_points?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -105,6 +121,7 @@ export interface CustomerDetailItem {
   dob?: string;
   anniversary?: string;
   status: 'Sold' | 'Exchange' | 'Lost' | 'Walkin' | 'In Hold / Follow Up' | 'In Hold' | 'Follow Up' | string;
+  product_id?: string;
   product_value?: number | string;
   notes?: string;
   // Schemes Closed
@@ -115,6 +132,13 @@ export interface CustomerDetailItem {
   has_google_review?: boolean;
   google_review_rating?: number;
   google_review_text?: string;
+  google_review_screenshot?: string;
+  // Video Reviews
+  has_video_review?: boolean;
+  videos_count?: number;
+  video_title?: string;
+  video_url?: string;
+  video_screenshot?: string;
   // Customer Direct Feedback
   has_customer_feedback?: boolean;
   feedback_rating?: number;
@@ -139,10 +163,43 @@ export interface CustomerActivity {
   product_value?: number;
   activity_date: string;
   status: string; // 'Sold' | 'Exchange' | 'Lost' | 'Walkin' | 'In Hold / Follow Up' | 'Attended' | 'Closed'
+  approval_status?: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
+  created_by_role?: 'EMPLOYEE' | 'MANAGER' | string;
+  created_by_id?: number;
+  rejection_reason?: string;
+  reviewed_by_id?: number;
+  reviewed_at?: string;
   notes?: string;
   created_at?: string;
   updated_at?: string;
 }
+
+export interface EmployeeDashboardSummary {
+  employee_id: number;
+  employee_code: string;
+  employee_name: string;
+  designation: string;
+  department: string;
+  branch_id: number;
+  branch_name: string;
+  branch_code: string;
+  total_customer_activities: number;
+  pending_customer_activities: number;
+  approved_customer_activities: number;
+  rejected_customer_activities: number;
+  total_calls: number;
+  completed_calls: number;
+  pending_calls: number;
+  total_points?: number;
+  google_review_points?: number;
+  video_review_points?: number;
+  approved_google_reviews?: number;
+  approved_video_reviews?: number;
+  pending_reviews_count?: number;
+  pending_google_reviews?: number;
+  pending_video_reviews?: number;
+}
+
 
 export interface SchemeRecord {
   id: number;
@@ -178,6 +235,23 @@ export interface FormMedia {
   created_at?: string;
 }
 
+export interface EmployeePointsRanking {
+  rank: number;
+  employee_id: number;
+  employee_code: string;
+  full_name: string;
+  designation: string;
+  department: string;
+  branch_id: number;
+  branch_name: string;
+  branch_code: string;
+  city: string;
+  google_review_points: number;
+  video_review_points: number;
+  total_points: number;
+  pending_points: number;
+}
+
 export interface GoogleReview {
   id: number;
   branch_id: number;
@@ -193,8 +267,50 @@ export interface GoogleReview {
   review_text: string;
   notes?: string;
   screenshot_url?: string;
-  status: 'Published' | 'Pending' | 'Verified' | string;
+  status: 'Published' | 'Pending' | 'Verified' | 'APPROVED' | 'REJECTED' | string;
+  rejection_reason?: string | null;
+  reviewed_by_id?: number | null;
+  reviewed_at?: string | null;
+  submitted_by_role?: string;
+  points?: number;
   created_at?: string;
+  updated_at?: string;
+}
+
+export interface VideoReview {
+  id: number;
+  branch_id: number;
+  branch_code?: string;
+  branch_name?: string;
+  employee_id?: number;
+  employee_name?: string;
+  customer_name?: string;
+  videos_count: number;
+  video_title?: string;
+  video_url?: string;
+  review_date: string;
+  notes?: string;
+  screenshot_url?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'Verified' | 'Published' | string;
+  rejection_reason?: string | null;
+  reviewed_by_id?: number | null;
+  reviewed_at?: string | null;
+  submitted_by_role?: string;
+  points?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface EmployeePointsSummary {
+  employee_id: number;
+  employee_name: string;
+  google_review_points: number;
+  video_review_points: number;
+  total_points: number;
+  approved_google_reviews: number;
+  approved_video_reviews: number;
+  pending_google_reviews: number;
+  pending_video_reviews: number;
 }
 
 export interface AttireRecord {
@@ -246,6 +362,9 @@ export interface OutdoorMarketingCustomer {
   has_google_review?: boolean;
   google_review_rating?: number;
   google_review_text?: string;
+  has_customer_feedback?: boolean;
+  feedback_rating?: number;
+  feedback_text?: string;
   status: 'Lead' | 'Contacted' | 'Interested' | 'Converted' | 'Closed' | 'Lost' | string;
   interested_in?: string;
   notes?: string;
@@ -263,6 +382,9 @@ export interface OutdoorCustomerDetail {
   has_google_review: boolean;
   google_review_rating?: number;
   google_review_text?: string;
+  has_customer_feedback?: boolean;
+  feedback_rating?: number;
+  feedback_text?: string;
   scheme_name?: string;
   area_name?: string;
   interested_in?: string;

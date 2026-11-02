@@ -54,6 +54,9 @@ class OutdoorCustomerDetail(BaseModel):
     has_google_review: bool = False
     google_review_rating: Optional[int] = 5
     google_review_text: Optional[str] = None
+    has_customer_feedback: bool = False
+    feedback_rating: Optional[int] = 5
+    feedback_text: Optional[str] = None
     scheme_name: Optional[str] = None
     area_name: Optional[str] = None
     interested_in: Optional[str] = None
@@ -74,6 +77,9 @@ class OutdoorCustomerCreate(BaseModel):
     has_google_review: bool = False
     google_review_rating: Optional[int] = 5
     google_review_text: Optional[str] = None
+    has_customer_feedback: bool = False
+    feedback_rating: Optional[int] = 5
+    feedback_text: Optional[str] = None
     status: str = Field(default="Lead")
     interested_in: Optional[str] = None
     notes: Optional[str] = None
@@ -93,6 +99,9 @@ class OutdoorCustomerUpdate(BaseModel):
     has_google_review: Optional[bool] = None
     google_review_rating: Optional[int] = None
     google_review_text: Optional[str] = None
+    has_customer_feedback: Optional[bool] = None
+    feedback_rating: Optional[int] = None
+    feedback_text: Optional[str] = None
     status: Optional[str] = None
     interested_in: Optional[str] = None
     notes: Optional[str] = None
@@ -117,6 +126,9 @@ class OutdoorCustomerResponse(BaseModel):
     has_google_review: bool = False
     google_review_rating: Optional[int] = 5
     google_review_text: Optional[str] = None
+    has_customer_feedback: bool = False
+    feedback_rating: Optional[int] = None
+    feedback_text: Optional[str] = None
     status: str
     interested_in: Optional[str] = None
     notes: Optional[str] = None

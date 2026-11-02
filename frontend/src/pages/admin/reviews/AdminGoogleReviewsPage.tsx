@@ -14,8 +14,16 @@ import {
   User,
   Phone,
   RotateCcw,
+  Video,
+  Play,
+  Trophy,
+  Clock,
+  XCircle,
+  AlertTriangle,
+  FileImage,
+  Check,
 } from 'lucide-react';
-import { GoogleReview, AdminFeedbackOverview, CustomerFeedback } from '../../../types';
+import { GoogleReview, VideoReview, AdminFeedbackOverview, CustomerFeedback } from '../../../types';
 import { AdminKPICard } from '../../../components/admin/ui/AdminKPICard';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../../components/ui/EmptyState';
@@ -30,7 +38,7 @@ export const AdminGoogleReviewsPage: React.FC = () => {
   const { branches, selectedBranchId, setSelectedBranchId } = useAdminBranch();
   const { error: toastError } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'google_reviews' | 'direct_feedback'>('google_reviews');
+  const [activeTab, setActiveTab] = useState<'google_reviews' | 'video_reviews' | 'direct_feedback'>('google_reviews');
 
   // Google Reviews State
   const [reviews, setReviews] = useState<GoogleReview[]>([]);
@@ -40,6 +48,16 @@ export const AdminGoogleReviewsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [branchFilter, setBranchFilter] = useState<string>(selectedBranchId?.toString() || 'all');
   const [previewReview, setPreviewReview] = useState<GoogleReview | null>(null);
+
+  // Video Reviews State
+  const [videoReviews, setVideoReviews] = useState<VideoReview[]>([]);
+  const [totalVideoReviews, setTotalVideoReviews] = useState<number>(0);
+  const [totalVideosCount, setTotalVideosCount] = useState<number>(0);
+  const [verifiedVideosCount, setVerifiedVideosCount] = useState<number>(0);
+  const [pendingVideosCount, setPendingVideosCount] = useState<number>(0);
+  const [isVideoLoading, setIsVideoLoading] = useState<boolean>(false);
+  const [videoSearchTerm, setVideoSearchTerm] = useState<string>('');
+  const [previewVideoReview, setPreviewVideoReview] = useState<VideoReview | null>(null);
 
   // Customer Feedback State
   const [feedbackOverview, setFeedbackOverview] = useState<AdminFeedbackOverview | null>(null);
@@ -85,6 +103,35 @@ export const AdminGoogleReviewsPage: React.FC = () => {
     }
   };
 
+  const fetchVideoReviews = async () => {
+    try {
+      setIsVideoLoading(true);
+      const params: Record<string, any> = {};
+      if (branchFilter !== 'all') params.branch_id = parseInt(branchFilter);
+
+      const res = await api.get<any>('/api/v1/admin/video-reviews', { params });
+      setVideoReviews(res.data.reviews || []);
+      setTotalVideoReviews(res.data.total_reviews || 0);
+      setTotalVideosCount(res.data.total_videos || 0);
+      setVerifiedVideosCount(res.data.verified_count || 0);
+      setPendingVideosCount(res.data.pending_count || 0);
+    } catch (err) {
+      console.error('Failed to load admin video reviews:', err);
+      toastError('Failed to fetch video reviews.');
+    } finally {
+      setIsVideoLoading(false);
+    }
+  };
+
+  const handleAdminVerifyVideo = async (id: number) => {
+    try {
+      await api.post(`/api/v1/admin/video-reviews/${id}/verify`);
+      fetchVideoReviews();
+    } catch (err) {
+      toastError('Failed to verify video review.');
+    }
+  };
+
   const fetchDirectFeedback = useCallback(async () => {
     try {
       setIsFeedbackLoading(true);
@@ -103,6 +150,7 @@ export const AdminGoogleReviewsPage: React.FC = () => {
 
   useEffect(() => {
     fetchReviews();
+    fetchVideoReviews();
     fetchDirectFeedback();
   }, [branchFilter]);
 
@@ -136,7 +184,7 @@ export const AdminGoogleReviewsPage: React.FC = () => {
               Brand Reputation & Customer Sentiment
             </span>
             <span className="text-xs text-[#8A8479] font-medium">
-              {totalReviews} Google Reviews • {feedbackOverview?.total_feedbacks || 0} Showroom Feedback Logs
+              {totalReviews} Google Reviews • {totalVideosCount} Video Reviews • {feedbackOverview?.total_feedbacks || 0} Showroom Feedback Logs
             </span>
           </div>
           <h1 className="text-2xl font-extrabold text-[#1D1D1B] tracking-tight mt-1">
@@ -180,6 +228,23 @@ export const AdminGoogleReviewsPage: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab('video_reviews')}
+          className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+            activeTab === 'video_reviews'
+              ? 'bg-[#7E22CE] text-white shadow-xs'
+              : 'bg-white text-[#5E5A52] hover:bg-[#FAF8F3] border border-[#E8E6E1]'
+          }`}
+        >
+          <Video className="w-3.5 h-3.5" />
+          <span>🎥 Video Reviews & Proofs ({totalVideosCount})</span>
+          {pendingVideosCount > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-black text-[10px] font-black">
+              {pendingVideosCount} pending
+            </span>
+          )}
+        </button>
+
+        <button
           onClick={() => setActiveTab('direct_feedback')}
           className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
             activeTab === 'direct_feedback'
@@ -188,7 +253,7 @@ export const AdminGoogleReviewsPage: React.FC = () => {
           }`}
         >
           <MessageSquare className="w-3.5 h-3.5" />
-          <span>💬 Customer Direct Feedback & Staff Ratings ({feedbackOverview?.total_feedbacks || 0})</span>
+          <span>💬 Customer Direct Feedback ({feedbackOverview?.total_feedbacks || 0})</span>
         </button>
       </div>
 
@@ -311,6 +376,205 @@ export const AdminGoogleReviewsPage: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------------
+          TAB: VIDEO REVIEWS & EMPLOYEE POINTS
+      ------------------------------------------------------------- */}
+      {activeTab === 'video_reviews' && (
+        <div className="space-y-6">
+          {/* 4 KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <AdminKPICard
+              title="Total Video Reviews"
+              value={totalVideoReviews}
+              subtitle={`${totalVideosCount} Total Videos Recorded`}
+              icon={<Video className="w-5 h-5 text-[#7E22CE]" />}
+              iconBgColor="bg-[#F3E8FF] border-[#D8B4FE] text-[#7E22CE]"
+            />
+
+            <AdminKPICard
+              title="Points Awarded"
+              value={`${verifiedVideosCount} Pts`}
+              subtitle="1-2 points per verified video"
+              icon={<Trophy className="w-5 h-5 text-[#D97706]" />}
+              iconBgColor="bg-[#FEF3C7] border-[#FDE68A] text-[#D97706]"
+            />
+
+            <AdminKPICard
+              title="Verified Submissions"
+              value={verifiedVideosCount}
+              subtitle="Showroom manager approved"
+              icon={<CheckCircle2 className="w-5 h-5 text-[#21845F]" />}
+              iconBgColor="bg-[#E8F4EE] border-[#C5E3D5] text-[#21845F]"
+            />
+
+            <AdminKPICard
+              title="Pending Verification"
+              value={pendingVideosCount}
+              subtitle="Awaiting showroom approval"
+              icon={<Clock className="w-5 h-5 text-[#B45309]" />}
+              iconBgColor="bg-[#FEFCE8] border-[#FEF08A] text-[#B45309]"
+            />
+          </div>
+
+          {/* Search Bar */}
+          <div className="p-4 bg-white border border-[#E4DFD4] rounded-2xl shadow-xs flex items-center justify-between gap-3">
+            <div className="relative flex-1 w-full max-w-md">
+              <Search className="w-4 h-4 text-[#8A8479] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={videoSearchTerm}
+                onChange={(e) => setVideoSearchTerm(e.target.value)}
+                placeholder="Search by customer, employee, or video title..."
+                className="w-full pl-10 pr-4 py-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-none focus:border-[#7E22CE]"
+              />
+            </div>
+            <span className="text-xs text-[#8A8479] font-medium">
+              Showing {videoReviews.length} video review entries
+            </span>
+          </div>
+
+          {/* Video Reviews Grid */}
+          {isVideoLoading ? (
+            <div className="p-16 flex items-center justify-center bg-white border border-[#E6E2D8] rounded-3xl">
+              <LoadingSpinner message="Loading video reviews across showrooms..." />
+            </div>
+          ) : videoReviews.length === 0 ? (
+            <div className="bg-white border border-[#E6E2D8] rounded-3xl p-12">
+              <EmptyState
+                icon={Video}
+                title="No Video Reviews Recorded"
+                description="No video reviews have been found matching the branch and search filters."
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {videoReviews
+                .filter((v) => {
+                  if (!videoSearchTerm.trim()) return true;
+                  const q = videoSearchTerm.toLowerCase();
+                  return (
+                    (v.customer_name || '').toLowerCase().includes(q) ||
+                    (v.employee_name || '').toLowerCase().includes(q) ||
+                    (v.video_title || '').toLowerCase().includes(q) ||
+                    (v.branch_name || '').toLowerCase().includes(q)
+                  );
+                })
+                .map((v) => {
+                  const isApproved = (v.status || '').toUpperCase() === 'APPROVED' || (v.status || '').toUpperCase() === 'VERIFIED' || (v.status || '').toUpperCase() === 'PUBLISHED';
+                  const isPending = (v.status || '').toUpperCase() === 'PENDING';
+
+                  return (
+                    <div
+                      key={v.id}
+                      className="bg-white border border-[#E6E2D8] rounded-2xl p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between space-y-4"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] flex items-center gap-1">
+                            <Video className="w-3 h-3 text-[#7E22CE]" />
+                            {v.videos_count} Video{v.videos_count > 1 ? 's' : ''} ({v.videos_count} Pt{v.videos_count > 1 ? 's' : ''})
+                          </span>
+                          <span className="text-[11px] font-mono text-[#8A8479]">{v.review_date}</span>
+                        </div>
+
+                        <div className="font-extrabold text-[#1D1D1B] text-xs flex items-center justify-between">
+                          <span>{v.customer_name || 'Customer'}</span>
+                          {v.branch_name && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#6B6559] border border-[#E6E1D6]">
+                              {v.branch_name}
+                            </span>
+                          )}
+                        </div>
+
+                        {v.employee_name && (
+                          <div className="text-[11px] text-[#23815F] font-bold flex items-center gap-1">
+                            <span>Staff: {v.employee_name}</span>
+                          </div>
+                        )}
+
+                        <div className="bg-[#FAF8F5] p-3 rounded-xl border border-[#F0ECE1] space-y-1">
+                          <div className="text-xs font-bold text-[#1D1D1B] flex items-center gap-1.5">
+                            <Play className="w-3.5 h-3.5 text-[#7E22CE] shrink-0" />
+                            <span className="truncate">{v.video_title || 'Customer Review Video'}</span>
+                          </div>
+                          {v.video_url && (
+                            <a
+                              href={v.video_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] text-[#2563EB] font-bold hover:underline flex items-center gap-1 truncate"
+                            >
+                              <ExternalLink className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{v.video_url}</span>
+                            </a>
+                          )}
+                          {v.notes && (
+                            <p className="text-[10px] text-[#8A8479] italic truncate">Note: {v.notes}</p>
+                          )}
+                        </div>
+
+                        {/* Screenshot Proof */}
+                        {v.screenshot_url && (
+                          <div
+                            onClick={() => setPreviewVideoReview(v)}
+                            className="relative rounded-xl overflow-hidden border border-[#E6E2D8] cursor-pointer group h-28 bg-gray-50 flex items-center justify-center"
+                          >
+                            <img
+                              src={getMediaUrl(v.screenshot_url)}
+                              alt="Photo Proof"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                              <Eye className="w-4 h-4" />
+                              <span>View Proof</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-[#F0EBE0]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] flex items-center gap-1">
+                            <Trophy className="w-3 h-3 text-[#D97706]" />
+                            +{v.points ?? v.videos_count} Pt{v.videos_count > 1 ? 's' : ''}
+                          </span>
+
+                          {isApproved ? (
+                            <span className="text-[10px] font-bold text-[#21845F] flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-[#21845F]" />
+                              Verified
+                            </span>
+                          ) : isPending ? (
+                            <span className="text-[10px] font-bold text-[#B45309] flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-[#B45309]" />
+                              Pending
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-[#C24141] flex items-center gap-1">
+                              <XCircle className="w-3 h-3 text-[#C24141]" />
+                              Rejected
+                            </span>
+                          )}
+                        </div>
+
+                        {isPending && (
+                          <button
+                            onClick={() => handleAdminVerifyVideo(v.id)}
+                            className="py-1 px-2.5 rounded-lg bg-[#23815F] hover:bg-[#1C694D] text-white text-[11px] font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>Verify</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
         </div>
       )}
 
@@ -486,6 +750,30 @@ export const AdminGoogleReviewsPage: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Video Proof Lightbox Modal */}
+      {previewVideoReview && (
+        <Modal
+          isOpen={!!previewVideoReview}
+          onClose={() => setPreviewVideoReview(null)}
+          title={`Video Review Proof: ${previewVideoReview.customer_name}`}
+          size="lg"
+        >
+          <div className="space-y-4">
+            <div className="rounded-xl overflow-hidden border border-[#E6E2D8] bg-black max-h-[70vh] flex items-center justify-center">
+              <img
+                src={getMediaUrl(previewVideoReview.screenshot_url)}
+                alt="Video Review Proof"
+                className="max-h-[70vh] w-auto object-contain"
+              />
+            </div>
+            <div className="p-3 bg-[#FAF8F5] rounded-xl border border-[#F0ECE1] flex items-center justify-between text-xs">
+              <span className="font-bold text-[#1D1D1B]">{previewVideoReview.video_title || 'Video Review'}</span>
+              <span className="font-extrabold text-[#7E22CE]">+{previewVideoReview.videos_count} Points</span>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {/* Review Proof Modal */}

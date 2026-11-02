@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Building2,
   Gem,
+  MessageSquareHeart,
 } from 'lucide-react';
 import { OutdoorMarketingCustomer, Employee } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -80,6 +81,9 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
     has_google_review: boolean;
     google_review_rating: number;
     google_review_text: string;
+    has_customer_feedback: boolean;
+    feedback_rating: number;
+    feedback_text: string;
     date: string;
     notes: string;
   }>({
@@ -97,6 +101,9 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
     has_google_review: false,
     google_review_rating: 5,
     google_review_text: '',
+    has_customer_feedback: false,
+    feedback_rating: 5,
+    feedback_text: '',
     date: new Date().toISOString().split('T')[0],
     notes: '',
   });
@@ -109,6 +116,9 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       if (selectedStatusFilter !== 'all') params.status = selectedStatusFilter;
       if (selectedAreaFilter !== 'all') params.area = selectedAreaFilter;
       if (selectedSchemeFilter !== 'all') params.scheme_name = selectedSchemeFilter;
+      if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom') {
+        params.date_filter = dateFilter;
+      }
       if (fromDate) params.from_date = fromDate;
       if (toDate) params.to_date = toDate;
       if (searchTerm.trim()) params.search = searchTerm.trim();
@@ -133,7 +143,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [selectedEmpFilter, selectedStatusFilter, selectedAreaFilter, selectedSchemeFilter, fromDate, toDate]);
+  }, [selectedEmpFilter, selectedStatusFilter, selectedAreaFilter, selectedSchemeFilter, dateFilter, fromDate, toDate]);
 
   // Unique campaign areas list for filter dropdown
   const uniqueAreas = useMemo(() => {
@@ -144,14 +154,45 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
     return Array.from(set).sort();
   }, [customers]);
 
-  // Client-side instant filtering (for fast search & reviews)
+  // Client-side instant filtering (for fast search, date periods & reviews)
   const filteredCustomers = useMemo(() => {
     return customers.filter((c) => {
-      // Review filter
-      if (reviewFilter === 'reviewed' && !c.has_google_review) return false;
+      // 1. Review filter
+      if (reviewFilter === 'reviewed' && !c.has_google_review && !c.has_customer_feedback) return false;
       if (reviewFilter === '5stars' && (!c.has_google_review || c.google_review_rating !== 5)) return false;
 
-      // Text search
+      // 2. Date Period Filter (Preset and Custom)
+      if (dateFilter !== 'all') {
+        const rowDate = c.date ? c.date.slice(0, 10) : '';
+        const now = new Date();
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const toLocalDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        const todayStr = toLocalDateStr(now);
+
+        if (dateFilter === 'today') {
+          if (rowDate !== todayStr) return false;
+        } else if (dateFilter === 'yesterday') {
+          const yest = new Date(now);
+          yest.setDate(yest.getDate() - 1);
+          if (rowDate !== toLocalDateStr(yest)) return false;
+        } else if (dateFilter === 'this_week') {
+          const weekAgo = new Date(now);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          const weekAgoStr = toLocalDateStr(weekAgo);
+          if (rowDate < weekAgoStr || rowDate > todayStr) return false;
+        } else if (dateFilter === 'this_month') {
+          const monthStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
+          if (rowDate < monthStart || rowDate > todayStr) return false;
+        } else if (dateFilter === 'custom') {
+          if (fromDate && rowDate < fromDate) return false;
+          if (toDate && rowDate > toDate) return false;
+        }
+      }
+
+      if (fromDate && c.date && c.date.slice(0, 10) < fromDate) return false;
+      if (toDate && c.date && c.date.slice(0, 10) > toDate) return false;
+
+      // 3. Text search
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase();
         const matchesName = c.customer_name?.toLowerCase().includes(q);
@@ -167,15 +208,15 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
 
       return true;
     });
-  }, [customers, reviewFilter, searchTerm]);
+  }, [customers, reviewFilter, searchTerm, dateFilter, fromDate, toDate]);
 
-  // Analytics Metrics
+  // Analytics Metrics calculated from filtered customer leads
   const stats = useMemo(() => {
-    const totalLeads = customers.length;
-    const convertedCount = customers.filter((c) => c.is_converted || c.status.toLowerCase().includes('converted') || c.status.toLowerCase().includes('closed')).length;
+    const totalLeads = filteredCustomers.length;
+    const convertedCount = filteredCustomers.filter((c) => c.is_converted || c.status.toLowerCase().includes('converted') || c.status.toLowerCase().includes('closed')).length;
     const conversionRate = totalLeads > 0 ? Math.round((convertedCount / totalLeads) * 100) : 0;
-    const schemesCount = customers.filter((c) => c.scheme_name && c.scheme_name.trim()).length;
-    const googleReviewsCount = customers.filter((c) => c.has_google_review).length;
+    const schemesCount = filteredCustomers.filter((c) => c.scheme_name && c.scheme_name.trim()).length;
+    const googleReviewsCount = filteredCustomers.filter((c) => c.has_google_review).length;
 
     return {
       totalLeads,
@@ -184,7 +225,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       schemesCount,
       googleReviewsCount,
     };
-  }, [customers]);
+  }, [filteredCustomers]);
 
   // Open Add Modal
   const openAddModal = () => {
@@ -204,6 +245,9 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       has_google_review: false,
       google_review_rating: 5,
       google_review_text: '',
+      has_customer_feedback: false,
+      feedback_rating: 5,
+      feedback_text: '',
       date: new Date().toISOString().split('T')[0],
       notes: '',
     });
@@ -229,6 +273,9 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       has_google_review: Boolean(c.has_google_review),
       google_review_rating: c.google_review_rating || 5,
       google_review_text: c.google_review_text || '',
+      has_customer_feedback: Boolean(c.has_customer_feedback),
+      feedback_rating: c.feedback_rating || 5,
+      feedback_text: c.feedback_text || '',
       date: c.date || new Date().toISOString().split('T')[0],
       notes: c.notes || '',
     });
@@ -265,6 +312,9 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       has_google_review: formData.has_google_review,
       google_review_rating: formData.has_google_review ? formData.google_review_rating : undefined,
       google_review_text: formData.has_google_review && formData.google_review_text.trim() ? formData.google_review_text.trim() : undefined,
+      has_customer_feedback: formData.has_customer_feedback,
+      feedback_rating: formData.has_customer_feedback ? formData.feedback_rating : undefined,
+      feedback_text: formData.has_customer_feedback && formData.feedback_text.trim() ? formData.feedback_text.trim() : undefined,
       date: formData.date,
       notes: formData.notes.trim() || undefined,
     };
@@ -325,6 +375,9 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       'Google Review Given?',
       'Google Rating (Stars)',
       'Google Review Feedback',
+      'Customer Feedback Given?',
+      'Customer Rating (Stars)',
+      'Customer Feedback Notes',
       'Field Date',
       'Notes & Inquiries',
     ];
@@ -346,6 +399,9 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
         c.has_google_review ? 'Yes' : 'No',
         c.has_google_review && c.google_review_rating ? c.google_review_rating.toString() : '',
         c.has_google_review ? `"${(c.google_review_text || '').replace(/"/g, '""')}"` : '',
+        c.has_customer_feedback ? 'Yes' : 'No',
+        c.has_customer_feedback && c.feedback_rating ? c.feedback_rating.toString() : '',
+        c.has_customer_feedback ? `"${(c.feedback_text || '').replace(/"/g, '""')}"` : '',
         c.date || '',
         `"${(c.notes || '').replace(/"/g, '""')}"`,
       ]);
@@ -399,25 +455,25 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 cursor-pointer shadow-2xs border-[#E4DFD4] text-[#1D1D1B] hover:bg-[#FAF8F3]"
+            leftIcon={<Download className="w-4 h-4 text-[#10B981]" />}
+            className="cursor-pointer shadow-2xs border-[#E4DFD4] text-[#1D1D1B] hover:bg-[#FAF8F3] whitespace-nowrap shrink-0"
           >
-            <Download className="w-4 h-4 text-[#10B981]" />
-            <span>Export Leads CSV ({filteredCustomers.length})</span>
+            Export Leads CSV ({filteredCustomers.length})
           </Button>
 
           <Button
             variant="primary"
             size="sm"
             onClick={openAddModal}
-            className="flex items-center gap-1.5 cursor-pointer shadow-xs bg-[#065F46] hover:bg-[#047857]"
+            leftIcon={<Plus className="w-4 h-4 text-white" />}
+            className="cursor-pointer shadow-xs bg-[#065F46] hover:bg-[#047857] text-white whitespace-nowrap shrink-0"
           >
-            <Plus className="w-4 h-4" />
-            <span>+ Add Field Customer Lead</span>
+            Add Field Customer Lead
           </Button>
         </div>
       </div>
@@ -800,8 +856,8 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                       )}
                     </td>
 
-                    {/* 5. Google Review */}
-                    <td className="px-4 py-3.5 align-top max-w-[180px]">
+                    {/* 5. Google Review & Customer Feedback */}
+                    <td className="px-4 py-3.5 align-top max-w-[200px]">
                       {c.has_google_review ? (
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1 text-[#D97706] font-bold text-[11px]">
@@ -811,6 +867,18 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                           {c.google_review_text && (
                             <p className="text-[11px] text-[#5E5A52] italic truncate" title={c.google_review_text}>
                               "{c.google_review_text}"
+                            </p>
+                          )}
+                        </div>
+                      ) : c.has_customer_feedback ? (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1 text-[#065F46] font-bold text-[11px]">
+                            <MessageSquareHeart className="w-3.5 h-3.5 text-[#065F46]" />
+                            <span>{c.feedback_rating || 5}★ Feedback</span>
+                          </div>
+                          {c.feedback_text && (
+                            <p className="text-[11px] text-[#5E5A52] italic truncate" title={c.feedback_text}>
+                              "{c.feedback_text}"
                             </p>
                           )}
                         </div>
@@ -1025,45 +1093,91 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
             />
           </div>
 
-          {/* Google Review Checkbox */}
-          <div className="p-3 rounded-xl bg-[#FAF9F6] border border-[#E8E6E1] space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={formData.has_google_review}
-                onChange={(e) => setFormData({ ...formData, has_google_review: e.target.checked })}
-                className="w-4 h-4 rounded text-[#D97706] focus:ring-[#D97706]"
-              />
-              <span className="text-xs font-bold text-[#1D1D1B] flex items-center gap-1">
-                <Star className="w-3.5 h-3.5 text-[#D97706] fill-current" />
-                <span>Customer Posted 5-Star Google Review</span>
-              </span>
-            </label>
+          {/* Side by Side: Google Review & Customer Feedback */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Google Review Checkbox */}
+            <div className="p-3 rounded-xl bg-[#FAF9F6] border border-[#E8E6E1] space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.has_google_review}
+                  onChange={(e) => setFormData({ ...formData, has_google_review: e.target.checked })}
+                  className="w-4 h-4 rounded text-[#D97706] focus:ring-[#D97706]"
+                />
+                <span className="text-xs font-bold text-[#1D1D1B] flex items-center gap-1">
+                  <Star className="w-3.5 h-3.5 text-[#D97706] fill-current" />
+                  <span>5-Star Google Review</span>
+                </span>
+              </label>
 
-            {formData.has_google_review && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-                <div>
-                  <Select
-                    label="Rating"
-                    value={formData.google_review_rating.toString()}
-                    onChange={(e) => setFormData({ ...formData, google_review_rating: parseInt(e.target.value) || 5 })}
-                    options={[
-                      { value: '5', label: '⭐⭐⭐⭐⭐ 5 Stars' },
-                      { value: '4', label: '⭐⭐⭐⭐ 4 Stars' },
-                      { value: '3', label: '⭐⭐⭐ 3 Stars' },
-                    ]}
-                  />
+              {formData.has_google_review && (
+                <div className="space-y-2 pt-1">
+                  <div>
+                    <Select
+                      label="Rating"
+                      value={formData.google_review_rating.toString()}
+                      onChange={(e) => setFormData({ ...formData, google_review_rating: parseInt(e.target.value) || 5 })}
+                      options={[
+                        { value: '5', label: '⭐⭐⭐⭐⭐ 5 Stars' },
+                        { value: '4', label: '⭐⭐⭐⭐ 4 Stars' },
+                        { value: '3', label: '⭐⭐⭐ 3 Stars' },
+                      ]}
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      label="Review Snippet"
+                      value={formData.google_review_text}
+                      onChange={(e) => setFormData({ ...formData, google_review_text: e.target.value })}
+                      placeholder="e.g. Very helpful staff..."
+                    />
+                  </div>
                 </div>
-                <div className="sm:col-span-2">
-                  <Input
-                    label="Review Feedback Snippet"
-                    value={formData.google_review_text}
-                    onChange={(e) => setFormData({ ...formData, google_review_text: e.target.value })}
-                    placeholder="e.g. Very helpful staff and nice gold plans..."
-                  />
+              )}
+            </div>
+
+            {/* Customer Direct Feedback Checkbox */}
+            <div className="p-3 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7] space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.has_customer_feedback}
+                  onChange={(e) => setFormData({ ...formData, has_customer_feedback: e.target.checked })}
+                  className="w-4 h-4 rounded text-[#065F46] focus:ring-[#065F46]"
+                />
+                <span className="text-xs font-bold text-[#1D1D1B] flex items-center gap-1">
+                  <MessageSquareHeart className="w-3.5 h-3.5 text-[#065F46]" />
+                  <span>Customer Direct Feedback</span>
+                </span>
+              </label>
+
+              {formData.has_customer_feedback && (
+                <div className="space-y-2 pt-1">
+                  <div>
+                    <Select
+                      label="Rating"
+                      value={formData.feedback_rating.toString()}
+                      onChange={(e) => setFormData({ ...formData, feedback_rating: parseInt(e.target.value) || 5 })}
+                      options={[
+                        { value: '5', label: '⭐⭐⭐⭐⭐ 5 Stars' },
+                        { value: '4', label: '⭐⭐⭐⭐ 4 Stars' },
+                        { value: '3', label: '⭐⭐⭐ 3 Stars' },
+                        { value: '2', label: '⭐⭐ 2 Stars' },
+                        { value: '1', label: '⭐ 1 Star' },
+                      ]}
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      label="Feedback Notes"
+                      value={formData.feedback_text}
+                      onChange={(e) => setFormData({ ...formData, feedback_text: e.target.value })}
+                      placeholder="e.g. Explained scheme clearly..."
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           <Input

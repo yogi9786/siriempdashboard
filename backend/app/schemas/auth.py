@@ -18,12 +18,25 @@ class TokenResponse(BaseModel):
     username: str
     full_name: str
     manager_code: Optional[str] = None
+    employee_code: Optional[str] = None
     email: Optional[str] = None
     role: str
     user_type: Optional[str] = None
     branch_id: int
     branch_code: str
     branch_name: str
+
+
+class EmployeePublicOption(BaseModel):
+    id: int
+    full_name: str
+    employee_code: str
+    username: Optional[str] = None
+    designation: Optional[str] = "Sales Executive"
+    department: Optional[str] = "Sales & Showroom Operations"
+    branch_id: int
+    branch_code: str
+
 
 
 class ManagerProfile(BaseModel):

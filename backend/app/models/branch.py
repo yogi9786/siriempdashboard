@@ -30,6 +30,7 @@ class Branch(Base):
     schemes = relationship("SchemeRecord", back_populates="branch", cascade="all, delete-orphan")
     form_media = relationship("EmployeeFormMedia", back_populates="branch", cascade="all, delete-orphan")
     google_reviews = relationship("GoogleReview", back_populates="branch", cascade="all, delete-orphan")
+    video_reviews = relationship("VideoReview", back_populates="branch", cascade="all, delete-orphan")
     attire_records = relationship("AttireRecord", back_populates="branch", cascade="all, delete-orphan")
     outdoor_areas = relationship("OutdoorMarketingArea", back_populates="branch", cascade="all, delete-orphan")
     outdoor_customers = relationship("OutdoorMarketingCustomer", back_populates="branch", cascade="all, delete-orphan")

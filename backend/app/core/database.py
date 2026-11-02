@@ -31,6 +31,9 @@ def create_db_engine():
         )
         # Verify connection test
         with engine.connect() as conn:
+            if "postgresql" in str(engine.url):
+                conn.execute(text("CREATE SCHEMA IF NOT EXISTS siridashboard;"))
+                conn.commit()
             conn.execute(text("SELECT 1"))
         logger.info(f"Connected successfully to PostgreSQL database: {db_url}")
         return engine
@@ -72,7 +75,7 @@ def auto_migrate_db_schema():
     # Import all models to ensure metadata is populated
     from backend.app.models.branch import Branch, User
     from backend.app.models.employee import Employee
-    from backend.app.models.activity import CustomerActivity, SchemeRecord, EmployeeFormMedia, GoogleReview, AttireRecord, EmployeeCallLog
+    from backend.app.models.activity import CustomerActivity, SchemeRecord, EmployeeFormMedia, GoogleReview, VideoReview, AttireRecord, EmployeeCallLog
     from backend.app.models.outdoor_marketing import OutdoorMarketingArea, OutdoorMarketingDuty, OutdoorMarketingCustomer, OutdoorMarketingScheme, OutdoorMarketingActivity
     from backend.app.models.audit import AuditLog
     from backend.app.models.attendance import EmployeeAttendance

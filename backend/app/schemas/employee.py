@@ -62,9 +62,11 @@ class EmployeeResponse(BaseModel):
     notes: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    google_review_points: Optional[int] = 0
+    video_review_points: Optional[int] = 0
+    total_points: Optional[int] = 0
 
     model_config = ConfigDict(from_attributes=True)
-
 
 class EmployeeCallLogBase(BaseModel):
     customer_name: str = Field(..., min_length=1, max_length=150)

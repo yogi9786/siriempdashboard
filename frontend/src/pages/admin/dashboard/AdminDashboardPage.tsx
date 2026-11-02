@@ -19,10 +19,14 @@ import {
   ChevronRight,
   RefreshCw,
   FileText,
+  Trophy,
+  Medal,
+  Crown,
+  Search,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useAdminBranch } from '../../../context/AdminBranchContext';
-import { AdminDashboardOverview } from '../../../types';
+import { AdminDashboardOverview, EmployeePointsRanking } from '../../../types';
 import { AdminKPICard } from '../../../components/admin/ui/AdminKPICard';
 import { ActivityTimeline } from '../../../components/admin/ui/ActivityTimeline';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
@@ -35,6 +39,24 @@ export const AdminDashboardPage: React.FC = () => {
 
   const [overview, setOverview] = useState<AdminDashboardOverview | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [pointsRanking, setPointsRanking] = useState<EmployeePointsRanking[]>([]);
+  const [rankingSearch, setRankingSearch] = useState<string>('');
+  const [rankingBranchFilter, setRankingBranchFilter] = useState<string>(selectedBranchId?.toString() || 'all');
+
+  const fetchPointsRanking = async () => {
+    try {
+      const params: Record<string, any> = {};
+      if (rankingBranchFilter !== 'all') {
+        params.branch_id = parseInt(rankingBranchFilter, 10);
+      } else if (selectedBranchId) {
+        params.branch_id = selectedBranchId;
+      }
+      const res = await api.get<EmployeePointsRanking[]>('/api/v1/admin/employees/points-ranking', { params });
+      setPointsRanking(res.data);
+    } catch (err) {
+      console.error('Failed to load points ranking:', err);
+    }
+  };
 
   const fetchOverview = async () => {
     try {
@@ -54,11 +76,21 @@ export const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchOverview();
+    fetchPointsRanking();
     const interval = setInterval(() => {
       fetchOverview();
+      fetchPointsRanking();
     }, 15000);
     return () => clearInterval(interval);
-  }, [selectedBranchId, dateRange]);
+  }, [selectedBranchId, dateRange, rankingBranchFilter]);
+
+  useEffect(() => {
+    if (selectedBranchId) {
+      setRankingBranchFilter(selectedBranchId.toString());
+    } else {
+      setRankingBranchFilter('all');
+    }
+  }, [selectedBranchId]);
 
   const todayFormatted = new Date().toLocaleDateString('en-IN', {
     weekday: 'long',
@@ -280,7 +312,73 @@ export const AdminDashboardPage: React.FC = () => {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Showroom Branch Cards (block md:hidden) */}
+        <div className="block md:hidden space-y-3">
+          {overview?.branch_comparison.map((b) => (
+            <div
+              key={b.branch_id}
+              onClick={() => navigate(`/admin/branches/${b.branch_id}`)}
+              className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-xs space-y-3 hover:border-[#7E22CE] transition-all cursor-pointer"
+            >
+              <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-[#F0ECE1]">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center font-bold text-xs shrink-0">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-[#1D1D1B] block text-sm">{b.branch_name}</span>
+                    <span className="text-[10px] text-[#8A8479] font-mono">{b.branch_code} • {b.city}</span>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FAF1EC] text-[#B97855] border border-[#ECCFC0] font-bold text-xs">
+                  <Star className="w-3 h-3 fill-[#B97855]" />
+                  <span>{b.average_rating.toFixed(1)}</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-xl bg-[#FAF8F5] border border-[#EBE6DC]">
+                  <span className="text-[10px] text-[#8A8479] font-semibold block">Staff On Floor</span>
+                  <span className="font-bold text-[#1D1D1B] mt-0.5 block">
+                    {b.active_employee_count} <span className="text-[#8A8479] font-normal">/ {b.employee_count}</span>
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-[#FAF8F5] border border-[#EBE6DC]">
+                  <span className="text-[10px] text-[#8A8479] font-semibold block">Footfall (Conv.)</span>
+                  <span className="font-bold text-[#1D1D1B] mt-0.5 block">
+                    {b.customer_footfall} <span className="text-[#21845F] font-semibold text-[11px]">({b.conversion_rate}%)</span>
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-[#F5F3FF] border border-[#DDD6FE]">
+                  <span className="text-[10px] text-[#7E22CE] font-semibold block">Gold Schemes</span>
+                  <span className="font-bold text-[#6B21A8] mt-0.5 block">
+                    {b.schemes_count} Plans (₹{b.schemes_value.toLocaleString('en-IN')})
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0]">
+                  <span className="text-[10px] text-[#166534] font-semibold block">Attire Compliance</span>
+                  <span className="font-bold text-[#15803D] mt-0.5 block">
+                    {b.attire_compliance_pct}% Standard
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-[#F0ECE1] flex items-center justify-between text-xs font-bold text-[#7E22CE]">
+                <span>{b.manager_count} Showroom Manager{b.manager_count > 1 ? 's' : ''}</span>
+                <span className="flex items-center gap-1 hover:underline">
+                  <span>Showroom Dashboard</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tablet & Desktop Table View (hidden md:block) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-[#FAF8F3] border-b border-[#E4DFD4] text-[#5E5A52] uppercase tracking-wider font-bold text-[11px]">
               <tr>
@@ -352,6 +450,366 @@ export const AdminDashboardPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* -------------------------------------------------------------
+          3b. SHOWROOM STAFF POINT-WISE RANKING LEADERBOARD
+      ------------------------------------------------------------- */}
+      <div id="staff-points-ranking" className="bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-7 shadow-[0_4px_18px_rgba(40,35,25,0.045)] space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#EBE6DC] pb-5">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] flex items-center gap-1">
+                <Trophy className="w-3 h-3 text-[#D97706]" />
+                <span>Showroom Leaderboard</span>
+              </span>
+              <span className="text-xs font-bold text-[#7E22CE] bg-[#F3E8FF] px-2.5 py-0.5 rounded-full border border-[#D8B4FE]">
+                1 Review = 1 Pt • 1 Video = 5 Pts (5 pts per video)
+              </span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-black text-[#1D1D1B] mt-1.5 flex items-center gap-2">
+              <span>Showroom Staff Points Ranking</span>
+            </h2>
+            <p className="text-xs text-[#8A8479] font-medium mt-0.5">
+              Point-wise ranked employee leaderboard based on customer Google review proofs and video reviews
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Search Input */}
+            <div className="relative w-full sm:w-56">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8479]" />
+              <input
+                type="text"
+                placeholder="Search staff or code..."
+                value={rankingSearch}
+                onChange={(e) => setRankingSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#D97706] focus:ring-1 focus:ring-[#D97706]"
+              />
+            </div>
+
+            {/* Branch Filter Pills */}
+            <div className="flex items-center gap-1 p-0.5 bg-[#FAF8F3] rounded-xl border border-[#E4DFD4] overflow-x-auto max-w-full">
+              {[
+                { id: 'all', label: 'All Showrooms' },
+                { id: '1', label: 'Yelahanka' },
+                { id: '2', label: 'Kolar' },
+                { id: '3', label: 'Udupi' },
+              ].map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => setRankingBranchFilter(b.id)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    rankingBranchFilter === b.id
+                      ? 'bg-white text-[#1D1D1B] shadow-2xs font-extrabold'
+                      : 'text-[#6B6559] hover:text-[#1D1D1B]'
+                  }`}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Top 3 Podium Highlights & Ranking Table */}
+        {(() => {
+          const filtered = pointsRanking.filter((item) => {
+            if (rankingBranchFilter !== 'all' && item.branch_id.toString() !== rankingBranchFilter) return false;
+            if (rankingSearch.trim()) {
+              const q = rankingSearch.trim().toLowerCase();
+              return item.full_name.toLowerCase().includes(q) || item.employee_code.toLowerCase().includes(q);
+            }
+            return true;
+          });
+
+          const top1 = filtered[0];
+          const top2 = filtered[1];
+          const top3 = filtered[2];
+
+          if (!top1) {
+            return (
+              <div className="py-8 text-center text-xs text-[#8A8479] bg-[#FAF8F5] rounded-2xl border border-[#EBE6DC]">
+                No staff members found matching the selected filter.
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-5">
+              {/* Top 3 Podium Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* #2 Rank Card */}
+                {top2 ? (
+                  <div className="relative p-4 rounded-2xl bg-gradient-to-b from-[#F8FAFC] to-[#F1F5F9] border-2 border-[#CBD5E1] shadow-2xs flex flex-col justify-between order-2 sm:order-1">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#E2E8F0] text-[#334155] border border-[#CBD5E1] flex items-center gap-1">
+                        <Medal className="w-3 h-3 text-[#64748B]" />
+                        <span>Rank #2</span>
+                      </span>
+                      <span className="text-[11px] font-bold text-[#64748B] font-mono">{top2.branch_name}</span>
+                    </div>
+                    <div className="my-3 text-center">
+                      <div className="w-12 h-12 mx-auto rounded-full bg-white border-2 border-[#94A3B8] shadow-xs flex items-center justify-center font-black text-sm text-[#334155] mb-2">
+                        {top2.full_name.charAt(0)}
+                      </div>
+                      <h4 className="font-extrabold text-[#1D1D1B] text-sm leading-tight">{top2.full_name}</h4>
+                      <p className="text-[10px] text-[#64748B] font-mono font-bold mt-0.5">{top2.employee_code}</p>
+                    </div>
+                    <div className="pt-2 border-t border-[#CBD5E1] flex items-center justify-between text-xs">
+                      <span className="text-[#64748B] text-[11px] font-medium">Verified Points</span>
+                      <span className="font-black text-[#1E293B] font-mono text-sm">
+                        {top2.total_points} <span className="text-[10px] font-bold">pts</span>
+                      </span>
+                    </div>
+                  </div>
+                ) : <div className="hidden sm:block order-2 sm:order-1" />}
+
+                {/* #1 Rank Card (Gold Centerpiece) */}
+                {top1 && (
+                  <div className="relative p-5 rounded-2xl bg-gradient-to-b from-[#FEFCE8] to-[#FEF3C7] border-2 border-[#F59E0B] shadow-md flex flex-col justify-between order-1 sm:order-2 sm:-translate-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FDE68A] text-[#92400E] border border-[#F59E0B] flex items-center gap-1 shadow-2xs">
+                        <Crown className="w-3.5 h-3.5 fill-[#D97706] text-[#D97706]" />
+                        <span>#1 Leader</span>
+                      </span>
+                      <span className="text-[11px] font-extrabold text-[#B45309] font-mono">{top1.branch_name}</span>
+                    </div>
+                    <div className="my-3 text-center">
+                      <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] border-2 border-white shadow-md flex items-center justify-center font-black text-base text-white mb-2">
+                        {top1.full_name.charAt(0)}
+                      </div>
+                      <h4 className="font-black text-[#1D1D1B] text-base leading-tight">{top1.full_name}</h4>
+                      <p className="text-[11px] text-[#92400E] font-mono font-bold mt-0.5">{top1.employee_code} • {top1.designation}</p>
+                    </div>
+                    <div className="pt-2.5 border-t border-[#FCD34D] flex items-center justify-between text-xs">
+                      <span className="text-[#92400E] text-[11px] font-extrabold uppercase">Total Points</span>
+                      <span className="font-black text-[#78350F] font-mono text-base flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-[#D97706] text-[#D97706]" />
+                        <span>{top1.total_points} pts</span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* #3 Rank Card */}
+                {top3 ? (
+                  <div className="relative p-4 rounded-2xl bg-gradient-to-b from-[#FFF7ED] to-[#FFEDD5] border-2 border-[#FDBA74] shadow-2xs flex flex-col justify-between order-3">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FED7AA] text-[#9A3412] border border-[#FDBA74] flex items-center gap-1">
+                        <Medal className="w-3 h-3 text-[#C2410C]" />
+                        <span>Rank #3</span>
+                      </span>
+                      <span className="text-[11px] font-bold text-[#C2410C] font-mono">{top3.branch_name}</span>
+                    </div>
+                    <div className="my-3 text-center">
+                      <div className="w-12 h-12 mx-auto rounded-full bg-white border-2 border-[#FB923C] shadow-xs flex items-center justify-center font-black text-sm text-[#9A3412] mb-2">
+                        {top3.full_name.charAt(0)}
+                      </div>
+                      <h4 className="font-extrabold text-[#1D1D1B] text-sm leading-tight">{top3.full_name}</h4>
+                      <p className="text-[10px] text-[#9A3412] font-mono font-bold mt-0.5">{top3.employee_code}</p>
+                    </div>
+                    <div className="pt-2 border-t border-[#FDBA74] flex items-center justify-between text-xs">
+                      <span className="text-[#9A3412] text-[11px] font-medium">Verified Points</span>
+                      <span className="font-black text-[#7C2D12] font-mono text-sm">
+                        {top3.total_points} <span className="text-[10px] font-bold">pts</span>
+                      </span>
+                    </div>
+                  </div>
+                ) : <div className="hidden sm:block order-3" />}
+              </div>
+
+              {/* Complete Point-Wise Table */}
+              {/* Mobile View: Ranking Cards (block sm:hidden) */}
+              <div className="block sm:hidden space-y-3">
+                {filtered.map((item) => {
+                  const isTop1 = item.rank === 1;
+                  const isTop2 = item.rank === 2;
+                  const isTop3 = item.rank === 3;
+
+                  return (
+                    <div
+                      key={item.employee_id}
+                      className={`p-4 rounded-2xl border transition-all ${
+                        isTop1
+                          ? 'bg-gradient-to-b from-[#FEFCE8] to-[#FFFBEB] border-[#F59E0B] shadow-xs'
+                          : isTop2
+                          ? 'bg-gradient-to-b from-[#F8FAFC] to-[#F1F5F9] border-[#CBD5E1] shadow-2xs'
+                          : isTop3
+                          ? 'bg-gradient-to-b from-[#FFF7ED] to-[#FFEDD5] border-[#FDBA74] shadow-2xs'
+                          : 'bg-white border-[#E6E1D6] shadow-2xs'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-black/5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {isTop1 ? (
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FEF3C7] text-[#92400E] font-black text-xs border border-[#FDE68A] shadow-2xs shrink-0">
+                              🥇 1
+                            </span>
+                          ) : isTop2 ? (
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#F1F5F9] text-[#334155] font-black text-xs border border-[#CBD5E1] shadow-2xs shrink-0">
+                              🥈 2
+                            </span>
+                          ) : isTop3 ? (
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FFEDD5] text-[#9A3412] font-black text-xs border border-[#FDBA74] shadow-2xs shrink-0">
+                              🥉 3
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FAF8F5] text-[#8A8479] font-bold text-xs border border-[#E6E1D6] shrink-0">
+                              #{item.rank}
+                            </span>
+                          )}
+                          <div className="min-w-0">
+                            <h4 className="font-black text-[#1D1D1B] text-sm leading-tight truncate">{item.full_name}</h4>
+                            <span className="text-[10px] text-[#8A8479] font-mono block truncate">{item.employee_code} • {item.designation}</span>
+                          </div>
+                        </div>
+
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white text-[#536B8A] border border-[#E2E8F0] shrink-0">
+                          {item.branch_name}
+                        </span>
+                      </div>
+
+                      {/* Points and Sub-breakdown Row */}
+                      <div className="pt-2.5 flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold">
+                            <Star className="w-3 h-3 fill-[#D97706] text-[#D97706]" />
+                            <span>{item.google_review_points} Google pts</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] text-[10px] font-bold">
+                            <span>🎥 {item.video_review_points} Video pts</span>
+                          </span>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-[#FEF3C7] to-[#FDE68A] border border-[#F59E0B]/60 text-[#78350F] font-black text-xs font-mono shadow-2xs">
+                            <Star className="w-3.5 h-3.5 fill-[#D97706] text-[#D97706]" />
+                            <span>{item.total_points} pts</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Tablet & Desktop Table (hidden sm:block) */}
+              <div className="hidden sm:block overflow-x-auto rounded-2xl border border-[#EBE6DC]">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-[#FAF8F3] border-b border-[#E4DFD4] text-[#5E5A52] uppercase tracking-wider font-bold text-[11px]">
+                    <tr>
+                      <th className="px-4 py-3 text-center w-16">Rank</th>
+                      <th className="px-4 py-3">Staff Member</th>
+                      <th className="px-4 py-3">Showroom</th>
+                      <th className="px-4 py-3 text-center">Google Reviews</th>
+                      <th className="px-4 py-3 text-center">Video Reviews</th>
+                      <th className="px-4 py-3 text-center">Total Points</th>
+                      <th className="px-4 py-3 text-right">Standing</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#EBE6DC] font-medium">
+                    {filtered.map((item) => {
+                      const isTop1 = item.rank === 1;
+                      const isTop2 = item.rank === 2;
+                      const isTop3 = item.rank === 3;
+
+                      return (
+                        <tr
+                          key={item.employee_id}
+                          className={`hover:bg-[#FAF5FF] transition-colors ${
+                            isTop1 ? 'bg-[#FEFCE8]/40 font-bold' : isTop2 ? 'bg-[#F8FAFC]/40' : isTop3 ? 'bg-[#FFF7ED]/40' : ''
+                          }`}
+                        >
+                          {/* Rank */}
+                          <td className="px-4 py-3.5 text-center">
+                            {isTop1 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FEF3C7] text-[#92400E] font-black text-xs border border-[#FDE68A] shadow-2xs">
+                                🥇 1
+                              </span>
+                            ) : isTop2 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#F1F5F9] text-[#334155] font-black text-xs border border-[#CBD5E1] shadow-2xs">
+                                🥈 2
+                              </span>
+                            ) : isTop3 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FFEDD5] text-[#9A3412] font-black text-xs border border-[#FDBA74] shadow-2xs">
+                                🥉 3
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FAF8F5] text-[#8A8479] font-bold text-xs border border-[#E6E1D6]">
+                                #{item.rank}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Staff Member */}
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center font-extrabold text-xs shrink-0">
+                                {item.full_name.charAt(0)}
+                              </div>
+                              <div>
+                                <span className="font-extrabold text-[#1D1D1B] block">{item.full_name}</span>
+                                <span className="text-[10px] text-[#8A8479] font-mono">{item.employee_code} • {item.designation}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Showroom */}
+                          <td className="px-4 py-3.5">
+                            <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#FAF8F5] text-[#536B8A] border border-[#E2E8F0]">
+                              {item.branch_name}
+                            </span>
+                          </td>
+
+                          {/* Google Reviews */}
+                          <td className="px-4 py-3.5 text-center">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-bold text-xs font-mono">
+                              <Star className="w-3 h-3 fill-[#D97706] text-[#D97706]" />
+                              <span>{item.google_review_points} pts</span>
+                            </span>
+                          </td>
+
+                          {/* Video Reviews */}
+                          <td className="px-4 py-3.5 text-center">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] font-bold text-xs font-mono">
+                              <span>🎥 {item.video_review_points} pts</span>
+                            </span>
+                          </td>
+
+                          {/* Total Points */}
+                          <td className="px-4 py-3.5 text-center">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-[#FEF3C7] to-[#FDE68A] border border-[#F59E0B]/60 text-[#78350F] font-black text-xs font-mono shadow-2xs">
+                              <Star className="w-3.5 h-3.5 fill-[#D97706] text-[#D97706]" />
+                              <span>{item.total_points} Points</span>
+                            </span>
+                          </td>
+
+                          {/* Standing */}
+                          <td className="px-4 py-3.5 text-right">
+                            {item.total_points >= 3 ? (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]">
+                                ★ Top Performer
+                              </span>
+                            ) : item.total_points > 0 ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]">
+                                Contributor
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-medium text-[#8A8479]">
+                                Floor Active
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* -------------------------------------------------------------

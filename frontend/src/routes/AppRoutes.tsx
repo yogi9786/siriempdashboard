@@ -22,6 +22,11 @@ import { OutdoorMarketingPage } from '../pages/outdoor/OutdoorMarketingPage';
 import { AccountSettingsPage } from '../pages/account/AccountSettingsPage';
 import { ShowroomCustomerLogPage } from '../pages/customers/ShowroomCustomerLogPage';
 import { OutdoorCustomerLeadsPage } from '../pages/outdoor/OutdoorCustomerLeadsPage';
+import { PendingCustomerActivityPage } from '../pages/customers/PendingCustomerActivityPage';
+
+// Employee Module Pages & Guard
+import { EmployeeProtectedRoute } from './EmployeeProtectedRoute';
+import { EmployeePortalPage } from '../pages/employee/EmployeePortalPage';
 
 // Super Admin Enterprise Module Pages
 import { AdminDashboardPage } from '../pages/admin/dashboard/AdminDashboardPage';
@@ -51,11 +56,18 @@ export const AppRoutes: React.FC = () => {
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
+      {/* Protected Employee Portal Routes (Strictly Customer Logs & Call Logs) */}
+      <Route element={<EmployeeProtectedRoute />}>
+        <Route path="/employee" element={<Navigate to="/employee/activity" replace />} />
+        <Route path="/employee/activity" element={<EmployeePortalPage />} />
+      </Route>
+
       {/* Protected Showroom Manager Routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/customer-logs" element={<ShowroomCustomerLogPage />} />
+          <Route path="/pending-customer-activity" element={<PendingCustomerActivityPage />} />
           <Route path="/customers" element={<CustomerActivityPage />} />
           <Route path="/customer-activity" element={<Navigate to="/customer-logs" replace />} />
           <Route path="/employees" element={<EmployeeListPage />} />

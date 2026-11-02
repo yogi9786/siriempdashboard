@@ -3,7 +3,6 @@ from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, Text, F
 from sqlalchemy.orm import relationship
 from backend.app.core.database import Base
 
-
 def utcnow():
     return datetime.now(timezone.utc)
 
@@ -39,5 +38,51 @@ class Employee(Base):
     outdoor_schemes = relationship("OutdoorMarketingScheme", back_populates="employee", cascade="all, delete-orphan")
     outdoor_duties = relationship("OutdoorMarketingDuty", back_populates="employee", cascade="all, delete-orphan")
     call_logs = relationship("EmployeeCallLog", back_populates="employee", cascade="all, delete-orphan")
+    google_reviews = relationship("GoogleReview", back_populates="employee", cascade="all, delete-orphan")
+    video_reviews = relationship("VideoReview", back_populates="employee", cascade="all, delete-orphan")
+
+    @property
+    def google_review_points(self) -> int:
+        cached = getattr(self, "_google_review_points", None)
+        if cached is not None:
+            return cached
+        if not self.google_reviews:
+            return 0
+        return sum(
+            r.points for r in self.google_reviews
+            if (r.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"]
+        )
+
+    @google_review_points.setter
+    def google_review_points(self, value: int):
+        self._google_review_points = value
+
+    @property
+    def video_review_points(self) -> int:
+        cached = getattr(self, "_video_review_points", None)
+        if cached is not None:
+            return cached
+        if not self.video_reviews:
+            return 0
+        return sum(
+            r.points for r in self.video_reviews
+            if (r.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"]
+        )
+
+    @video_review_points.setter
+    def video_review_points(self, value: int):
+        self._video_review_points = value
+
+    @property
+    def total_points(self) -> int:
+        cached = getattr(self, "_total_points", None)
+        if cached is not None:
+            return cached
+        return self.google_review_points + self.video_review_points
+
+    @total_points.setter
+    def total_points(self, value: int):
+        self._total_points = value
+
 
 

@@ -47,6 +47,7 @@ export interface Branch {
   description?: string;
   is_active: boolean;
   managers?: ManagerPublicOption[];
+  employees?: EmployeePublicOption[];
 }
 
 export interface Employee {

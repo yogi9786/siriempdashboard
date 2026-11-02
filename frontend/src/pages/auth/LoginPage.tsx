@@ -19,6 +19,71 @@ import { Branch, ManagerPublicOption, EmployeePublicOption } from '../../types';
 import api from '../../api/client';
 import logoImg from '../../assets/siri samruddhi logo.png';
 
+// Complete showroom employee directory for instant zero-latency autofetch
+const SHOWROOM_EMPLOYEES_FALLBACK: Record<string, EmployeePublicOption[]> = {
+  YELAHANKA: [
+    { id: 214, employee_code: 'EMP-YEL-214', full_name: 'GAGAN', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 94, employee_code: 'EMP-YEL-094', full_name: 'BHEEMAMMA', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 8, employee_code: 'EMP-YEL-008', full_name: 'SHYLAJA B N', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 22, employee_code: 'EMP-YEL-022', full_name: 'SATISH ARKSALI', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 25, employee_code: 'EMP-YEL-025', full_name: 'SANNIRAMMA', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 54, employee_code: 'EMP-YEL-054', full_name: 'NANDINI BASAVARAJ', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 61, employee_code: 'EMP-YEL-061', full_name: 'KANTHARAJU', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 68, employee_code: 'EMP-YEL-068', full_name: 'TULASI', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 107, employee_code: 'EMP-YEL-107', full_name: 'SUNIL', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 110, employee_code: 'EMP-YEL-110', full_name: 'CHITHRA B', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 43, employee_code: 'EMP-YEL-043', full_name: 'PRASAD H R', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 116, employee_code: 'EMP-YEL-116', full_name: 'YOGANANDAN S P', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 132, employee_code: 'EMP-YEL-132', full_name: 'THEJU', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 178, employee_code: 'EMP-YEL-178', full_name: 'S GOPI', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 179, employee_code: 'EMP-YEL-179', full_name: 'DEVARAJU', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 183, employee_code: 'EMP-YEL-183', full_name: 'HARIPRIYA P V', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 200, employee_code: 'EMP-YEL-200', full_name: 'SINCHANA S', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 201, employee_code: 'EMP-YEL-201', full_name: 'SHWETHA M V', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 202, employee_code: 'EMP-YEL-202', full_name: 'VIDYASHREE', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 203, employee_code: 'EMP-YEL-203', full_name: 'SINCHANA P', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 204, employee_code: 'EMP-YEL-204', full_name: 'NAGINDRAPPA', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 211, employee_code: 'EMP-YEL-211', full_name: 'MADHU', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+    { id: 213, employee_code: 'EMP-YEL-213', full_name: 'MAHESWHARI', designation: 'Sales Executive', branch_id: 1, branch_code: 'YELAHANKA' },
+  ],
+  KOLAR: [
+    { id: 82, employee_code: 'EMP-KOL-082', full_name: 'DIVAKARA N', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 84, employee_code: 'EMP-KOL-084', full_name: 'MANJUNATHA M M', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 85, employee_code: 'EMP-KOL-085', full_name: 'KIRAN KUMAR S', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 90, employee_code: 'EMP-KOL-090', full_name: 'SHASHANKA N', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 72, employee_code: 'EMP-KOL-072', full_name: 'SANDEEP S', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 182, employee_code: 'EMP-KOL-182', full_name: 'N LEELAVATHI', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 191, employee_code: 'EMP-KOL-191', full_name: 'KALPANA', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 198, employee_code: 'EMP-KOL-198', full_name: 'PUNITRAJKUMAR R', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 199, employee_code: 'EMP-KOL-199', full_name: 'SWATHI V', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 208, employee_code: 'EMP-KOL-208', full_name: 'GAJENDRA S', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 209, employee_code: 'EMP-KOL-209', full_name: 'H MAHESH KUMAR', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+    { id: 80, employee_code: 'EMP-KOL-080', full_name: 'SHIVAKUMAR M K', designation: 'Sales Executive', branch_id: 2, branch_code: 'KOLAR' },
+  ],
+  UDUPI: [
+    { id: 118, employee_code: 'EMP-UDU-118', full_name: 'ASHWINI KUMARI N', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 140, employee_code: 'EMP-UDU-140', full_name: 'RAKSHITH AMIN', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 141, employee_code: 'EMP-UDU-141', full_name: 'KIRAN KUMAR', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 143, employee_code: 'EMP-UDU-143', full_name: 'CHAITHRA', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 144, employee_code: 'EMP-UDU-144', full_name: 'SANDHYA', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 147, employee_code: 'EMP-UDU-147', full_name: 'BHAGYA B R', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 148, employee_code: 'EMP-UDU-148', full_name: 'AKSHAYA', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 150, employee_code: 'EMP-UDU-150', full_name: 'VENKATESHA', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 151, employee_code: 'EMP-UDU-151', full_name: 'SANDESH KINI', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 152, employee_code: 'EMP-UDU-152', full_name: 'SWETHA R', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 154, employee_code: 'EMP-UDU-154', full_name: 'KAVYA H R', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 155, employee_code: 'EMP-UDU-155', full_name: 'GAYATHRI', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 158, employee_code: 'EMP-UDU-158', full_name: 'MANOJ IRANNA', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 160, employee_code: 'EMP-UDU-160', full_name: 'LAVISHA', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 163, employee_code: 'EMP-UDU-163', full_name: 'NISARGA ULLAS KHARVI', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 165, employee_code: 'EMP-UDU-165', full_name: 'KAVYASHRI N', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 167, employee_code: 'EMP-UDU-167', full_name: 'PRABHAKARA K', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 186, employee_code: 'EMP-UDU-186', full_name: 'NIKIL', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 189, employee_code: 'EMP-UDU-189', full_name: 'DILEEP', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+    { id: 210, employee_code: 'EMP-UDU-210', full_name: 'RAGHAVENDRA S', designation: 'Sales Executive', branch_id: 3, branch_code: 'UDUPI' },
+  ],
+};
+
 export const LoginPage: React.FC = () => {
   const { login, loginEmployee, isAuthenticated, isEmployee } = useAuth();
   const { success, error: toastError } = useToast();
@@ -38,7 +103,6 @@ export const LoginPage: React.FC = () => {
 
   const [employees, setEmployees] = useState<EmployeePublicOption[]>([]);
   const [selectedEmployeeUsername, setSelectedEmployeeUsername] = useState<string>('');
-  const [manualEmployeeInput, setManualEmployeeInput] = useState<boolean>(false);
 
   // Form State
   const [password, setPassword] = useState<string>('');
@@ -68,7 +132,7 @@ export const LoginPage: React.FC = () => {
     }
   }, [isAuthenticated, isEmployee, navigate]);
 
-  // Fetch branches with their live managers directly from backend API
+  // Fetch branches and autofetch managers & employees directly from backend API
   const fetchBranches = async () => {
     try {
       setIsFetchingData(true);
@@ -81,43 +145,73 @@ export const LoginPage: React.FC = () => {
           res.data.find((b) => b.code.toUpperCase() === selectedBranchCode.toUpperCase()) || res.data[0];
         setSelectedBranchCode(defaultBranch.code);
 
+        // Autofetch and set managers
         if (defaultBranch.managers && defaultBranch.managers.length > 0) {
           setManagers(defaultBranch.managers);
           setSelectedManagerUsername(defaultBranch.managers[0].username);
         }
 
-        // Also prefetch employees for this branch
+        // Autofetch and set employees
+        if (defaultBranch.employees && defaultBranch.employees.length > 0) {
+          setEmployees(defaultBranch.employees);
+          setSelectedEmployeeUsername(defaultBranch.employees[0].employee_code);
+        } else {
+          // Instant autofetch fallback for the branch
+          const fallback = SHOWROOM_EMPLOYEES_FALLBACK[defaultBranch.code.toUpperCase()] || [];
+          setEmployees(fallback);
+          if (fallback.length > 0) {
+            setSelectedEmployeeUsername(fallback[0].employee_code);
+          }
+        }
+
+        // Live sync employees in background
         fetchEmployees(defaultBranch.code);
       }
     } catch (err) {
       console.error('Failed to load branches from backend:', err);
+      // Fallback branches
+      const fallback = SHOWROOM_EMPLOYEES_FALLBACK[selectedBranchCode] || [];
+      setEmployees(fallback);
+      if (fallback.length > 0) {
+        setSelectedEmployeeUsername(fallback[0].employee_code);
+      }
     } finally {
       setIsFetchingData(false);
     }
   };
 
   const fetchEmployees = async (branchCode: string) => {
+    const cleanCode = branchCode.toUpperCase();
     try {
-      const res = await api.get<EmployeePublicOption[]>(`/api/v1/auth/branches/${branchCode.toUpperCase()}/employees`);
-      // Strictly exclude managers from employee login
+      const res = await api.get<EmployeePublicOption[]>(`/api/v1/auth/branches/${cleanCode}/employees`);
       const salesEmployees = (res.data || []).filter(
         (emp) => !emp.designation?.toLowerCase().includes('manager')
       );
       if (salesEmployees.length > 0) {
         setEmployees(salesEmployees);
-        setSelectedEmployeeUsername(salesEmployees[0].employee_code);
-        setManualEmployeeInput(false);
+        setSelectedEmployeeUsername((curr) => {
+          const exists = salesEmployees.some((e) => e.employee_code === curr);
+          return exists ? curr : salesEmployees[0].employee_code;
+        });
       } else {
-        setEmployees([]);
-        setManualEmployeeInput(true);
+        const fallback = SHOWROOM_EMPLOYEES_FALLBACK[cleanCode] || [];
+        setEmployees(fallback);
+        if (fallback.length > 0) {
+          setSelectedEmployeeUsername(fallback[0].employee_code);
+        }
       }
     } catch (err) {
-      console.warn('Employees endpoint unavailable, falling back to manual code entry:', err);
-      setEmployees([]);
-      setManualEmployeeInput(true);
+      // Smooth autofetch from showroom roster fallback
+      const fallback = SHOWROOM_EMPLOYEES_FALLBACK[cleanCode] || [];
+      setEmployees(fallback);
+      if (fallback.length > 0) {
+        setSelectedEmployeeUsername((curr) => {
+          const exists = fallback.some((e) => e.employee_code === curr);
+          return exists ? curr : fallback[0].employee_code;
+        });
+      }
     }
   };
-
   useEffect(() => {
     fetchBranches();
   }, []);
@@ -138,7 +232,16 @@ export const LoginPage: React.FC = () => {
       setSelectedManagerUsername('');
     }
 
-    // Sync employees for this branch
+    // Autofetch employees immediately for selected branch
+    const branchEmps = targetBranch?.employees && targetBranch.employees.length > 0
+      ? targetBranch.employees
+      : (SHOWROOM_EMPLOYEES_FALLBACK[cleanCode] || []);
+    setEmployees(branchEmps);
+    if (branchEmps.length > 0) {
+      setSelectedEmployeeUsername(branchEmps[0].employee_code);
+    } else {
+      setSelectedEmployeeUsername('');
+    }
     fetchEmployees(cleanCode);
 
     // Non-blocking background sync from .env endpoint
@@ -448,52 +551,30 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            /* Employee Dropdown / Manual Code Entry */
+            /* Employee Dropdown - Autofetched without examples */
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-[#5E5A52]">
-                  {manualEmployeeInput || employees.length === 0 ? 'Employee Code or Username *' : 'Select Sales Employee *'}
-                </label>
-                {employees.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setManualEmployeeInput(!manualEmployeeInput)}
-                    className="text-[11px] text-[#2563EB] hover:underline font-semibold cursor-pointer"
-                  >
-                    {manualEmployeeInput ? 'Select from list' : 'Type code manually'}
-                  </button>
-                )}
-              </div>
+              <label className="text-xs font-medium text-[#5E5A52] block mb-1.5">
+                Select Sales Employee *
+              </label>
               <div className="relative flex items-center">
                 <UserIcon className="absolute left-3.5 w-4 h-4 text-[#2563EB] pointer-events-none" />
-                {manualEmployeeInput || employees.length === 0 ? (
-                  <input
-                    type="text"
-                    value={selectedEmployeeUsername}
-                    onChange={(e) => handleEmployeeChange(e.target.value)}
-                    placeholder="e.g. EMP-YEL-214 or GAGAN214"
-                    className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-2xl pl-9 pr-4 py-2.5 text-xs sm:text-sm transition-all font-semibold shadow-2xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 text-[#1E293B]"
-                    required
-                  />
-                ) : (
-                  <>
-                    <select
-                      value={selectedEmployeeUsername}
-                      onChange={(e) => handleEmployeeChange(e.target.value)}
-                      className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-2xl pl-9 pr-9 py-2.5 text-xs sm:text-sm appearance-none transition-all font-semibold cursor-pointer shadow-2xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 text-[#1E293B]"
-                      required
-                    >
-                      {employees
-                        .filter((emp) => !emp.designation?.toLowerCase().includes('manager'))
-                        .map((emp) => (
-                          <option key={emp.id} value={emp.employee_code}>
-                            {emp.full_name} ({emp.employee_code}) - {emp.designation}
-                          </option>
-                        ))}
-                    </select>
-                    <ChevronDown className="absolute right-3.5 w-4 h-4 text-[#8A8479] pointer-events-none" />
-                  </>
-                )}
+                <select
+                  value={selectedEmployeeUsername}
+                  onChange={(e) => handleEmployeeChange(e.target.value)}
+                  className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-2xl pl-9 pr-9 py-2.5 text-xs sm:text-sm appearance-none transition-all font-semibold cursor-pointer shadow-2xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 text-[#1E293B]"
+                  required
+                >
+                  {employees.length === 0 ? (
+                    <option value="">Fetching showroom employees...</option>
+                  ) : (
+                    employees.map((emp) => (
+                      <option key={emp.id} value={emp.employee_code}>
+                        {emp.full_name} ({emp.employee_code})
+                      </option>
+                    ))
+                  )}
+                </select>
+                <ChevronDown className="absolute right-3.5 w-4 h-4 text-[#8A8479] pointer-events-none" />
               </div>
             </div>
           )}

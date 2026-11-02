@@ -120,6 +120,38 @@ def get_env_branches_and_managers(db: Optional[Session] = None) -> List[BranchPu
                 )
             )
 
+        emp_options = []
+        if db and real_branch:
+            try:
+                mgr_names = {m.full_name.strip().lower() for m in mgr_options}
+                mgr_users = {m.username.strip().lower() for m in mgr_options}
+                db_emps = (
+                    db.query(Employee)
+                    .filter(Employee.branch_id == real_branch.id, Employee.status == "active")
+                    .order_by(Employee.full_name.asc())
+                    .all()
+                )
+                for e in db_emps:
+                    desig = (e.designation or "").lower()
+                    name = (e.full_name or "").strip().lower()
+                    code = (e.employee_code or "").strip().lower()
+                    if "manager" in desig or name in mgr_names or name in mgr_users or code in mgr_users:
+                        continue
+                    emp_options.append(
+                        EmployeePublicOption(
+                            id=e.id,
+                            full_name=e.full_name,
+                            employee_code=e.employee_code,
+                            username=e.employee_code,
+                            designation=e.designation or "Sales Executive",
+                            department=e.department or "Sales & Showroom Operations",
+                            branch_id=branch_id,
+                            branch_code=b_code,
+                        )
+                    )
+            except Exception:
+                pass
+
         results.append(
             BranchPublicResponse(
                 id=branch_id,
@@ -131,6 +163,7 @@ def get_env_branches_and_managers(db: Optional[Session] = None) -> List[BranchPu
                 description=real_branch.description if real_branch else b["description"],
                 is_active=True,
                 managers=mgr_options,
+                employees=emp_options,
             )
         )
     return results

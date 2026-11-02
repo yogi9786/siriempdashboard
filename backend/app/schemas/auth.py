@@ -88,6 +88,7 @@ class BranchPublicResponse(BaseModel):
     description: Optional[str] = None
     is_active: bool
     managers: List[ManagerPublicOption] = []
+    employees: List[EmployeePublicOption] = []
 
 
 # Backward-compatibility alias

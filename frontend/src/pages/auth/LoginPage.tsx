@@ -38,6 +38,7 @@ export const LoginPage: React.FC = () => {
 
   const [employees, setEmployees] = useState<EmployeePublicOption[]>([]);
   const [selectedEmployeeUsername, setSelectedEmployeeUsername] = useState<string>('');
+  const [manualEmployeeInput, setManualEmployeeInput] = useState<boolean>(false);
 
   // Form State
   const [password, setPassword] = useState<string>('');
@@ -105,12 +106,15 @@ export const LoginPage: React.FC = () => {
       if (salesEmployees.length > 0) {
         setEmployees(salesEmployees);
         setSelectedEmployeeUsername(salesEmployees[0].employee_code);
+        setManualEmployeeInput(false);
       } else {
         setEmployees([]);
-        setSelectedEmployeeUsername('');
+        setManualEmployeeInput(true);
       }
     } catch (err) {
-      console.error('Failed to load employees for branch:', err);
+      console.warn('Employees endpoint unavailable, falling back to manual code entry:', err);
+      setEmployees([]);
+      setManualEmployeeInput(true);
     }
   };
 
@@ -444,32 +448,52 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            /* Employee Dropdown */
+            /* Employee Dropdown / Manual Code Entry */
             <div>
-              <label className="text-xs font-medium text-[#5E5A52] block mb-1.5">
-                Select Sales Employee *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-[#5E5A52]">
+                  {manualEmployeeInput || employees.length === 0 ? 'Employee Code or Username *' : 'Select Sales Employee *'}
+                </label>
+                {employees.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setManualEmployeeInput(!manualEmployeeInput)}
+                    className="text-[11px] text-[#2563EB] hover:underline font-semibold cursor-pointer"
+                  >
+                    {manualEmployeeInput ? 'Select from list' : 'Type code manually'}
+                  </button>
+                )}
+              </div>
               <div className="relative flex items-center">
                 <UserIcon className="absolute left-3.5 w-4 h-4 text-[#2563EB] pointer-events-none" />
-                <select
-                  value={selectedEmployeeUsername}
-                  onChange={(e) => handleEmployeeChange(e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-2xl pl-9 pr-9 py-2.5 text-xs sm:text-sm appearance-none transition-all font-semibold cursor-pointer shadow-2xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 text-[#1E293B]"
-                  required
-                >
-                  {employees.filter((emp) => !emp.designation?.toLowerCase().includes('manager')).length === 0 ? (
-                    <option value="">No sales employees found for this showroom</option>
-                  ) : (
-                    employees
-                      .filter((emp) => !emp.designation?.toLowerCase().includes('manager'))
-                      .map((emp) => (
-                        <option key={emp.id} value={emp.employee_code}>
-                          {emp.full_name} ({emp.employee_code}) - {emp.designation}
-                        </option>
-                      ))
-                  )}
-                </select>
-                <ChevronDown className="absolute right-3.5 w-4 h-4 text-[#8A8479] pointer-events-none" />
+                {manualEmployeeInput || employees.length === 0 ? (
+                  <input
+                    type="text"
+                    value={selectedEmployeeUsername}
+                    onChange={(e) => handleEmployeeChange(e.target.value)}
+                    placeholder="e.g. EMP-YEL-214 or GAGAN214"
+                    className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-2xl pl-9 pr-4 py-2.5 text-xs sm:text-sm transition-all font-semibold shadow-2xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 text-[#1E293B]"
+                    required
+                  />
+                ) : (
+                  <>
+                    <select
+                      value={selectedEmployeeUsername}
+                      onChange={(e) => handleEmployeeChange(e.target.value)}
+                      className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-2xl pl-9 pr-9 py-2.5 text-xs sm:text-sm appearance-none transition-all font-semibold cursor-pointer shadow-2xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 text-[#1E293B]"
+                      required
+                    >
+                      {employees
+                        .filter((emp) => !emp.designation?.toLowerCase().includes('manager'))
+                        .map((emp) => (
+                          <option key={emp.id} value={emp.employee_code}>
+                            {emp.full_name} ({emp.employee_code}) - {emp.designation}
+                          </option>
+                        ))}
+                    </select>
+                    <ChevronDown className="absolute right-3.5 w-4 h-4 text-[#8A8479] pointer-events-none" />
+                  </>
+                )}
               </div>
             </div>
           )}

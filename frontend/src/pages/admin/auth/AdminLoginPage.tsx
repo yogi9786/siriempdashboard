@@ -26,7 +26,7 @@ export const AdminLoginPage: React.FC = () => {
   const { success, error: toastError } = useToast();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState<string>('admin@sirisamruddhigold.com');
+  const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [rememberMe, setRememberMe] = useState<boolean>(true);
   const [showPassword, setShowPassword] = useState<boolean>(false);

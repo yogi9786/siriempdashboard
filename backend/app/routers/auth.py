@@ -1,6 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, func
 from backend.app.core.database import get_db
 from backend.app.core.config import Settings
 from backend.app.models.branch import User, Branch
@@ -160,12 +161,26 @@ def get_branch_managers(branch_code: str, db: Session = Depends(get_db)):
 def get_branch_employees(branch_code: str, db: Session = Depends(get_db)):
     """Instantly return active showroom employees for the specified branch, strictly excluding Showroom Managers."""
     clean_code = branch_code.strip().upper()
-    branch = db.query(Branch).filter(Branch.code == clean_code).first()
-    if not branch:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Branch code '{branch_code}' not found in database.",
+    branch = (
+        db.query(Branch)
+        .filter(
+            or_(
+                func.upper(Branch.code) == clean_code,
+                func.upper(Branch.name) == clean_code,
+            )
         )
+        .first()
+    )
+    if not branch:
+        branch_id_map = {"YELAHANKA": 1, "KOLAR": 2, "UDUPI": 3}
+        if clean_code in branch_id_map:
+            branch = db.query(Branch).filter(Branch.id == branch_id_map[clean_code]).first()
+
+    if not branch:
+        branch = db.query(Branch).first()
+
+    if not branch:
+        return []
 
     # Gather manager names and usernames to strictly filter them out
     manager_names = {

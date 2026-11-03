@@ -164,7 +164,7 @@ class Settings(BaseSettings):
     UDUPI_MANAGER_2_PASSWORD: str = "PRITHVIRAJ@siri1234"
 
     # Default Employee Password for Showroom Sales Staff
-    DEFAULT_EMPLOYEE_PASSWORD: str = "Siri@Emp2026!"
+    DEFAULT_EMPLOYEE_PASSWORD: str = ""
 
 
 def validate_security_configuration(s: Settings) -> None:

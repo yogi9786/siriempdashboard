@@ -140,8 +140,17 @@ def get_env_employee_password(identifier: str, emp: Optional[Employee] = None) -
         except Exception:
             pass
 
-    # 4. Return default configured employee password
-    return raw_env.get("DEFAULT_EMPLOYEE_PASSWORD") or getattr(settings, "DEFAULT_EMPLOYEE_PASSWORD", "Siri@Emp2026!")
+    # 4. Check if employee full_name matches any MANAGER_*_NAME (e.g. GAGAN -> MANAGER_6_PASSWORD)
+    if emp and emp.full_name:
+        emp_clean = emp.full_name.strip().lower()
+        for k, v in raw_env.items():
+            if ("_MANAGER_" in k or k.startswith("MANAGER_")) and k.endswith("_NAME"):
+                if v.strip().lower() == emp_clean:
+                    pwd_k = k.replace("_NAME", "_PASSWORD")
+                    if pwd_k in raw_env and raw_env[pwd_k].strip():
+                        return raw_env[pwd_k].strip()
+
+    return ""
 
 
 
@@ -558,22 +567,62 @@ class AuthService:
                 detail="Showroom Managers cannot log in via the Employee portal. Please use the Showroom Manager login tab.",
             )
 
-        # 4. Verify Password from .env with universal showroom employee pattern: {FirstName}@siri1234
-        expected_pwd = get_env_employee_password(username_cleaned, emp)
-        default_pwd = getattr(live_settings, "DEFAULT_EMPLOYEE_PASSWORD", "Siri@Emp2026!")
+        # 4. Verify Password against employee's designated credentials (ZERO DEFAULT PASSWORD ALLOWED)
+        valid_passwords = set()
 
-        first_name = (emp.full_name or "").strip().split()[0].capitalize() if emp and emp.full_name else ""
-        std_pwd = f"{first_name}@siri1234" if first_name else ""
+        # A. Direct password from .env (e.g. EMP_SHYLAJA_PASSWORD, EMP_GAGAN_PASSWORD, etc.)
+        env_pwd = get_env_employee_password(username_cleaned, emp)
+        if env_pwd:
+            valid_passwords.add(env_pwd)
 
-        pwd_match = (
-            (expected_pwd and hmac.compare_digest(password_cleaned, expected_pwd))
-            or (default_pwd and hmac.compare_digest(password_cleaned, default_pwd))
-            or hmac.compare_digest(password_cleaned, "Siri@Emp2026!")
-            or (std_pwd and hmac.compare_digest(password_cleaned.lower(), std_pwd.lower()))
-            or (std_pwd and hmac.compare_digest(password_cleaned, std_pwd))
-            or (emp and (emp.full_name or "").strip().upper() == "GAGAN" and hmac.compare_digest(password_cleaned, "Gagan@siri1234"))
-            or (emp and (emp.full_name or "").strip().upper() == "BHEEMAMMA" and hmac.compare_digest(password_cleaned, "Bheemamma@siri1234"))
-        )
+        # B. Standard showroom employee pattern: {FirstName}@siri1234 for each name token
+        if emp and emp.full_name:
+            name_parts = [p.strip().lower() for p in emp.full_name.split() if p.strip()]
+            significant_parts = [p for p in name_parts if len(p) >= 3]
+            if not significant_parts and name_parts:
+                significant_parts = name_parts
+
+            for part in significant_parts:
+                valid_passwords.add(f"{part.capitalize()}@siri1234")
+                valid_passwords.add(f"{part.lower()}@siri1234")
+                valid_passwords.add(f"{part.upper()}@siri1234")
+
+            # Handle spelling variations (e.g. Maheswhari vs Maheshwari)
+            if "maheswhari" in emp.full_name.lower() or "maheshwari" in emp.full_name.lower():
+                valid_passwords.add("Maheshwari@siri1234")
+                valid_passwords.add("Maheswhari@siri1234")
+
+        # C. Manager password if employee is also configured as manager (e.g. GAGAN)
+        if emp and emp.full_name:
+            emp_clean = emp.full_name.strip().lower()
+            raw_env_map = {}
+            for p in [os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"), ".env", "backend/.env"]:
+                if os.path.exists(p):
+                    try:
+                        with open(p, "r", encoding="utf-8") as f:
+                            for line in f:
+                                line = line.strip()
+                                if line and not line.startswith("#") and "=" in line:
+                                    k, v = line.split("=", 1)
+                                    raw_env_map[k.strip()] = v.strip()
+                        if raw_env_map:
+                            break
+                    except Exception:
+                        pass
+            for k, v in raw_env_map.items():
+                if ("_MANAGER_" in k or k.startswith("MANAGER_")) and k.endswith("_NAME"):
+                    if v.strip().lower() == emp_clean:
+                        pwd_k = k.replace("_NAME", "_PASSWORD")
+                        if pwd_k in raw_env_map and raw_env_map[pwd_k].strip():
+                            valid_passwords.add(raw_env_map[pwd_k].strip())
+
+        # STRICT VERIFICATION: ONLY designated employee passwords allowed, Siri@Emp2026! is explicitly rejected
+        pwd_match = False
+        if password_cleaned != "Siri@Emp2026!":
+            for valid_p in valid_passwords:
+                if hmac.compare_digest(password_cleaned, valid_p) or hmac.compare_digest(password_cleaned.lower(), valid_p.lower()):
+                    pwd_match = True
+                    break
 
         if not pwd_match:
             record_failed_login(client_key)

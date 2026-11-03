@@ -111,7 +111,7 @@ UDUPI_MANAGER_2_PASSWORD=PRITHVIRAJ@siri1234
 # =========================================================================
 # SHOWROOM EMPLOYEES CREDENTIALS (ENV-Configured — ZERO Frontend Storage)
 # =========================================================================
-DEFAULT_EMPLOYEE_PASSWORD=Siri@Emp2026!
+# DEFAULT_EMPLOYEE_PASSWORD removed
 
 # Yelahanka Showroom Employees
 EMP_SHYLAJA_USERNAME=SHYLAJA8

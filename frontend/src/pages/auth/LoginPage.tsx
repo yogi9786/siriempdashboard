@@ -19,6 +19,14 @@ import { Branch, ManagerPublicOption, EmployeePublicOption } from '../../types';
 import api from '../../api/client';
 import logoImg from '../../assets/siri samruddhi logo.png';
 
+// Safe merger ensuring all showroom roster members (e.g. GAGAN) are always in dropdown
+const mergeWithFallback = (branchCode: string, serverList: EmployeePublicOption[]): EmployeePublicOption[] => {
+  const fallback = SHOWROOM_EMPLOYEES_FALLBACK[branchCode.toUpperCase()] || [];
+  const existingCodes = new Set((serverList || []).map((e) => (e.employee_code || '').trim().toUpperCase()));
+  const missing = fallback.filter((f) => !existingCodes.has((f.employee_code || '').trim().toUpperCase()));
+  return [...(serverList || []), ...missing].sort((a, b) => a.full_name.localeCompare(b.full_name));
+};
+
 // Complete showroom employee directory for instant zero-latency autofetch
 const SHOWROOM_EMPLOYEES_FALLBACK: Record<string, EmployeePublicOption[]> = {
   YELAHANKA: [
@@ -151,17 +159,14 @@ export const LoginPage: React.FC = () => {
           setSelectedManagerUsername(defaultBranch.managers[0].username);
         }
 
-        // Autofetch and set employees
-        if (defaultBranch.employees && defaultBranch.employees.length > 0) {
-          setEmployees(defaultBranch.employees);
-          setSelectedEmployeeUsername(defaultBranch.employees[0].employee_code);
-        } else {
-          // Instant autofetch fallback for the branch
-          const fallback = SHOWROOM_EMPLOYEES_FALLBACK[defaultBranch.code.toUpperCase()] || [];
-          setEmployees(fallback);
-          if (fallback.length > 0) {
-            setSelectedEmployeeUsername(fallback[0].employee_code);
-          }
+        // Autofetch and set employees with fallback merge (guarantees GAGAN is always present)
+        const rawEmps = defaultBranch.employees && defaultBranch.employees.length > 0
+          ? defaultBranch.employees
+          : (SHOWROOM_EMPLOYEES_FALLBACK[defaultBranch.code.toUpperCase()] || []);
+        const mergedEmps = mergeWithFallback(defaultBranch.code, rawEmps);
+        setEmployees(mergedEmps);
+        if (mergedEmps.length > 0) {
+          setSelectedEmployeeUsername(mergedEmps[0].employee_code);
         }
 
         // Live sync employees in background
@@ -187,18 +192,13 @@ export const LoginPage: React.FC = () => {
       const salesEmployees = (res.data || []).filter(
         (emp) => !emp.designation?.toLowerCase().includes('manager')
       );
-      if (salesEmployees.length > 0) {
-        setEmployees(salesEmployees);
+      const mergedEmps = mergeWithFallback(cleanCode, salesEmployees);
+      if (mergedEmps.length > 0) {
+        setEmployees(mergedEmps);
         setSelectedEmployeeUsername((curr) => {
-          const exists = salesEmployees.some((e) => e.employee_code === curr);
-          return exists ? curr : salesEmployees[0].employee_code;
+          const exists = mergedEmps.some((e) => e.employee_code === curr);
+          return exists ? curr : mergedEmps[0].employee_code;
         });
-      } else {
-        const fallback = SHOWROOM_EMPLOYEES_FALLBACK[cleanCode] || [];
-        setEmployees(fallback);
-        if (fallback.length > 0) {
-          setSelectedEmployeeUsername(fallback[0].employee_code);
-        }
       }
     } catch (err) {
       // Smooth autofetch from showroom roster fallback
@@ -232,13 +232,14 @@ export const LoginPage: React.FC = () => {
       setSelectedManagerUsername('');
     }
 
-    // Autofetch employees immediately for selected branch
-    const branchEmps = targetBranch?.employees && targetBranch.employees.length > 0
+    // Autofetch employees immediately for selected branch with fallback merge
+    const rawBranchEmps = targetBranch?.employees && targetBranch.employees.length > 0
       ? targetBranch.employees
       : (SHOWROOM_EMPLOYEES_FALLBACK[cleanCode] || []);
-    setEmployees(branchEmps);
-    if (branchEmps.length > 0) {
-      setSelectedEmployeeUsername(branchEmps[0].employee_code);
+    const mergedBranchEmps = mergeWithFallback(cleanCode, rawBranchEmps);
+    setEmployees(mergedBranchEmps);
+    if (mergedBranchEmps.length > 0) {
+      setSelectedEmployeeUsername(mergedBranchEmps[0].employee_code);
     } else {
       setSelectedEmployeeUsername('');
     }

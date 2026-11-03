@@ -159,7 +159,7 @@ def list_pending_customer_activities(
     return [_build_activity_response(r) for r in records]
 
 
-@router.post("/{record_id}/review", response_model=CustomerActivityResponse, summary="Approve or Reject an employee-submitted customer activity")
+@router.post("/{record_id:int}/review", response_model=CustomerActivityResponse, summary="Approve or Reject an employee-submitted customer activity")
 def review_customer_activity(
     record_id: int,
     action_data: CustomerApprovalAction,
@@ -566,7 +566,7 @@ def _build_activity_response(record: CustomerActivity) -> CustomerActivityRespon
 
 
 
-@router.put("/{record_id}", response_model=CustomerActivityResponse, summary="Update a customer activity record (full replace)")
+@router.put("/{record_id:int}", response_model=CustomerActivityResponse, summary="Update a customer activity record (full replace)")
 def put_customer_activity(
     record_id: int,
     update_data: CustomerActivityUpdate,
@@ -590,7 +590,7 @@ def put_customer_activity(
     return _build_activity_response(record)
 
 
-@router.patch("/{record_id}", response_model=CustomerActivityResponse, summary="Partially update a customer activity record")
+@router.patch("/{record_id:int}", response_model=CustomerActivityResponse, summary="Partially update a customer activity record")
 def patch_customer_activity(
     record_id: int,
     update_data: CustomerActivityUpdate,
@@ -615,7 +615,7 @@ def patch_customer_activity(
     return _build_activity_response(record)
 
 
-@router.post("/{record_id}/send-whatsapp", summary="Manually trigger WhatsApp notification for a customer activity record via AiSensy")
+@router.post("/{record_id:int}/send-whatsapp", summary="Manually trigger WhatsApp notification for a customer activity record via AiSensy")
 def send_customer_activity_whatsapp(
     record_id: int,
     req: SendWhatsAppRequest = SendWhatsAppRequest(),
@@ -658,7 +658,7 @@ def send_customer_activity_whatsapp(
     }
 
 
-@router.delete("/{record_id}", status_code=status.HTTP_200_OK, summary="Delete a customer activity record")
+@router.delete("/{record_id:int}", status_code=status.HTTP_200_OK, summary="Delete a customer activity record")
 def delete_customer_activity(
     record_id: int,
     current_user: User = Depends(get_current_manager),

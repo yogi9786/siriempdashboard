@@ -174,41 +174,56 @@ export const PendingCustomerActivityPage: React.FC = () => {
   const fetchActivities = async () => {
     try {
       setIsLoading(true);
-      const params: Record<string, any> = {
-        status_filter: statusFilter,
+      const allParams: Record<string, any> = {
+        status_filter: 'all',
       };
-      const countParams: Record<string, any> = {};
       if (selectedEmployeeId && selectedEmployeeId !== 'all') {
-        params.employee_id = parseInt(selectedEmployeeId, 10);
-        countParams.employee_id = parseInt(selectedEmployeeId, 10);
+        allParams.employee_id = parseInt(selectedEmployeeId, 10);
       }
 
-      const [actRes, empRes, countRes] = await Promise.all([
-        api.get<CustomerActivity[]>('/api/v1/customers/pending', { params }),
+      // Fetch all customer submissions for this branch & employee to compute all filter card counts cleanly with 0 network errors
+      const [allActRes, empRes] = await Promise.all([
+        api.get<CustomerActivity[]>('/api/v1/customers/pending', { params: allParams }),
         api.get<Employee[]>('/api/v1/employees'),
-        api.get<{ pending: number; approved: number; rejected: number; total: number }>('/api/v1/customers/pending-counts', { params: countParams }).catch(() => null),
       ]);
 
-      setActivities(actRes.data);
-      setEmployees(empRes.data);
+      const allItems = allActRes.data || [];
+      const pendingCount = allItems.filter(
+        (a) => (a.approval_status || '').toUpperCase() === 'PENDING'
+      ).length;
+      const approvedCount = allItems.filter(
+        (a) => (a.approval_status || '').toUpperCase() === 'APPROVED'
+      ).length;
+      const rejectedCount = allItems.filter(
+        (a) => (a.approval_status || '').toUpperCase() === 'REJECTED'
+      ).length;
 
-      if (countRes && countRes.data) {
-        setCounts(countRes.data);
-        // If on initial page load there are 0 pending items, but approved items exist, auto-switch to APPROVED so user sees them right away
-        if (!initialAutoSwitchDone.current && countRes.data.pending === 0 && countRes.data.approved > 0 && statusFilter === 'PENDING') {
-          initialAutoSwitchDone.current = true;
-          setStatusFilter('APPROVED');
-        }
-      } else {
-        const p = actRes.data.filter((a) => a.approval_status === 'PENDING').length;
-        const app = actRes.data.filter((a) => a.approval_status === 'APPROVED').length;
-        const rej = actRes.data.filter((a) => a.approval_status === 'REJECTED').length;
-        setCounts((prev) => ({
-          pending: statusFilter === 'PENDING' ? actRes.data.length : prev.pending || p,
-          approved: statusFilter === 'APPROVED' ? actRes.data.length : prev.approved || app,
-          rejected: statusFilter === 'REJECTED' ? actRes.data.length : prev.rejected || rej,
-          total: prev.total || actRes.data.length,
-        }));
+      setCounts({
+        pending: pendingCount,
+        approved: approvedCount,
+        rejected: rejectedCount,
+        total: allItems.length,
+      });
+
+      // Filter activities according to the selected tab statusFilter
+      const filtered =
+        statusFilter === 'ALL'
+          ? allItems
+          : allItems.filter(
+              (a) => (a.approval_status || '').toUpperCase() === statusFilter.toUpperCase()
+            );
+      setActivities(filtered);
+      setEmployees(empRes.data || []);
+
+      // If on initial page load there are 0 pending items, but approved items exist, auto-switch to APPROVED so user sees them right away
+      if (
+        !initialAutoSwitchDone.current &&
+        pendingCount === 0 &&
+        approvedCount > 0 &&
+        statusFilter === 'PENDING'
+      ) {
+        initialAutoSwitchDone.current = true;
+        setStatusFilter('APPROVED');
       }
     } catch (err: any) {
       console.error('Failed to load pending customer activities:', err);

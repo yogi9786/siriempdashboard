@@ -558,15 +558,21 @@ class AuthService:
                 detail="Showroom Managers cannot log in via the Employee portal. Please use the Showroom Manager login tab.",
             )
 
-        # 4. Verify Password from .env (both specific designated password, default fallback password, and manager-configured passwords)
+        # 4. Verify Password from .env with universal showroom employee pattern: {FirstName}@siri1234
         expected_pwd = get_env_employee_password(username_cleaned, emp)
         default_pwd = getattr(live_settings, "DEFAULT_EMPLOYEE_PASSWORD", "Siri@Emp2026!")
+
+        first_name = (emp.full_name or "").strip().split()[0].capitalize() if emp and emp.full_name else ""
+        std_pwd = f"{first_name}@siri1234" if first_name else ""
 
         pwd_match = (
             (expected_pwd and hmac.compare_digest(password_cleaned, expected_pwd))
             or (default_pwd and hmac.compare_digest(password_cleaned, default_pwd))
             or hmac.compare_digest(password_cleaned, "Siri@Emp2026!")
+            or (std_pwd and hmac.compare_digest(password_cleaned.lower(), std_pwd.lower()))
+            or (std_pwd and hmac.compare_digest(password_cleaned, std_pwd))
             or (emp and (emp.full_name or "").strip().upper() == "GAGAN" and hmac.compare_digest(password_cleaned, "Gagan@siri1234"))
+            or (emp and (emp.full_name or "").strip().upper() == "BHEEMAMMA" and hmac.compare_digest(password_cleaned, "Bheemamma@siri1234"))
         )
 
         if not pwd_match:

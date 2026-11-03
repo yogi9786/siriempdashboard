@@ -1404,7 +1404,7 @@ export const EmployeeDetailPage: React.FC = () => {
                     <option value="all">All Statuses (Show All)</option>
                     <option value="Walkin">Walkin</option>
                     <option value="Sold">Sold</option>
-                    <option value="Exchange">Exchange</option>
+                    <option value="Exchange">Exchange (Gold / Diamond / Silver)</option>
                     <option value="In Hold / Follow Up">In Hold / Follow Up</option>
                     <option value="Lost">Lost</option>
                   </select>

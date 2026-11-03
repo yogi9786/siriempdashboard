@@ -78,7 +78,7 @@ class AiSensyService:
             key = (getattr(settings, "AISENSY_API_KEY_SOLD", None) or master_key).strip()
             return camp, key, "Purchased / Sold"
 
-        if status_norm in ["exchange", "gold exchange", "jewellery exchange"]:
+        if "exchange" in status_norm or status_norm in ["exchange", "gold exchange", "jewellery exchange", "silver exchange"]:
             camp = (
                 getattr(settings, "AISENSY_CAMPAIGN_EXCHANGE", None)
                 or getattr(settings, "AISENSY_TEMPLATE_EXCHANGE", None)
@@ -125,7 +125,7 @@ class AiSensyService:
         url: Optional[str] = None
         if status_norm in ["sold", "purchased", "closed", "sale"]:
             url = getattr(settings, "AISENSY_MEDIA_URL_SOLD", None)
-        elif status_norm in ["exchange", "gold exchange", "jewellery exchange"]:
+        elif "exchange" in status_norm or status_norm in ["exchange", "gold exchange", "jewellery exchange", "silver exchange"]:
             url = getattr(settings, "AISENSY_MEDIA_URL_EXCHANGE", None)
         elif status_norm in ["in hold / follow up", "in hold", "hold", "follow up", "follow-up", "callback"]:
             url = getattr(settings, "AISENSY_MEDIA_URL_IN_HOLD", None)
@@ -179,7 +179,7 @@ class AiSensyService:
         if status_norm in ["sold", "purchased", "closed", "sale"]:
             return [cust_name, showroom, staff, val_str, note_str]
 
-        if status_norm in ["exchange", "gold exchange", "jewellery exchange"]:
+        if "exchange" in status_norm or status_norm in ["exchange", "gold exchange", "jewellery exchange", "silver exchange"]:
             return [cust_name, showroom, staff, val_str, note_str]
 
         if status_norm in ["in hold / follow up", "in hold", "hold", "follow up", "follow-up", "callback"]:

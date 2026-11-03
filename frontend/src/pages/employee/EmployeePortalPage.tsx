@@ -37,6 +37,7 @@ import {
   FileImage,
   Camera,
   Trophy,
+  Bell,
 } from 'lucide-react';
 import api from '../../api/client';
 import { CustomerActivity, EmployeeCallLog, EmployeeDashboardSummary, GoogleReview, VideoReview } from '../../types';
@@ -198,8 +199,15 @@ export const EmployeePortalPage: React.FC = () => {
   const [isLoadingCustomers, setIsLoadingCustomers] = useState<boolean>(true);
   const [customerSearch, setCustomerSearch] = useState<string>('');
   const [customerApprovalFilter, setCustomerApprovalFilter] = useState<string>('ALL');
-  const [customerStatusFilter, setCustomerStatusFilter] = useState<'ALL' | 'Sold' | 'Interested' | 'Lost'>('ALL');
+  const [customerStatusFilter, setCustomerStatusFilter] = useState<'ALL' | 'Sold' | 'Exchange' | 'In Hold' | 'Interested' | 'Lost'>('ALL');
   const [showCustomerModal, setShowCustomerModal] = useState<boolean>(false);
+
+  // Notification states (Attire checks & Review approvals)
+  const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState<boolean>(false);
+  const [notificationTab, setNotificationTab] = useState<'all' | 'attire' | 'reviews'>('all');
   const [editingActivity, setEditingActivity] = useState<CustomerActivity | null>(null);
 
   // Call logs state
@@ -232,6 +240,38 @@ export const EmployeePortalPage: React.FC = () => {
     } catch (err) {
       console.error('Failed to load employee summary:', err);
     }
+  };
+
+  // Fetch Notifications (Attire checks & Review approvals)
+  const fetchNotifications = async () => {
+    try {
+      setIsLoadingNotifications(true);
+      const res = await api.get('/api/v1/employee/notifications');
+      if (res.data) {
+        const notifs = res.data.notifications || [];
+        setNotifications(notifs);
+        const lastSeen = localStorage.getItem(`emp_notif_seen_${user?.id}`);
+        if (!lastSeen) {
+          setUnreadCount(notifs.length);
+        } else {
+          const unseen = notifs.filter(
+            (n: any) => new Date(n.created_at || n.date).getTime() > Number(lastSeen)
+          );
+          setUnreadCount(unseen.length);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  };
+
+  const handleOpenNotifications = () => {
+    setShowNotificationsModal(true);
+    localStorage.setItem(`emp_notif_seen_${user?.id}`, Date.now().toString());
+    setUnreadCount(0);
+    fetchNotifications();
   };
 
   // Fetch Customer Activities
@@ -387,6 +427,7 @@ export const EmployeePortalPage: React.FC = () => {
 
   useEffect(() => {
     fetchSummary();
+    fetchNotifications();
   }, []);
 
   useEffect(() => {
@@ -520,6 +561,34 @@ export const EmployeePortalPage: React.FC = () => {
 
           {/* Employee User Card & Logout */}
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Notifications Button (Attire checks & Review Approvals) */}
+            <button
+              type="button"
+              onClick={handleOpenNotifications}
+              className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-[#FAF5FF] border border-[#E6E1D6] hover:border-[#D8B4FE] text-[#1D1D1B] transition-all cursor-pointer shadow-2xs group shrink-0"
+              title="Notifications: Manager attire checks & review approvals"
+            >
+              <div className="relative flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-[#FAF5FF] text-[#7E22CE] group-hover:bg-[#F3E8FF] transition-colors shrink-0">
+                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#7E22CE] group-hover:scale-110 transition-transform" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#DC2626] rounded-full ring-2 ring-white animate-pulse" />
+                )}
+              </div>
+              <div className="text-left hidden sm:block">
+                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#8A8479] block leading-none">
+                  Updates
+                </span>
+                <span className="text-xs font-bold text-[#1D1D1B] leading-tight flex items-center gap-1">
+                  Alerts
+                  {unreadCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA]">
+                      {unreadCount}
+                    </span>
+                  )}
+                </span>
+              </div>
+            </button>
+
             {/* Total Points Indicator in Header */}
             <button
               type="button"
@@ -913,6 +982,18 @@ export const EmployeePortalPage: React.FC = () => {
                     label: 'Sold',
                     activeCls: 'bg-[#21845F] text-white border-[#21845F] shadow-sm shadow-emerald-500/20',
                     inactiveCls: 'bg-[#E8F4EE] text-[#21845F] border-[#A7F3D0] hover:bg-[#D1FAE5]',
+                  },
+                  {
+                    id: 'Exchange',
+                    label: 'Exchange (Gold/Diamond/Silver)',
+                    activeCls: 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm shadow-blue-500/20',
+                    inactiveCls: 'bg-[#EFF6FF] text-[#1E40AF] border-[#BFDBFE] hover:bg-[#DBEAFE]',
+                  },
+                  {
+                    id: 'In Hold',
+                    label: 'In Hold / Follow Up',
+                    activeCls: 'bg-[#B45309] text-white border-[#B45309] shadow-sm shadow-amber-600/20',
+                    inactiveCls: 'bg-[#FFFBEB] text-[#92400E] border-[#FDE68A] hover:bg-[#FEF3C7]',
                   },
                   {
                     id: 'Interested',
@@ -2459,6 +2540,221 @@ export const EmployeePortalPage: React.FC = () => {
                 alt="Photo Proof Full"
                 className="max-h-[80vh] w-auto max-w-full object-contain"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ------------------------------------------------------------------- */}
+      {/* MODAL: NOTIFICATIONS (Attire checks & Review approvals)            */}
+      {/* Simple, clean, clear layout requested by user                      */}
+      {/* ------------------------------------------------------------------- */}
+      {showNotificationsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-[#E6E1D6] max-w-xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-[#F0ECE1] flex items-center justify-between gap-3 bg-[#FAF8F5]">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs">
+                  <Bell className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-sm sm:text-base font-black text-[#1D1D1B] truncate">
+                    Manager Updates & Notifications
+                  </h2>
+                  <p className="text-[11px] text-[#8A8479] truncate">
+                    Grooming attire checks and review approvals
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={fetchNotifications}
+                  disabled={isLoadingNotifications}
+                  className="p-2 rounded-xl text-[#8A8479] hover:text-[#7E22CE] hover:bg-white border border-transparent hover:border-[#E6E1D6] transition-all cursor-pointer"
+                  title="Refresh Notifications"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoadingNotifications ? 'animate-spin text-[#7E22CE]' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNotificationsModal(false)}
+                  className="p-2 rounded-xl text-[#8A8479] hover:text-[#1D1D1B] hover:bg-white border border-transparent hover:border-[#E6E1D6] transition-all cursor-pointer"
+                  title="Close"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Simple Category Tabs */}
+            <div className="px-4 sm:px-5 py-2.5 bg-white border-b border-[#F0ECE1] flex items-center gap-1.5 overflow-x-auto">
+              {[
+                { id: 'all', label: 'All Updates', count: notifications.length },
+                {
+                  id: 'attire',
+                  label: 'Attire Checks',
+                  count: notifications.filter((n) => n.category === 'attire').length,
+                },
+                {
+                  id: 'reviews',
+                  label: 'Review Approvals',
+                  count: notifications.filter(
+                    (n) => n.category === 'google_review' || n.category === 'video_review' || n.category === 'customer_activity'
+                  ).length,
+                },
+              ].map((tab) => {
+                const isActive = notificationTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setNotificationTab(tab.id as any)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                      isActive
+                        ? 'bg-[#7E22CE] text-white shadow-xs'
+                        : 'bg-[#FAF8F5] text-[#5E5A52] hover:bg-[#F3E8FF] hover:text-[#7E22CE]'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                        isActive ? 'bg-white/20 text-white' : 'bg-[#E6E1D6] text-[#5E5A52]'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* List of Simple Notifications */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+              {isLoadingNotifications ? (
+                <div className="py-12 flex justify-center">
+                  <LoadingSpinner message="Loading updates from showroom manager..." />
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="py-12 text-center text-[#8A8479] space-y-2">
+                  <Bell className="w-8 h-8 mx-auto text-[#CBD5E1]" />
+                  <p className="text-xs font-bold text-[#1D1D1B]">No notifications recorded yet</p>
+                  <p className="text-[11px] max-w-sm mx-auto">
+                    When your showroom manager logs your attire check or approves your customer Google / Video reviews, updates will appear right here.
+                  </p>
+                </div>
+              ) : (
+                notifications
+                  .filter((n) => {
+                    if (notificationTab === 'attire') return n.category === 'attire';
+                    if (notificationTab === 'reviews')
+                      return (
+                        n.category === 'google_review' ||
+                        n.category === 'video_review' ||
+                        n.category === 'customer_activity'
+                      );
+                    return true;
+                  })
+                  .map((item) => {
+                    const isApproved =
+                      item.status === 'Proper' ||
+                      item.status === 'APPROVED' ||
+                      item.badge_color === 'green';
+                    const isRejected =
+                      item.status === 'Not Proper' ||
+                      item.status === 'REJECTED' ||
+                      item.badge_color === 'red';
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
+                          isApproved
+                            ? 'bg-[#F0FDF4] border-[#BBF7D0]'
+                            : isRejected
+                              ? 'bg-[#FEF2F2] border-[#FECACA]'
+                              : 'bg-[#FFFBEB] border-[#FDE68A]'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold shadow-2xs ${
+                              isApproved
+                                ? 'bg-[#21845F] text-white'
+                                : isRejected
+                                  ? 'bg-[#DC2626] text-white'
+                                  : 'bg-[#D97706] text-white'
+                            }`}
+                          >
+                            {item.category === 'attire' ? (
+                              <Shield className="w-4 h-4" />
+                            ) : isApproved ? (
+                              <CheckCircle2 className="w-4 h-4" />
+                            ) : isRejected ? (
+                              <XCircle className="w-4 h-4" />
+                            ) : (
+                              <Clock className="w-4 h-4" />
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                              <span className="text-xs font-black text-[#1D1D1B]">
+                                {item.title}
+                              </span>
+                              <span className="text-[10px] text-[#8A8479] font-mono font-medium">
+                                {item.date}
+                              </span>
+                            </div>
+
+                            <p className="text-xs text-[#374151] leading-relaxed mb-2">
+                              {item.message}
+                            </p>
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                  isApproved
+                                    ? 'bg-[#DCFCE7] text-[#166534] border border-[#86EFAC]'
+                                    : isRejected
+                                      ? 'bg-[#FEE2E2] text-[#991B1B] border border-[#FCA5A5]'
+                                      : 'bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D]'
+                                }`}
+                              >
+                                {item.status}
+                              </span>
+                              <span className="text-[10px] text-[#8A8479] uppercase font-bold">
+                                {item.category === 'attire'
+                                  ? '👔 Grooming & Attire Check'
+                                  : item.category === 'google_review'
+                                    ? '⭐ Google Review'
+                                    : item.category === 'video_review'
+                                      ? '🎥 Video Review'
+                                      : '📋 Customer Log'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 sm:p-4 bg-[#FAF8F5] border-t border-[#F0ECE1] flex items-center justify-between">
+              <span className="text-[11px] text-[#8A8479] font-medium">
+                Live sync from showroom management
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowNotificationsModal(false)}
+                className="px-4 py-1.5 rounded-xl bg-white hover:bg-gray-50 border border-[#CBD5E1] text-xs font-bold text-[#1D1D1B] cursor-pointer shadow-2xs"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

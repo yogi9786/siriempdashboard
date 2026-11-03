@@ -128,7 +128,9 @@ export const CustomerActivityPage: React.FC = () => {
       const checkStatus = (st: string) => {
         const s = (st || '').toLowerCase();
         if (target === 'sold') return s.includes('sold') || s.includes('closed');
-        if (target === 'interested') return s.includes('interested') || s.includes('hold') || s.includes('follow');
+        if (target === 'exchange') return s.includes('exchange');
+        if (target === 'in hold' || target === 'hold' || target.includes('hold')) return s.includes('hold') || s.includes('follow');
+        if (target === 'interested') return s.includes('interested');
         if (target === 'lost') return s.includes('lost');
         return s === target;
       };
@@ -371,7 +373,7 @@ export const CustomerActivityPage: React.FC = () => {
         <div className="bg-white border border-[#E4DFD4] hover:border-[#C5D5E6] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors">
           <div>
             <span className="text-[10px] sm:text-[11px] font-bold text-[#536B8A] uppercase tracking-wider block mb-1">
-              Gold Exchange
+              Exchange (Gold / Diamond / Silver)
             </span>
             <div className="text-xl sm:text-2xl font-bold text-[#536B8A]">{totalExchange}</div>
             <span className="text-[10px] text-[#536B8A] font-semibold">Exchanged Pieces</span>
@@ -419,7 +421,9 @@ export const CustomerActivityPage: React.FC = () => {
           {[
             { id: 'all', label: 'All Customers', count: activities.length, color: 'text-[#1D1D1B] bg-white border-[#CBD5E1]' },
             { id: 'Sold', label: 'Sold', count: totalSold, color: 'text-[#166534] bg-[#F0FDF4] border-[#BBF7D0]' },
-            { id: 'Interested', label: 'Interested', count: totalInHold, color: 'text-[#92400E] bg-[#FEF3C7] border-[#FDE68A]' },
+            { id: 'Exchange', label: 'Exchange', count: totalExchange, color: 'text-[#1E40AF] bg-[#EFF6FF] border-[#BFDBFE]' },
+            { id: 'In Hold', label: 'In Hold', count: totalInHold, color: 'text-[#B45309] bg-[#FFFBEB] border-[#FDE68A]' },
+            { id: 'Interested', label: 'Interested', count: activities.filter(a => (a.status || '').toLowerCase().includes('interested')).length, color: 'text-[#92400E] bg-[#FEF3C7] border-[#FDE68A]' },
             { id: 'Lost', label: 'Lost', count: activities.filter(a => (a.status || '').toLowerCase().includes('lost')).length, color: 'text-[#991B1B] bg-[#FEF2F2] border-[#FECACA]' },
           ].map((pill) => {
             const isSelected = selectedStatusFilter.toLowerCase() === pill.id.toLowerCase();
@@ -482,10 +486,10 @@ export const CustomerActivityPage: React.FC = () => {
           >
             <option value="all">All Outcomes</option>
             <option value="Sold">Sold</option>
+            <option value="Exchange">Exchange (Gold / Diamond / Silver)</option>
+            <option value="In Hold / Follow Up">In Hold / Follow Up</option>
             <option value="Interested">Interested</option>
             <option value="Lost">Lost</option>
-            <option value="Exchange">Exchange</option>
-            <option value="In Hold / Follow Up">In Hold / Follow Up</option>
             <option value="Walkin">Walkin (General)</option>
           </select>
 

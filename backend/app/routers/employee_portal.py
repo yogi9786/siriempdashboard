@@ -11,7 +11,7 @@ from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.models.branch import Branch
 from backend.app.models.employee import Employee
-from backend.app.models.activity import CustomerActivity, EmployeeCallLog, GoogleReview, VideoReview, SchemeRecord
+from backend.app.models.activity import CustomerActivity, EmployeeCallLog, GoogleReview, VideoReview, SchemeRecord, AttireRecord
 from backend.app.models.feedback import CustomerFeedback
 from backend.app.schemas.activity import (
     CustomerActivityCreate,
@@ -21,6 +21,7 @@ from backend.app.schemas.activity import (
     VideoReviewCreate,
     VideoReviewResponse,
     EmployeePointsSummary,
+    AttireRecordResponse,
 )
 from backend.app.schemas.employee import (
     EmployeeCallLogCreate,
@@ -64,6 +65,22 @@ class EmployeeDashboardSummary(BaseModel):
     pending_reviews_count: int = 0
     pending_google_reviews: int = 0
     pending_video_reviews: int = 0
+
+
+class EmployeeNotificationItem(BaseModel):
+    id: str
+    category: str  # attire, google_review, video_review, customer_activity
+    title: str
+    status: str
+    message: str
+    date: str
+    created_at: Optional[str] = None
+    badge_color: str  # green, amber, red, blue
+
+
+class EmployeeNotificationResponse(BaseModel):
+    unread_count: int
+    notifications: List[EmployeeNotificationItem]
 
 
 def _build_emp_activity_response(record: CustomerActivity, emp: Employee) -> CustomerActivityResponse:
@@ -207,12 +224,16 @@ def list_employee_customer_activities(
         st_clean = status.strip().lower()
         if st_clean == "sold":
             query = query.filter(or_(CustomerActivity.status.ilike("%sold%"), CustomerActivity.status.ilike("%closed%")))
+        elif st_clean == "exchange":
+            query = query.filter(CustomerActivity.status.ilike("%exchange%"))
+        elif st_clean in ["in hold", "in hold / follow up", "hold", "follow up", "follow-up"]:
+            query = query.filter(or_(CustomerActivity.status.ilike("%hold%"), CustomerActivity.status.ilike("%follow%")))
         elif st_clean == "interested":
-            query = query.filter(or_(CustomerActivity.status.ilike("%interested%"), CustomerActivity.status.ilike("%hold%"), CustomerActivity.status.ilike("%follow%"), CustomerActivity.status.ilike("%exchange%")))
+            query = query.filter(CustomerActivity.status.ilike("%interested%"))
         elif st_clean == "lost":
             query = query.filter(CustomerActivity.status.ilike("%lost%"))
         else:
-            query = query.filter(CustomerActivity.status == status)
+            query = query.filter(CustomerActivity.status.ilike(f"%{st_clean}%"))
 
     if search:
         term = f"%{search.strip()}%"
@@ -892,3 +913,175 @@ def delete_employee_video_review(
     db.delete(record)
     db.commit()
     return {"message": "Video review submission deleted successfully."}
+
+
+@router.get("/notifications", response_model=EmployeeNotificationResponse, summary="Get employee notifications for attire checks & review approvals")
+def get_employee_notifications(
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    notifications: List[EmployeeNotificationItem] = []
+
+    # 1. Attire Checks logged by manager for this employee
+    attire_records = (
+        db.query(AttireRecord)
+        .filter(AttireRecord.employee_id == current_emp.id)
+        .order_by(AttireRecord.check_date.desc(), AttireRecord.id.desc())
+        .limit(20)
+        .all()
+    )
+    for a in attire_records:
+        st = a.status or "Proper"
+        st_lower = st.lower()
+        color = "green" if st_lower == "proper" else ("amber" if "attention" in st_lower else "red")
+        notes_str = f" • Manager Remarks: {a.notes}" if a.notes and a.notes.strip() else ""
+        date_str = a.check_date.strftime("%d %b %Y") if hasattr(a.check_date, "strftime") else str(a.check_date)
+        notifications.append(
+            EmployeeNotificationItem(
+                id=f"attire_{a.id}",
+                category="attire",
+                title=f"Attire Check: {st}",
+                status=st,
+                message=f"Showroom manager completed your grooming & attire inspection for {date_str}. Status: {st}{notes_str}",
+                date=date_str,
+                created_at=a.created_at.isoformat() if a.created_at else str(a.check_date),
+                badge_color=color,
+            )
+        )
+
+    # 2. Google Reviews submitted by this employee
+    google_reviews = (
+        db.query(GoogleReview)
+        .filter(GoogleReview.employee_id == current_emp.id)
+        .order_by(GoogleReview.created_at.desc(), GoogleReview.id.desc())
+        .limit(20)
+        .all()
+    )
+    for g in google_reviews:
+        st_raw = (g.status or "PENDING").upper()
+        if st_raw in ["APPROVED", "VERIFIED", "PUBLISHED"]:
+            st = "APPROVED"
+            color = "green"
+            msg = f"Google review for {g.customer_name or 'Customer'} was APPROVED by manager (+1 point credited)."
+        elif st_raw == "REJECTED":
+            st = "REJECTED"
+            color = "red"
+            reason = f" (Reason: {g.notes})" if g.notes and g.notes.strip() else ""
+            msg = f"Google review for {g.customer_name or 'Customer'} was REJECTED by manager{reason}."
+        else:
+            st = "PENDING"
+            color = "amber"
+            msg = f"Google review for {g.customer_name or 'Customer'} is pending manager verification."
+
+        rev_date = g.review_date.strftime("%d %b %Y") if g.review_date and hasattr(g.review_date, "strftime") else (g.created_at.strftime("%d %b %Y") if g.created_at else "")
+        notifications.append(
+            EmployeeNotificationItem(
+                id=f"google_{g.id}",
+                category="google_review",
+                title=f"Google Review: {st.title()}",
+                status=st,
+                message=msg,
+                date=rev_date,
+                created_at=g.created_at.isoformat() if g.created_at else None,
+                badge_color=color,
+            )
+        )
+
+    # 3. Video Reviews submitted by this employee
+    video_reviews = (
+        db.query(VideoReview)
+        .filter(VideoReview.employee_id == current_emp.id)
+        .order_by(VideoReview.created_at.desc(), VideoReview.id.desc())
+        .limit(20)
+        .all()
+    )
+    for v in video_reviews:
+        st_raw = (v.status or "PENDING").upper()
+        v_pts = (v.videos_count or 1) * 5
+        if st_raw in ["APPROVED", "VERIFIED", "PUBLISHED"]:
+            st = "APPROVED"
+            color = "green"
+            msg = f"Video review for {v.customer_name or 'Customer'} was APPROVED by manager (+{v_pts} points credited)."
+        elif st_raw == "REJECTED":
+            st = "REJECTED"
+            color = "red"
+            reason = f" (Reason: {v.notes})" if v.notes and v.notes.strip() else ""
+            msg = f"Video review for {v.customer_name or 'Customer'} was REJECTED by manager{reason}."
+        else:
+            st = "PENDING"
+            color = "amber"
+            msg = f"Video review for {v.customer_name or 'Customer'} is pending manager verification."
+
+        v_date = v.review_date.strftime("%d %b %Y") if v.review_date and hasattr(v.review_date, "strftime") else (v.created_at.strftime("%d %b %Y") if v.created_at else "")
+        notifications.append(
+            EmployeeNotificationItem(
+                id=f"video_{v.id}",
+                category="video_review",
+                title=f"Video Review: {st.title()}",
+                status=st,
+                message=msg,
+                date=v_date,
+                created_at=v.created_at.isoformat() if v.created_at else None,
+                badge_color=color,
+            )
+        )
+
+    # 4. Customer Activity Approval Updates
+    recent_activities = (
+        db.query(CustomerActivity)
+        .filter(CustomerActivity.employee_id == current_emp.id)
+        .order_by(CustomerActivity.created_at.desc(), CustomerActivity.id.desc())
+        .limit(20)
+        .all()
+    )
+    for act in recent_activities:
+        st = (act.approval_status or "PENDING").upper()
+        color = "green" if st == "APPROVED" else ("red" if st == "REJECTED" else "amber")
+        reason = f" (Reason: {act.rejection_reason})" if act.rejection_reason else ""
+        notifications.append(
+            EmployeeNotificationItem(
+                id=f"activity_{act.id}",
+                category="customer_activity",
+                title=f"Customer Log: {st.title()}",
+                status=st,
+                message=f"Customer interaction for {act.customer_name or 'Customer'} ({act.status}) is {st.title()}{reason}.",
+                date=act.activity_date.strftime("%d %b %Y") if act.activity_date and hasattr(act.activity_date, "strftime") else str(act.activity_date),
+                created_at=act.created_at.isoformat() if act.created_at else None,
+                badge_color=color,
+            )
+        )
+
+    # Sort notifications by created_at descending
+    notifications.sort(key=lambda x: x.created_at or x.date or "", reverse=True)
+
+    return EmployeeNotificationResponse(
+        unread_count=len(notifications),
+        notifications=notifications,
+    )
+
+
+@router.get("/attire", response_model=List[AttireRecordResponse], summary="List attire compliance records for logged in employee")
+def list_employee_attire(
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    records = (
+        db.query(AttireRecord)
+        .filter(AttireRecord.employee_id == current_emp.id)
+        .order_by(AttireRecord.check_date.desc(), AttireRecord.id.desc())
+        .all()
+    )
+    return [
+        AttireRecordResponse(
+            id=r.id,
+            branch_id=r.branch_id,
+            employee_id=r.employee_id,
+            employee_name=current_emp.full_name,
+            check_date=r.check_date,
+            status=r.status,
+            notes=r.notes,
+            image_url=r.image_url,
+            created_at=r.created_at,
+        )
+        for r in records
+    ]

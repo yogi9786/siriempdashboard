@@ -57,12 +57,16 @@ def list_customer_activities(
         st_clean = status.strip().lower()
         if st_clean == "sold":
             query = query.filter(or_(CustomerActivity.status.ilike("%sold%"), CustomerActivity.status.ilike("%closed%")))
+        elif st_clean == "exchange":
+            query = query.filter(CustomerActivity.status.ilike("%exchange%"))
+        elif st_clean in ["in hold", "in hold / follow up", "hold", "follow up", "follow-up"]:
+            query = query.filter(or_(CustomerActivity.status.ilike("%hold%"), CustomerActivity.status.ilike("%follow%")))
         elif st_clean == "interested":
-            query = query.filter(or_(CustomerActivity.status.ilike("%interested%"), CustomerActivity.status.ilike("%hold%"), CustomerActivity.status.ilike("%follow%"), CustomerActivity.status.ilike("%exchange%")))
+            query = query.filter(CustomerActivity.status.ilike("%interested%"))
         elif st_clean == "lost":
             query = query.filter(CustomerActivity.status.ilike("%lost%"))
         else:
-            query = query.filter(CustomerActivity.status == status)
+            query = query.filter(CustomerActivity.status.ilike(f"%{st_clean}%"))
 
     if approval_status and approval_status != "all":
         query = query.filter(CustomerActivity.approval_status == approval_status.upper())

@@ -919,7 +919,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                         <option value="Sold">Sold (Purchased / Closed)</option>
                         <option value="Interested">Interested (Interested / In Hold / Callback)</option>
                         <option value="Lost">Lost (Not Interested / Left)</option>
-                        <option value="Exchange">Exchange (Gold / Diamond Exchange)</option>
+                        <option value="Exchange">Exchange (Gold / Diamond / Silver Exchange)</option>
                         <option value="In Hold / Follow Up">In Hold / Follow Up</option>
                         <option value="Walkin">Walkin (General Inquiry / Browsing)</option>
                       </select>

@@ -903,5 +903,18 @@ export interface AdminFeedbackOverview {
   records?: CustomerFeedback[];
 }
 
+export interface EmployeeNotificationItem {
+  id: string;
+  category: 'attire' | 'google_review' | 'video_review' | 'customer_activity' | string;
+  title: string;
+  status: string;
+  message: string;
+  date: string;
+  created_at?: string | null;
+  badge_color: 'green' | 'amber' | 'red' | 'blue' | string;
+}
 
-
+export interface EmployeeNotificationResponse {
+  unread_count: number;
+  notifications: EmployeeNotificationItem[];
+}

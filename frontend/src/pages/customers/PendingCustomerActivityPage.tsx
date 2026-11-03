@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { CustomerActivityModal } from '../../components/customers/CustomerActivityModal';
 import { getMediaUrl } from '../../utils/media';
 import {
@@ -146,9 +146,18 @@ export const PendingCustomerActivityPage: React.FC = () => {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
-  const [customerOutcomeFilter, setCustomerOutcomeFilter] = useState<'ALL' | 'Sold' | 'Interested' | 'Lost'>('ALL');
+  const [customerOutcomeFilter, setCustomerOutcomeFilter] = useState<'ALL' | 'Sold' | 'Exchange' | 'In Hold' | 'Interested' | 'Lost'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('all');
+
+  // Status counts for the top 4 filter cards
+  const [counts, setCounts] = useState({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    total: 0,
+  });
+  const initialAutoSwitchDone = useRef(false);
 
   // Edit / Delete / Lightbox State
   const [editingActivity, setEditingActivity] = useState<CustomerActivity | null>(null);
@@ -168,17 +177,39 @@ export const PendingCustomerActivityPage: React.FC = () => {
       const params: Record<string, any> = {
         status_filter: statusFilter,
       };
+      const countParams: Record<string, any> = {};
       if (selectedEmployeeId && selectedEmployeeId !== 'all') {
         params.employee_id = parseInt(selectedEmployeeId, 10);
+        countParams.employee_id = parseInt(selectedEmployeeId, 10);
       }
 
-      const [actRes, empRes] = await Promise.all([
+      const [actRes, empRes, countRes] = await Promise.all([
         api.get<CustomerActivity[]>('/api/v1/customers/pending', { params }),
         api.get<Employee[]>('/api/v1/employees'),
+        api.get<{ pending: number; approved: number; rejected: number; total: number }>('/api/v1/customers/pending-counts', { params: countParams }).catch(() => null),
       ]);
 
       setActivities(actRes.data);
       setEmployees(empRes.data);
+
+      if (countRes && countRes.data) {
+        setCounts(countRes.data);
+        // If on initial page load there are 0 pending items, but approved items exist, auto-switch to APPROVED so user sees them right away
+        if (!initialAutoSwitchDone.current && countRes.data.pending === 0 && countRes.data.approved > 0 && statusFilter === 'PENDING') {
+          initialAutoSwitchDone.current = true;
+          setStatusFilter('APPROVED');
+        }
+      } else {
+        const p = actRes.data.filter((a) => a.approval_status === 'PENDING').length;
+        const app = actRes.data.filter((a) => a.approval_status === 'APPROVED').length;
+        const rej = actRes.data.filter((a) => a.approval_status === 'REJECTED').length;
+        setCounts((prev) => ({
+          pending: statusFilter === 'PENDING' ? actRes.data.length : prev.pending || p,
+          approved: statusFilter === 'APPROVED' ? actRes.data.length : prev.approved || app,
+          rejected: statusFilter === 'REJECTED' ? actRes.data.length : prev.rejected || rej,
+          total: prev.total || actRes.data.length,
+        }));
+      }
     } catch (err: any) {
       console.error('Failed to load pending customer activities:', err);
       toastError(err.response?.data?.detail || 'Failed to fetch customer activities for review.');
@@ -255,7 +286,9 @@ export const PendingCustomerActivityPage: React.FC = () => {
       const checkStatus = (st: string) => {
         const s = (st || '').toLowerCase();
         if (target === 'sold') return s.includes('sold') || s.includes('closed') || s.includes('purchased');
-        if (target === 'interested') return s.includes('interested') || s.includes('hold') || s.includes('follow');
+        if (target === 'exchange') return s.includes('exchange');
+        if (target === 'in hold' || target === 'hold') return s.includes('hold') || s.includes('follow');
+        if (target === 'interested') return s.includes('interested');
         if (target === 'lost') return s.includes('lost');
         return s === target;
       };
@@ -354,7 +387,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
               <Clock className="w-4 h-4 text-[#CA8A04]" />
             </div>
             <div className="text-2xl font-black text-[#854D0E] mt-1">
-              {statusFilter === 'PENDING' ? activities.length : pendingCount}
+              {counts.pending}
             </div>
             <p className="text-[11px] text-[#A16207] mt-0.5 font-medium">Awaiting Manager approval</p>
           </div>
@@ -372,7 +405,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
               <CheckCircle2 className="w-4 h-4 text-[#16A34A]" />
             </div>
             <div className="text-2xl font-black text-[#166534] mt-1">
-              {statusFilter === 'APPROVED' ? activities.length : approvedCount}
+              {counts.approved}
             </div>
             <p className="text-[11px] text-[#15803D] mt-0.5 font-medium">Verified & active in log</p>
           </div>
@@ -390,7 +423,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
               <XCircle className="w-4 h-4 text-[#DC2626]" />
             </div>
             <div className="text-2xl font-black text-[#991B1B] mt-1">
-              {statusFilter === 'REJECTED' ? activities.length : rejectedCount}
+              {counts.rejected}
             </div>
             <p className="text-[11px] text-[#B91C1C] mt-0.5 font-medium">Returned with reason</p>
           </div>
@@ -408,7 +441,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
               <Filter className="w-4 h-4 text-[#2563EB]" />
             </div>
             <div className="text-2xl font-black text-[#1E40AF] mt-1">
-              {activities.length}
+              {counts.total}
             </div>
             <p className="text-[11px] text-[#1D4ED8] mt-0.5 font-medium">Total recorded by staff</p>
           </div>
@@ -424,6 +457,8 @@ export const PendingCustomerActivityPage: React.FC = () => {
           {[
             { id: 'ALL', label: 'All Statuses', color: 'text-[#1D1D1B] bg-white border-[#CBD5E1]' },
             { id: 'Sold', label: 'Sold', color: 'text-[#166534] bg-[#F0FDF4] border-[#BBF7D0]' },
+            { id: 'Exchange', label: 'Exchange (Gold/Diamond/Silver)', color: 'text-[#1E40AF] bg-[#EFF6FF] border-[#BFDBFE]' },
+            { id: 'In Hold', label: 'In Hold / Follow Up', color: 'text-[#B45309] bg-[#FFFBEB] border-[#FDE68A]' },
             { id: 'Interested', label: 'Interested', color: 'text-[#92400E] bg-[#FEF3C7] border-[#FDE68A]' },
             { id: 'Lost', label: 'Lost', color: 'text-[#991B1B] bg-[#FEF2F2] border-[#FECACA]' },
           ].map((sTab) => {

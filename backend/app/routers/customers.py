@@ -102,6 +102,40 @@ def list_customer_activities(
     return [_build_activity_response(r) for r in records]
 
 
+class PendingCountsResponse(BaseModel):
+    pending: int
+    approved: int
+    rejected: int
+    total: int
+
+
+@router.get("/pending-counts", response_model=PendingCountsResponse, summary="Get summary counts of customer activities by approval status")
+def get_pending_counts(
+    employee_id: Optional[int] = Query(None, description="Filter by employee ID"),
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    base_query = (
+        db.query(CustomerActivity)
+        .join(Employee, CustomerActivity.employee_id == Employee.id)
+        .filter(CustomerActivity.branch_id == current_user.branch_id)
+    )
+    if employee_id:
+        base_query = base_query.filter(CustomerActivity.employee_id == employee_id)
+
+    pending_c = base_query.filter(CustomerActivity.approval_status == "PENDING").count()
+    approved_c = base_query.filter(CustomerActivity.approval_status == "APPROVED").count()
+    rejected_c = base_query.filter(CustomerActivity.approval_status == "REJECTED").count()
+    total_c = pending_c + approved_c + rejected_c
+
+    return PendingCountsResponse(
+        pending=pending_c,
+        approved=approved_c,
+        rejected=rejected_c,
+        total=total_c,
+    )
+
+
 @router.get("/pending", response_model=List[CustomerActivityResponse], summary="List employee-submitted customer activities for manager review")
 def list_pending_customer_activities(
     status_filter: Optional[str] = Query("PENDING", description="Filter: PENDING, APPROVED, REJECTED, all"),

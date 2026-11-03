@@ -124,8 +124,10 @@ def get_env_branches_and_managers(db: Optional[Session] = None) -> List[BranchPu
         emp_options = []
         if db and real_branch:
             try:
-                mgr_names = {m.full_name.strip().lower() for m in mgr_options}
-                mgr_users = {m.username.strip().lower() for m in mgr_options}
+                mgr_users = {m.username.strip().lower() for m in mgr_options if m.username}
+                for m in mgr_options:
+                    if getattr(m, "manager_code", None):
+                        mgr_users.add(m.manager_code.strip().lower())
                 db_emps = (
                     db.query(Employee)
                     .filter(Employee.branch_id == real_branch.id, Employee.status == "active")
@@ -134,9 +136,8 @@ def get_env_branches_and_managers(db: Optional[Session] = None) -> List[BranchPu
                 )
                 for e in db_emps:
                     desig = (e.designation or "").lower()
-                    name = (e.full_name or "").strip().lower()
                     code = (e.employee_code or "").strip().lower()
-                    if "manager" in desig or name in mgr_names or name in mgr_users or code in mgr_users:
+                    if "manager" in desig or code in mgr_users:
                         continue
                     emp_options.append(
                         EmployeePublicOption(
@@ -216,20 +217,22 @@ def get_branch_employees(branch_code: str, db: Session = Depends(get_db)):
     if not branch:
         return []
 
-    # Gather manager names and usernames to strictly filter them out
-    manager_names = {
-        m.full_name.strip().lower()
-        for m in db.query(User).filter(User.branch_id == branch.id, User.role == "MANAGER").all()
-        if m.full_name
-    }
+    # Gather manager usernames and manager codes to strictly filter them out
+    manager_codes = set()
+    for m in db.query(User).filter(User.branch_id == branch.id, User.role == "MANAGER").all():
+        if m.username:
+            manager_codes.add(m.username.strip().lower())
+        if getattr(m, "manager_code", None):
+            manager_codes.add(m.manager_code.strip().lower())
+
     all_branches = get_env_branches_and_managers(db)
     for b in all_branches:
         if b.code == clean_code:
             for m in b.managers:
-                if m.full_name:
-                    manager_names.add(m.full_name.strip().lower())
                 if m.username:
-                    manager_names.add(m.username.strip().lower())
+                    manager_codes.add(m.username.strip().lower())
+                if getattr(m, "manager_code", None):
+                    manager_codes.add(m.manager_code.strip().lower())
 
     employees = (
         db.query(Employee)
@@ -241,10 +244,9 @@ def get_branch_employees(branch_code: str, db: Session = Depends(get_db)):
     non_manager_employees = []
     for e in employees:
         desig = (e.designation or "").lower()
-        name = (e.full_name or "").strip().lower()
         code = (e.employee_code or "").strip().lower()
-        # Strictly exclude anyone with Manager designation or matching manager names/codes
-        if "manager" in desig or name in manager_names or code in manager_names:
+        # Strictly exclude anyone with Manager designation or matching manager codes
+        if "manager" in desig or code in manager_codes:
             continue
         non_manager_employees.append(e)
 

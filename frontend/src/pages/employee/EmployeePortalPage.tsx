@@ -589,28 +589,28 @@ export const EmployeePortalPage: React.FC = () => {
               </div>
             </button>
 
-            {/* Total Points Indicator in Header */}
+            {/* Total Points Indicator in Header (Matching Manager Card Style) */}
             <button
               type="button"
               onClick={() => setActiveTab('REVIEWS')}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-linear-to-r from-[#FEF3C7] to-[#FDE68A] hover:from-[#FDE68A] hover:to-[#FCD34D] border border-[#F59E0B]/60 shadow-xs cursor-pointer transition-all group shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-[#FAF1EC] border border-[#ECCFC0] shadow-2xs cursor-pointer transition-all group shrink-0"
               title="Click to view Review & Video Points Ledger"
             >
-              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-linear-to-br from-[#D97706] to-[#B45309] text-white flex items-center justify-center font-black text-xs shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-white text-white" />
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-[#FAF1EC] border border-[#ECCFC0] text-[#B97855] flex items-center justify-center font-black text-xs shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-[#B97855] text-[#B97855]" />
               </div>
               <div className="text-left">
-                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#92400E] block leading-none">
+                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#8A8479] block leading-none">
                   Points
                 </span>
-                <span className="text-xs sm:text-sm font-black text-[#78350F] font-mono leading-tight">
-                  {dashboardSummary?.total_points ?? 0} <span className="text-[9px] sm:text-[10px] font-bold">pts</span>
+                <span className="text-xs sm:text-sm font-black text-[#B97855] font-mono leading-tight">
+                  {dashboardSummary?.total_points ?? 0} <span className="text-[9px] sm:text-[10px] font-bold text-[#8A8479]">pts</span>
                 </span>
               </div>
             </button>
 
             <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#FAF8F5] border border-[#E6E1D6]">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-linear-to-br from-[#7E22CE] to-[#581C87] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-[#7E22CE] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
                 {user?.full_name?.charAt(0) || 'E'}
               </div>
               <div className="text-left">
@@ -638,31 +638,8 @@ export const EmployeePortalPage: React.FC = () => {
 
       {/* Main Workspace Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Welcome Luxury Hero Banner (Matching Manager Dashboard Style) */}
-        <div className="relative bg-linear-to-br from-[#FAF8F3] via-white to-[#FAF5FF] border border-[#D8B4FE] rounded-3xl p-6 sm:p-8 shadow-xs overflow-hidden group text-[#1D1D1B]">
-          {/* Top Purple Shimmer Border Line */}
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-[#9333EA] to-transparent opacity-60 animate-pulse" />
-
-          {/* Corner Filigree Luxury Brackets in Purple */}
-          <div className="absolute top-3 left-3 w-4 h-4 border-t-2 border-l-2 border-[#7E22CE]/40 rounded-tl-sm pointer-events-none" />
-          <div className="absolute top-3 right-3 w-4 h-4 border-t-2 border-r-2 border-[#7E22CE]/40 rounded-tr-sm pointer-events-none" />
-          <div className="absolute bottom-3 left-3 w-4 h-4 border-b-2 border-l-2 border-[#7E22CE]/40 rounded-bl-sm pointer-events-none" />
-          <div className="absolute bottom-3 right-3 w-4 h-4 border-b-2 border-r-2 border-[#7E22CE]/40 rounded-br-sm pointer-events-none" />
-
-          {/* Geometric Diamond Lattice SVG Watermark */}
-          <div className="absolute -top-12 -right-12 w-96 h-96 pointer-events-none opacity-[0.05] select-none text-[#7E22CE]">
-            <svg viewBox="0 0 200 200" className="w-full h-full" fill="none" stroke="currentColor">
-              <circle cx="100" cy="100" r="90" strokeWidth="0.75" strokeDasharray="3 3" />
-              <circle cx="100" cy="100" r="75" strokeWidth="0.75" />
-              <circle cx="100" cy="100" r="60" strokeWidth="0.75" strokeDasharray="2 2" />
-              <polygon points="100,10 190,100 100,190 10,100" strokeWidth="0.75" />
-              <polygon points="100,25 175,100 100,175 25,100" strokeWidth="0.75" strokeDasharray="4 4" />
-            </svg>
-          </div>
-
-          {/* Ambient Subtle Purple Radial Glow */}
-          <div className="absolute top-0 right-1/4 w-72 h-72 bg-linear-to-br from-[#9333EA]/10 via-[#F3E8FF]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
-
+        {/* Welcome Clean Hero Banner */}
+        <div className="relative bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-8 shadow-xs overflow-hidden text-[#1D1D1B]">
           {/* Hero Content */}
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3">
@@ -707,30 +684,30 @@ export const EmployeePortalPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 5 Distinct Luxury Colored Metric Blocks (Matching Manager Dashboard Palette) */}
+          {/* 5 Distinct Solid Colored Metric Blocks (Exact Manager Dashboard Palette) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mt-6 pt-6 border-t border-[#EBE6DC]">
-            {/* Block 1: Total Points Earned (Amber / Gold Luxury Block) */}
+            {/* Block 1: Total Points Earned (Warm Terracotta #FAF1EC & #B97855 - matching Manager Rating card) */}
             <div
               onClick={() => setActiveTab('REVIEWS')}
-              className="bg-linear-to-br from-[#FFFBEB] via-[#FEF3C7]/40 to-white border-2 border-[#F59E0B]/50 hover:border-[#F59E0B] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between col-span-2 sm:col-span-1"
+              className="bg-[#FAF1EC] border border-[#ECCFC0] hover:border-[#B97855] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between col-span-2 sm:col-span-1"
             >
               <div>
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-[11px] font-extrabold text-[#92400E] uppercase tracking-wider block mb-1">
+                    <span className="text-[11px] font-bold text-[#B97855] uppercase tracking-wider block mb-1">
                       Points Earned
                     </span>
-                    <div className="text-3xl font-extrabold text-[#78350F] font-mono tracking-tight">
+                    <div className="text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
                       {dashboardSummary?.total_points ?? 0}
                     </div>
-                    <span className="text-xs text-[#B45309] font-bold mt-0.5 block">Review Rewards</span>
+                    <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Review Rewards</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <Award className="w-5 h-5 text-[#D97706]" />
+                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#ECCFC0] text-[#B97855] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Award className="w-5 h-5 text-[#B97855]" />
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-2.5 border-t border-[#FDE68A] flex items-center justify-between text-[10px] font-bold text-[#92400E]">
+                <div className="mt-3.5 pt-2.5 border-t border-[#ECCFC0] flex items-center justify-between text-[10px] font-bold text-[#B97855]">
                   <span>{dashboardSummary?.google_review_points ?? 0} Google (1 pt)</span>
                   <span>•</span>
                   <span>{dashboardSummary?.video_review_points ?? 0} Video (5 pts)</span>
@@ -738,113 +715,113 @@ export const EmployeePortalPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Block 2: Total Customer Logs (Royal Purple / Lavender Block) */}
+            {/* Block 2: Total Customer Logs (Purple #F3E8FF & #7E22CE - matching Manager Staff card) */}
             <div
               onClick={() => setActiveTab('CUSTOMERS')}
-              className="bg-linear-to-br from-[#FAF5FF] via-white to-white border border-[#E9D5FF] hover:border-[#C084FC] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#F3E8FF] border border-[#D8B4FE] hover:border-[#7E22CE] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-[11px] font-extrabold text-[#7E22CE] uppercase tracking-wider block mb-1">
+                    <span className="text-[11px] font-bold text-[#7E22CE] uppercase tracking-wider block mb-1">
                       Customer Logs
                     </span>
-                    <div className="text-3xl font-extrabold text-[#3B0764] font-mono tracking-tight">
+                    <div className="text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
                       {dashboardSummary?.total_customer_activities ?? customerActivities.length}
                     </div>
-                    <span className="text-xs text-[#6B21A8] font-bold mt-0.5 block">Walk-ins Logged</span>
+                    <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Walk-ins Logged</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                     <Users className="w-5 h-5 text-[#7E22CE]" />
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-2.5 border-t border-[#E9D5FF] flex items-center justify-between text-[10px] font-bold text-[#7E22CE]">
+                <div className="mt-3.5 pt-2.5 border-t border-[#D8B4FE] flex items-center justify-between text-[10px] font-bold text-[#7E22CE]">
                   <span>Showroom Interactions</span>
                   <span className="font-mono">Active</span>
                 </div>
               </div>
             </div>
 
-            {/* Block 3: Pending Verification (Warm Amber Alert Block) */}
+            {/* Block 3: Pending Verification (Yellow #FEFCE8 & #EAB308 - matching Manager Pending card) */}
             <div
               onClick={() => {
                 setActiveTab('CUSTOMERS');
                 setCustomerApprovalFilter('PENDING');
               }}
-              className="bg-linear-to-br from-[#FEFCE8] via-white to-white border border-[#FEF08A] hover:border-[#EAB308] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#FEFCE8] border border-[#EAB308] hover:border-[#CA8A04] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-[11px] font-extrabold text-[#854D0E] uppercase tracking-wider block mb-1">
+                    <span className="text-[11px] font-bold text-[#854D0E] uppercase tracking-wider block mb-1">
                       Pending Review
                     </span>
-                    <div className="text-3xl font-extrabold text-[#713F12] font-mono tracking-tight">
+                    <div className="text-3xl font-bold text-[#854D0E] font-mono tracking-tight">
                       {dashboardSummary?.pending_customer_activities ?? customerActivities.filter(a => a.approval_status === 'PENDING').length}
                     </div>
-                    <span className="text-xs text-[#854D0E] font-bold mt-0.5 block">Awaiting Verification</span>
+                    <span className="text-xs text-[#854D0E] font-medium mt-0.5 block">Awaiting Verification</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-[#FEF08A] border border-[#FDE047] text-[#B45309] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform animate-pulse">
-                    <Clock className="w-5 h-5 text-[#B45309]" />
+                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#EAB308] text-[#CA8A04] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Clock className="w-5 h-5 text-[#CA8A04]" />
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-2.5 border-t border-[#FEF08A] flex items-center justify-between text-[10px] font-bold text-[#854D0E]">
+                <div className="mt-3.5 pt-2.5 border-t border-[#EAB308]/40 flex items-center justify-between text-[10px] font-bold text-[#854D0E]">
                   <span>In Manager's Queue</span>
                   <span>Pending</span>
                 </div>
               </div>
             </div>
 
-            {/* Block 4: Approved Logs (Emerald Green Luxury Block) */}
+            {/* Block 4: Approved Logs (Sage Green #E8F4EE & #21845F - matching Manager Verified card) */}
             <div
               onClick={() => {
                 setActiveTab('CUSTOMERS');
                 setCustomerApprovalFilter('APPROVED');
               }}
-              className="bg-linear-to-br from-[#F0FDF4] via-white to-white border border-[#BBF7D0] hover:border-[#4ADE80] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#E8F4EE] border border-[#C5E3D5] hover:border-[#21845F] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-[11px] font-extrabold text-[#166534] uppercase tracking-wider block mb-1">
+                    <span className="text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1">
                       Approved Logs
                     </span>
-                    <div className="text-3xl font-extrabold text-[#14532D] font-mono tracking-tight">
+                    <div className="text-3xl font-bold text-[#21845F] font-mono tracking-tight">
                       {dashboardSummary?.approved_customer_activities ?? customerActivities.filter(a => a.approval_status === 'APPROVED').length}
                     </div>
-                    <span className="text-xs text-[#15803D] font-bold mt-0.5 block">Manager Approved</span>
+                    <span className="text-xs text-[#21845F] font-medium mt-0.5 block">Manager Approved</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-[#DCFCE7] border border-[#86EFAC] text-[#166534] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <CheckCircle2 className="w-5 h-5 text-[#166534]" />
+                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <CheckCircle2 className="w-5 h-5 text-[#21845F]" />
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-2.5 border-t border-[#BBF7D0] flex items-center justify-between text-[10px] font-bold text-[#166534]">
+                <div className="mt-3.5 pt-2.5 border-t border-[#C5E3D5] flex items-center justify-between text-[10px] font-bold text-[#21845F]">
                   <span>Verified Records</span>
                   <span>Active</span>
                 </div>
               </div>
             </div>
 
-            {/* Block 5: Call Activities (Slate Blue Block) */}
+            {/* Block 5: Call Activities (Slate Blue #EDF2F8 & #526F91 - matching Manager Footfall card) */}
             <div
               onClick={() => setActiveTab('CALLS')}
-              className="bg-linear-to-br from-[#EDF2F8] via-white to-white border border-[#C6D4E3] hover:border-[#94A3B8] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#EDF2F8] border border-[#C6D4E3] hover:border-[#526F91] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-[11px] font-extrabold text-[#526F91] uppercase tracking-wider block mb-1">
+                    <span className="text-[11px] font-bold text-[#526F91] uppercase tracking-wider block mb-1">
                       Call Activities
                     </span>
-                    <div className="text-3xl font-extrabold text-[#1E3A8A] font-mono tracking-tight">
+                    <div className="text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
                       {dashboardSummary?.total_calls ?? callLogs.length}
                     </div>
-                    <span className="text-xs text-[#526F91] font-bold mt-0.5 block">Client Outreach</span>
+                    <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Client Outreach</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-[#EDF2F8] border border-[#C6D4E3] text-[#526F91] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#C6D4E3] text-[#526F91] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                     <PhoneCall className="w-5 h-5 text-[#526F91]" />
                   </div>
                 </div>
@@ -867,7 +844,7 @@ export const EmployeePortalPage: React.FC = () => {
               onClick={() => setActiveTab('CUSTOMERS')}
               className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'CUSTOMERS'
-                  ? 'bg-[#7E22CE] text-white shadow-md shadow-purple-600/20 scale-[1.01]'
+                  ? 'bg-[#7E22CE] text-white shadow-xs scale-[1.01]'
                   : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FAF5FF]'
               }`}
             >
@@ -888,8 +865,8 @@ export const EmployeePortalPage: React.FC = () => {
               onClick={() => setActiveTab('CALLS')}
               className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'CALLS'
-                  ? 'bg-[#2563EB] text-white shadow-md shadow-blue-600/20 scale-[1.01]'
-                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#EFF6FF]'
+                  ? 'bg-[#526F91] text-white shadow-xs scale-[1.01]'
+                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#EDF2F8]'
               }`}
             >
               <PhoneCall className="w-4 h-4 shrink-0" />
@@ -898,7 +875,7 @@ export const EmployeePortalPage: React.FC = () => {
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
                 activeTab === 'CALLS'
                   ? 'bg-white/20 text-white'
-                  : 'bg-[#EFF6FF] text-[#2563EB]'
+                  : 'bg-[#EDF2F8] text-[#526F91]'
               }`}>
                 {callLogs.length}
               </span>
@@ -909,8 +886,8 @@ export const EmployeePortalPage: React.FC = () => {
               onClick={() => setActiveTab('REVIEWS')}
               className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'REVIEWS'
-                  ? 'bg-linear-to-r from-[#D97706] to-[#B45309] text-white shadow-md shadow-amber-600/20 scale-[1.01]'
-                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FFFBEB]'
+                  ? 'bg-[#7E22CE] text-white shadow-xs scale-[1.01]'
+                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FAF5FF]'
               }`}
             >
               <Award className="w-4 h-4 shrink-0" />
@@ -918,8 +895,8 @@ export const EmployeePortalPage: React.FC = () => {
               <span className="sm:hidden text-[11px] truncate">Points</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
                 activeTab === 'REVIEWS'
-                  ? 'bg-white/25 text-white'
-                  : 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE]'
               }`}>
                 🏆 {dashboardSummary?.total_points ?? 0}
               </span>
@@ -930,7 +907,7 @@ export const EmployeePortalPage: React.FC = () => {
           {activeTab === 'CUSTOMERS' && (
             <Button
               onClick={handleOpenAddCustomer}
-              className="w-full sm:w-auto bg-linear-to-r from-[#7E22CE] to-[#6B21A8] hover:from-[#6B21A8] hover:to-[#581C87] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-purple-600/20 rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+              className="w-full sm:w-auto bg-[#7E22CE] hover:bg-[#6B21A8] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4 text-white" />
               <span>+ Add Customer Log</span>
@@ -939,7 +916,7 @@ export const EmployeePortalPage: React.FC = () => {
           {activeTab === 'CALLS' && (
             <Button
               onClick={() => setShowAddCallModal(true)}
-              className="w-full sm:w-auto bg-linear-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-600/20 rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+              className="w-full sm:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4 text-white" />
               <span>+ Log Customer Call</span>
@@ -949,7 +926,7 @@ export const EmployeePortalPage: React.FC = () => {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Button
                 onClick={handleOpenAddCustomer}
-                className="w-full sm:w-auto bg-linear-to-r from-[#7E22CE] to-[#6B21A8] hover:from-[#6B21A8] hover:to-[#581C87] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-purple-600/20 rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+                className="w-full sm:w-auto bg-[#7E22CE] hover:bg-[#6B21A8] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4 text-white" />
                 <span>+ Add Customer & Review</span>
@@ -964,7 +941,7 @@ export const EmployeePortalPage: React.FC = () => {
         {activeTab === 'CUSTOMERS' && (
           <div className="space-y-4">
             {/* Customer Status Quick Filter Bar (Requirement 6: Lost, Interested, Sold) */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-linear-to-r from-[#FAF8F3] via-white to-[#FAF5FF] border border-[#D8B4FE]/80 p-3 sm:p-3.5 rounded-2xl shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-[#E4DFD4] p-3 sm:p-3.5 rounded-2xl shadow-xs">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-black text-[#3B0764] mr-1 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                   <Filter className="w-3.5 h-3.5 text-[#7E22CE]" />
@@ -992,14 +969,14 @@ export const EmployeePortalPage: React.FC = () => {
                   {
                     id: 'In Hold',
                     label: 'In Hold / Follow Up',
-                    activeCls: 'bg-[#B45309] text-white border-[#B45309] shadow-sm shadow-amber-600/20',
-                    inactiveCls: 'bg-[#FFFBEB] text-[#92400E] border-[#FDE68A] hover:bg-[#FEF3C7]',
+                    activeCls: 'bg-[#B97855] text-white border-[#B97855] shadow-xs',
+                    inactiveCls: 'bg-[#FAF1EC] text-[#B97855] border-[#ECCFC0] hover:bg-[#F5E5DC]',
                   },
                   {
                     id: 'Interested',
                     label: 'Interested',
-                    activeCls: 'bg-[#D97706] text-white border-[#D97706] shadow-sm shadow-amber-500/20',
-                    inactiveCls: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A] hover:bg-[#FDE68A]',
+                    activeCls: 'bg-[#475569] text-white border-[#475569] shadow-xs',
+                    inactiveCls: 'bg-[#F1F5F9] text-[#475569] border-[#CBD5E1] hover:bg-[#E2E8F0]',
                   },
                   {
                     id: 'Lost',
@@ -1046,7 +1023,7 @@ export const EmployeePortalPage: React.FC = () => {
                 <span className="text-xs font-bold text-[#5E5A52] mr-1 hidden sm:inline uppercase text-[10px]">Approval:</span>
                 {[
                   { id: 'ALL', label: 'All', active: 'bg-[#7E22CE] text-white shadow-xs', inactive: 'bg-[#FAF8F5] text-[#5E5A52] border border-[#E6E1D6] hover:bg-white' },
-                  { id: 'PENDING', label: 'Pending Review', active: 'bg-[#D97706] text-white shadow-xs', inactive: 'bg-[#FEFCE8] text-[#854D0E] border border-[#FEF08A] hover:bg-[#FEF08A]' },
+                  { id: 'PENDING', label: 'Pending Review', active: 'bg-[#7E22CE] text-white shadow-xs', inactive: 'bg-[#FEFCE8] text-[#854D0E] border border-[#FEF08A] hover:bg-[#FEF08A]' },
                   { id: 'APPROVED', label: 'Approved', active: 'bg-[#21845F] text-white shadow-xs', inactive: 'bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7]' },
                   { id: 'REJECTED', label: 'Rejected', active: 'bg-[#C24141] text-white shadow-xs', inactive: 'bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA] hover:bg-[#FEE2E2]' },
                 ].map((tab) => {
@@ -1718,16 +1695,13 @@ export const EmployeePortalPage: React.FC = () => {
         {/* ------------------------------------------------------------------- */}
         {activeTab === 'REVIEWS' && (
           <div className="space-y-6">
-            {/* Spotlight Points Breakdown Banner */}
-            <div className="relative rounded-3xl bg-linear-to-br from-[#FAF8F3] via-white to-[#FAF5FF] border border-[#D8B4FE] p-5 sm:p-7 shadow-xs overflow-hidden">
-              {/* Top Purple Shimmer Border Line */}
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-[#9333EA] to-transparent opacity-60" />
-
+            {/* Clean Points Breakdown Banner */}
+            <div className="relative rounded-3xl bg-white border border-[#E4DFD4] p-5 sm:p-7 shadow-xs">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[#EBE6DC]">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] flex items-center gap-1.5 shadow-2xs">
-                      <Trophy className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span className="px-3 py-1 rounded-full text-xs font-black bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] flex items-center gap-1.5 shadow-2xs">
+                      <Trophy className="w-3.5 h-3.5 text-[#7E22CE]" />
                       <span>Employee Recognition & Points</span>
                     </span>
                     <span className="text-xs text-[#7E22CE] font-bold">Showroom Staff Reward Scheme</span>
@@ -1736,7 +1710,7 @@ export const EmployeePortalPage: React.FC = () => {
                     Review Contributions & Point Ledger
                   </h3>
                   <p className="text-xs sm:text-sm text-[#5E5A52] font-medium mt-1">
-                    1 Customer Google Review = <strong className="text-[#D97706] font-bold">1 Point</strong> • 1 Video Review = <strong className="text-[#7E22CE] font-bold">5 Points</strong> (5 points per video review)
+                    1 Customer Google Review = <strong className="text-[#7E22CE] font-bold">1 Point</strong> • 1 Video Review = <strong className="text-[#7E22CE] font-bold">5 Points</strong> (5 points per video review)
                   </p>
                 </div>
 
@@ -1744,7 +1718,7 @@ export const EmployeePortalPage: React.FC = () => {
                   <Button
                     size="sm"
                     onClick={handleOpenAddCustomer}
-                    className="bg-linear-to-r from-[#7E22CE] to-[#6B21A8] hover:from-[#6B21A8] hover:to-[#581C87] text-white text-xs font-bold rounded-xl px-4 py-2.5 cursor-pointer shadow-md shadow-purple-600/20 hover:scale-[1.02] transition-all"
+                    className="bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold rounded-xl px-4 py-2.5 cursor-pointer shadow-sm hover:scale-[1.02] transition-all"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" />
                     <span>+ Add Customer Log</span>
@@ -1752,84 +1726,84 @@ export const EmployeePortalPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 4 Distinct Luxury Colored KPI Cards */}
+              {/* 4 Distinct Solid Colored KPI Cards (Matching Manager Dashboard Palette) */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-5">
-                {/* 1. Total Points Earned */}
-                <div className="p-4 rounded-2xl bg-linear-to-br from-[#FFFBEB] via-[#FEF3C7]/40 to-white border-2 border-[#F59E0B]/50 shadow-xs flex flex-col justify-between">
+                {/* 1. Total Points Earned (Terracotta #FAF1EC & #B97855) */}
+                <div className="p-4 rounded-2xl bg-[#FAF1EC] border border-[#ECCFC0] shadow-xs flex flex-col justify-between">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-[10px] font-extrabold text-[#92400E] uppercase tracking-wider block mb-1">
+                      <span className="text-[10px] font-bold text-[#B97855] uppercase tracking-wider block mb-1">
                         Total Points
                       </span>
-                      <div className="text-2xl sm:text-3xl font-black text-[#78350F] font-mono tracking-tight">
+                      <div className="text-2xl sm:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
                         {dashboardSummary?.total_points ?? 0}
                       </div>
                     </div>
-                    <div className="w-8 h-8 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
-                      <Award className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-xl bg-white border border-[#ECCFC0] text-[#B97855] flex items-center justify-center shrink-0">
+                      <Award className="w-4 h-4 text-[#B97855]" />
                     </div>
                   </div>
-                  <div className="mt-3 pt-2 border-t border-[#FDE68A] text-[10px] text-[#92400E] font-bold">
+                  <div className="mt-3 pt-2 border-t border-[#ECCFC0] text-[10px] text-[#B97855] font-bold">
                     Credited to your profile
                   </div>
                 </div>
 
-                {/* 2. Google Review Points */}
-                <div className="p-4 rounded-2xl bg-linear-to-br from-[#FAF5FF] via-white to-white border border-[#E9D5FF] shadow-xs flex flex-col justify-between">
+                {/* 2. Google Review Points (Purple #F3E8FF & #7E22CE) */}
+                <div className="p-4 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] shadow-xs flex flex-col justify-between">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-[10px] font-extrabold text-[#7E22CE] uppercase tracking-wider block mb-1">
+                      <span className="text-[10px] font-bold text-[#7E22CE] uppercase tracking-wider block mb-1">
                         Google Points
                       </span>
-                      <div className="text-2xl sm:text-3xl font-black text-[#3B0764] font-mono tracking-tight">
+                      <div className="text-2xl sm:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
                         {dashboardSummary?.google_review_points ?? 0}
                       </div>
                     </div>
-                    <div className="w-8 h-8 rounded-xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0">
-                      <Star className="w-4 h-4 fill-[#7E22CE]" />
+                    <div className="w-8 h-8 rounded-xl bg-white border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0">
+                      <Star className="w-4 h-4 fill-[#7E22CE] text-[#7E22CE]" />
                     </div>
                   </div>
-                  <div className="mt-3 pt-2 border-t border-[#E9D5FF] text-[10px] text-[#7E22CE] font-bold">
+                  <div className="mt-3 pt-2 border-t border-[#D8B4FE] text-[10px] text-[#7E22CE] font-bold">
                     1 review = 1 point
                   </div>
                 </div>
 
-                {/* 3. Video Review Points */}
-                <div className="p-4 rounded-2xl bg-linear-to-br from-[#EFF6FF] via-white to-white border border-[#BFDBFE] shadow-xs flex flex-col justify-between">
+                {/* 3. Video Review Points (Slate Blue #EDF2F8 & #526F91) */}
+                <div className="p-4 rounded-2xl bg-[#EDF2F8] border border-[#C6D4E3] shadow-xs flex flex-col justify-between">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-[10px] font-extrabold text-[#1D4ED8] uppercase tracking-wider block mb-1">
+                      <span className="text-[10px] font-bold text-[#526F91] uppercase tracking-wider block mb-1">
                         Video Points
                       </span>
-                      <div className="text-2xl sm:text-3xl font-black text-[#1E3A8A] font-mono tracking-tight">
+                      <div className="text-2xl sm:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
                         {dashboardSummary?.video_review_points ?? 0}
                       </div>
                     </div>
-                    <div className="w-8 h-8 rounded-xl bg-[#DBEAFE] border border-[#BFDBFE] text-[#1D4ED8] flex items-center justify-center shrink-0">
-                      <Video className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-xl bg-white border border-[#C6D4E3] text-[#526F91] flex items-center justify-center shrink-0">
+                      <Video className="w-4 h-4 text-[#526F91]" />
                     </div>
                   </div>
-                  <div className="mt-3 pt-2 border-t border-[#BFDBFE] text-[10px] text-[#1D4ED8] font-bold">
+                  <div className="mt-3 pt-2 border-t border-[#C6D4E3] text-[10px] text-[#526F91] font-bold">
                     5 pts per video review
                   </div>
                 </div>
 
-                {/* 4. Pending Manager Review */}
-                <div className="p-4 rounded-2xl bg-linear-to-br from-[#FEFCE8] via-white to-white border border-[#FEF08A] shadow-xs flex flex-col justify-between">
+                {/* 4. Pending Manager Review (Yellow #FEFCE8 & #EAB308) */}
+                <div className="p-4 rounded-2xl bg-[#FEFCE8] border border-[#EAB308] shadow-xs flex flex-col justify-between">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-[10px] font-extrabold text-[#854D0E] uppercase tracking-wider block mb-1">
+                      <span className="text-[10px] font-bold text-[#854D0E] uppercase tracking-wider block mb-1">
                         Pending Review
                       </span>
-                      <div className="text-2xl sm:text-3xl font-black text-[#713F12] font-mono tracking-tight">
+                      <div className="text-2xl sm:text-3xl font-bold text-[#854D0E] font-mono tracking-tight">
                         {(dashboardSummary?.pending_google_reviews ?? 0) + (dashboardSummary?.pending_video_reviews ?? 0)}
                       </div>
                     </div>
-                    <div className="w-8 h-8 rounded-xl bg-[#FEF08A] border border-[#FDE047] text-[#B45309] flex items-center justify-center shrink-0 animate-pulse">
-                      <Clock className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-xl bg-white border border-[#EAB308] text-[#CA8A04] flex items-center justify-center shrink-0">
+                      <Clock className="w-4 h-4 text-[#CA8A04]" />
                     </div>
                   </div>
-                  <div className="mt-3 pt-2 border-t border-[#FEF08A] text-[10px] text-[#854D0E] font-bold">
+                  <div className="mt-3 pt-2 border-t border-[#EAB308]/40 text-[10px] text-[#854D0E] font-bold">
                     In Manager's Queue
                   </div>
                 </div>
@@ -1845,7 +1819,7 @@ export const EmployeePortalPage: React.FC = () => {
                   placeholder="Search customer name, phone, product ID, notes..."
                   value={reviewSearch}
                   onChange={(e) => setReviewSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#D97706] focus:ring-2 focus:ring-[#D97706]/10 shadow-inner"
+                  className="w-full pl-9 pr-4 py-2 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#7E22CE] focus:ring-2 focus:ring-[#7E22CE]/10 shadow-inner"
                 />
               </div>
 
@@ -2498,7 +2472,7 @@ export const EmployeePortalPage: React.FC = () => {
                   type="submit"
                   size="sm"
                   disabled={isSubmittingCall}
-                  className="bg-linear-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] text-white font-extrabold text-xs shadow-sm rounded-xl px-4 py-2"
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs shadow-sm rounded-xl px-4 py-2"
                 >
                   {isSubmittingCall ? (
                     <span className="flex items-center gap-1.5">
@@ -2685,7 +2659,7 @@ export const EmployeePortalPage: React.FC = () => {
                                 ? 'bg-[#21845F] text-white'
                                 : isRejected
                                   ? 'bg-[#DC2626] text-white'
-                                  : 'bg-[#D97706] text-white'
+                                  : 'bg-[#7E22CE] text-white'
                             }`}
                           >
                             {item.category === 'attire' ? (

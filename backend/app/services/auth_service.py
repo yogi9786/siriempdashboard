@@ -682,7 +682,7 @@ class AuthService:
         try:
             audit = AuditLog(
                 branch_id=emp.branch_id,
-                admin_id=emp.id,
+                admin_id=None,
                 admin_username=emp.employee_code,
                 action="Employee Login",
                 entity="Auth",

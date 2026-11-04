@@ -185,6 +185,7 @@ BRANCHES_DATA = [
 
 def seed_database():
     """Idempotently seed the 3 showroom branches (Yelahanka, Kolar, Udupi), their respective Managers, and all 62 employees with exact company IDs."""
+    import backend.app.models
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 

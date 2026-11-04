@@ -910,7 +910,7 @@ export const EmployeePortalPage: React.FC = () => {
               className="w-full sm:w-auto bg-[#7E22CE] hover:bg-[#6B21A8] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4 text-white" />
-              <span>+ Add Customer Log</span>
+              <span>Add Customer Log</span>
             </Button>
           )}
           {activeTab === 'CALLS' && (
@@ -919,7 +919,7 @@ export const EmployeePortalPage: React.FC = () => {
               className="w-full sm:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4 text-white" />
-              <span>+ Log Customer Call</span>
+              <span>Log Customer Call</span>
             </Button>
           )}
           {activeTab === 'REVIEWS' && (
@@ -929,7 +929,7 @@ export const EmployeePortalPage: React.FC = () => {
                 className="w-full sm:w-auto bg-[#7E22CE] hover:bg-[#6B21A8] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4 text-white" />
-                <span>+ Add Customer & Review</span>
+                <span>Add Customer & Review</span>
               </Button>
             </div>
           )}
@@ -1721,7 +1721,7 @@ export const EmployeePortalPage: React.FC = () => {
                     className="bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold rounded-xl px-4 py-2.5 cursor-pointer shadow-sm hover:scale-[1.02] transition-all"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" />
-                    <span>+ Add Customer Log</span>
+                    <span>Add Customer Log</span>
                   </Button>
                 </div>
               </div>
@@ -2057,7 +2057,7 @@ export const EmployeePortalPage: React.FC = () => {
                       className="bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold rounded-xl px-4 py-2"
                     >
                       <Plus className="w-4 h-4 mr-1" />
-                      <span>+ Add Customer Log</span>
+                      <span>Add Customer Log</span>
                     </Button>
                   </div>
                 );

@@ -1,6 +1,6 @@
 import hmac
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List
+from typing import Optional, List, Dict
 import os
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -608,6 +608,9 @@ class AuthService:
                 valid_passwords.add(f"{part.capitalize()}@siri1234")
                 valid_passwords.add(f"{part.lower()}@siri1234")
                 valid_passwords.add(f"{part.upper()}@siri1234")
+                valid_passwords.add(f"{part.capitalize()}@siri1234!")
+                valid_passwords.add(f"{part.lower()}@siri1234!")
+                valid_passwords.add(f"{part.upper()}@siri1234!")
 
             # Handle spelling variations (e.g. Maheswhari vs Maheshwari)
             if "maheswhari" in emp.full_name.lower() or "maheshwari" in emp.full_name.lower():
@@ -627,7 +630,7 @@ class AuthService:
 
         # STRICT VERIFICATION: ONLY designated employee passwords allowed, Siri@Emp2026! is explicitly rejected
         pwd_match = False
-        if password_cleaned != "Siri@Emp2026!":
+        if password_cleaned.lower() != "siri@emp2026!":
             for valid_p in valid_passwords:
                 if hmac.compare_digest(password_cleaned, valid_p) or hmac.compare_digest(password_cleaned.lower(), valid_p.lower()):
                     pwd_match = True

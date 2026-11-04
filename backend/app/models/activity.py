@@ -101,7 +101,7 @@ class GoogleReview(Base):
     screenshot_url = Column(String(255), nullable=True)  # Proof image screenshot
     status = Column(String(50), default="PENDING", nullable=False)  # PENDING, APPROVED, REJECTED, Published, Verified
     rejection_reason = Column(String(255), nullable=True)
-    reviewed_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_by_id = Column(Integer, nullable=True)  # No FK
     reviewed_at = Column(DateTime, nullable=True)
     submitted_by_role = Column(String(50), default="EMPLOYEE", nullable=False)  # EMPLOYEE, MANAGER, ADMIN
     created_at = Column(DateTime, default=utcnow, nullable=False)
@@ -110,7 +110,6 @@ class GoogleReview(Base):
     # Relationships
     branch = relationship("Branch", back_populates="google_reviews")
     employee = relationship("Employee", back_populates="google_reviews")
-    reviewer = relationship("User", foreign_keys=[reviewed_by_id])
 
     @property
     def points(self) -> int:
@@ -136,7 +135,7 @@ class VideoReview(Base):
     screenshot_url = Column(String(255), nullable=True)  # Image proof / thumbnail
     status = Column(String(50), default="PENDING", nullable=False)  # PENDING, APPROVED, REJECTED
     rejection_reason = Column(String(255), nullable=True)
-    reviewed_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_by_id = Column(Integer, nullable=True)  # No FK
     reviewed_at = Column(DateTime, nullable=True)
     submitted_by_role = Column(String(50), default="EMPLOYEE", nullable=False)  # EMPLOYEE, MANAGER, ADMIN
     created_at = Column(DateTime, default=utcnow, nullable=False)
@@ -145,7 +144,6 @@ class VideoReview(Base):
     # Relationships
     branch = relationship("Branch", back_populates="video_reviews")
     employee = relationship("Employee", back_populates="video_reviews")
-    reviewer = relationship("User", foreign_keys=[reviewed_by_id])
 
     @property
     def points(self) -> int:

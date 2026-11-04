@@ -12,7 +12,7 @@ class AuditLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     branch_id = Column(Integer, ForeignKey("branches.id"), index=True, nullable=True)
-    admin_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True)
+    admin_id = Column(Integer, index=True, nullable=True)  # No FK to users - avoids cross-schema conflicts
     admin_username = Column(String(100), nullable=True)
     action = Column(String(100), index=True, nullable=False)
     entity = Column(String(100), index=True, nullable=False)

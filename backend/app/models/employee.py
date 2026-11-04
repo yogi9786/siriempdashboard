@@ -12,7 +12,7 @@ class Employee(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     branch_id = Column(Integer, ForeignKey("branches.id"), index=True, nullable=False)
-    manager_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True)  # Manager isolation
+    manager_id = Column(Integer, index=True, nullable=True)  # Manager user id (no FK constraint - avoids cross-schema conflicts)
     employee_code = Column(String(50), index=True, nullable=False)  # e.g., EMP-YEL-001
     full_name = Column(String(150), nullable=False)
     phone = Column(String(20), nullable=True, default="")
@@ -29,7 +29,6 @@ class Employee(Base):
 
     # Relationships
     branch = relationship("Branch", back_populates="employees")
-    manager = relationship("User", foreign_keys=[manager_id])
     customer_activities = relationship("CustomerActivity", back_populates="employee", cascade="all, delete-orphan")
     schemes = relationship("SchemeRecord", back_populates="employee", cascade="all, delete-orphan")
     form_media = relationship("EmployeeFormMedia", back_populates="employee", cascade="all, delete-orphan")

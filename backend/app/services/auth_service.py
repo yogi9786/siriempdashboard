@@ -63,92 +63,114 @@ def get_env_manager_by_username(username: str) -> Optional[dict]:
     return None
 
 
-def get_env_employee_password(identifier: str, emp: Optional[Employee] = None) -> str:
+def load_live_env_dict() -> Dict[str, str]:
     """
-    Look up employee password configured in server-side .env.
-    Checks:
-    1. Direct match on EMP_{NAME}_USERNAME (e.g. TULASI68, SHYLAJA8)
-    2. Employee ID matching digits in EMP_{NAME}_USERNAME (e.g. ID 68 -> TULASI68)
-    3. Employee code matching digits (e.g. EMP-YEL-068 -> 68 -> TULASI68)
-    4. First name matching EMP_{NAME}_USERNAME
-    5. Fallback to DEFAULT_EMPLOYEE_PASSWORD from .env
+    Robustly read all environment variables from tracked env and live .env files,
+    as well as os.environ. Merges all files without shadowing populated values with blanks.
     """
-    from backend.app.core.config import settings
+    env_dict: Dict[str, str] = dict(os.environ)
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # backend
+    root_dir = os.path.dirname(base_dir)  # project root
 
-    target = (identifier or "").strip().lower()
-
-    # Search live .env file
-    env_paths = [
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "env"),
-        ".env",
+    possible_files = [
+        # 1. Tracked git file (guaranteed present after git pull)
+        os.path.join(base_dir, "env"),
+        os.path.join(root_dir, "env"),
+        "backend/env",
+        "env",
+        # 2. Local live environment files
+        os.path.join(base_dir, ".env"),
+        os.path.join(root_dir, ".env"),
         "backend/.env",
+        ".env",
     ]
-    raw_env = {}
-    for p in env_paths:
+
+    for p in possible_files:
         if os.path.exists(p):
             try:
-                with open(p, "r", encoding="utf-8") as f:
+                with open(p, "r", encoding="utf-8", errors="ignore") as f:
                     for line in f:
                         line = line.strip()
                         if line and not line.startswith("#") and "=" in line:
                             k, v = line.split("=", 1)
-                            raw_env[k.strip()] = v.strip()
-                if raw_env:
-                    break
+                            k = k.strip()
+                            v = v.strip().strip("'").strip('"')
+                            if v:  # Only populate non-empty values
+                                env_dict[k] = v
             except Exception:
                 pass
 
-    user_keys = [k for k in raw_env if k.startswith("EMP_") and k.endswith("_USERNAME")]
+    return env_dict
 
-    # 1. Direct match on EMP_*_USERNAME value
+
+def get_env_employee_password(identifier: str, emp: Optional[Employee] = None) -> str:
+    """
+    Look up the exact password configured for this employee in server-side .env or env.
+    """
+    env_map = load_live_env_dict()
+    target = (identifier or "").strip().lower()
+
+    if not emp and not target:
+        return ""
+
+    full_name_clean = (emp.full_name or "").strip().lower() if emp else ""
+    # Extract significant name words (ignore 1-2 letter initials like 's', 'p', 'v')
+    name_parts = [p.strip() for p in full_name_clean.split() if len(p.strip()) >= 3]
+    if not name_parts and full_name_clean:
+        name_parts = [p.strip() for p in full_name_clean.split() if p.strip()]
+
+    emp_id_str = str(emp.id) if emp else ""
+    emp_code_clean = (emp.employee_code or "").strip().lower() if emp else ""
+    digits = "".join(c for c in (emp_code_clean or target) if c.isdigit())
+
+    # 1. Direct match on key: EMP_{NAME}_PASSWORD
+    for np in name_parts:
+        k = f"EMP_{np.upper()}_PASSWORD"
+        if k in env_map and env_map[k].strip():
+            return env_map[k].strip()
+
+    # 2. Direct match on code or ID: EMP_{ID}_PASSWORD or EMP_{CODE}_PASSWORD
+    for cand in [emp_id_str, digits, emp_code_clean.replace("-", "_")]:
+        if cand:
+            k = f"EMP_{cand.upper()}_PASSWORD"
+            if k in env_map and env_map[k].strip():
+                return env_map[k].strip()
+
+    # 3. Match via EMP_*_USERNAME in .env
+    user_keys = [k for k in env_map if k.startswith("EMP_") and k.endswith("_USERNAME")]
     for uk in user_keys:
-        u_val = raw_env.get(uk, "").strip()
+        u_val = env_map[uk].strip().lower()
         pwd_key = uk.replace("_USERNAME", "_PASSWORD")
-        if u_val.lower() == target and pwd_key in raw_env:
-            return raw_env[pwd_key]
+        u_digits = "".join(c for c in u_val if c.isdigit())
+        if (
+            u_val in [target, emp_code_clean]
+            or (u_digits and u_digits == emp_id_str)
+            or (u_digits and digits and u_digits == digits)
+        ):
+            if pwd_key in env_map and env_map[pwd_key].strip():
+                return env_map[pwd_key].strip()
 
-    # 2. Match by Employee Object (ID / First Name)
-    if emp:
-        emp_id_str = str(emp.id)
-        for uk in user_keys:
-            u_val = raw_env.get(uk, "").strip()
-            pwd_key = uk.replace("_USERNAME", "_PASSWORD")
-            digits = "".join(c for c in u_val if c.isdigit())
-            if digits == emp_id_str and pwd_key in raw_env:
-                return raw_env[pwd_key]
+    # Match by name in EMP_*_USERNAME
+    for uk in user_keys:
+        u_val = env_map[uk].strip().lower()
+        pwd_key = uk.replace("_USERNAME", "_PASSWORD")
+        for np in name_parts:
+            if np in u_val and pwd_key in env_map and env_map[pwd_key].strip():
+                return env_map[pwd_key].strip()
 
-        first_name = emp.full_name.strip().split()[0].lower() if emp.full_name else ""
-        if len(first_name) >= 3:
-            for uk in user_keys:
-                u_val = raw_env.get(uk, "").strip()
-                pwd_key = uk.replace("_USERNAME", "_PASSWORD")
-                if (first_name in u_val.lower() or first_name in uk.lower()) and pwd_key in raw_env:
-                    return raw_env[pwd_key]
-
-    # 3. Match by digits in target identifier (e.g. EMP-YEL-068 -> digits "068" -> int 68)
-    digits_in_target = "".join(c for c in target if c.isdigit())
-    if digits_in_target:
-        try:
-            target_int_str = str(int(digits_in_target))
-            for uk in user_keys:
-                u_val = raw_env.get(uk, "").strip()
-                pwd_key = uk.replace("_USERNAME", "_PASSWORD")
-                digits = "".join(c for c in u_val if c.isdigit())
-                if digits == target_int_str and pwd_key in raw_env:
-                    return raw_env[pwd_key]
-        except Exception:
-            pass
-
-    # 4. Check if employee full_name matches any MANAGER_*_NAME (e.g. GAGAN -> MANAGER_6_PASSWORD)
-    if emp and emp.full_name:
-        emp_clean = emp.full_name.strip().lower()
-        for k, v in raw_env.items():
+    # 4. Check if employee name matches any MANAGER_*_NAME (e.g. GAGAN -> MANAGER_6_PASSWORD)
+    for np in name_parts:
+        for k, v in env_map.items():
             if ("_MANAGER_" in k or k.startswith("MANAGER_")) and k.endswith("_NAME"):
-                if v.strip().lower() == emp_clean:
+                if v.strip().lower() == np or v.strip().lower() == full_name_clean:
                     pwd_k = k.replace("_NAME", "_PASSWORD")
-                    if pwd_k in raw_env and raw_env[pwd_k].strip():
-                        return raw_env[pwd_k].strip()
+                    if pwd_k in env_map and env_map[pwd_k].strip():
+                        return env_map[pwd_k].strip()
+
+    # 5. Standard showroom password pattern {PrimaryName}@siri1234
+    primary_name = name_parts[0] if name_parts else ""
+    if primary_name:
+        return f"{primary_name.capitalize()}@siri1234"
 
     return ""
 
@@ -595,26 +617,13 @@ class AuthService:
         # C. Manager password if employee is also configured as manager (e.g. GAGAN)
         if emp and emp.full_name:
             emp_clean = emp.full_name.strip().lower()
-            raw_env_map = {}
-            for p in [os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"), ".env", "backend/.env"]:
-                if os.path.exists(p):
-                    try:
-                        with open(p, "r", encoding="utf-8") as f:
-                            for line in f:
-                                line = line.strip()
-                                if line and not line.startswith("#") and "=" in line:
-                                    k, v = line.split("=", 1)
-                                    raw_env_map[k.strip()] = v.strip()
-                        if raw_env_map:
-                            break
-                    except Exception:
-                        pass
-            for k, v in raw_env_map.items():
+            env_map = load_live_env_dict()
+            for k, v in env_map.items():
                 if ("_MANAGER_" in k or k.startswith("MANAGER_")) and k.endswith("_NAME"):
                     if v.strip().lower() == emp_clean:
                         pwd_k = k.replace("_NAME", "_PASSWORD")
-                        if pwd_k in raw_env_map and raw_env_map[pwd_k].strip():
-                            valid_passwords.add(raw_env_map[pwd_k].strip())
+                        if pwd_k in env_map and env_map[pwd_k].strip():
+                            valid_passwords.add(env_map[pwd_k].strip())
 
         # STRICT VERIFICATION: ONLY designated employee passwords allowed, Siri@Emp2026! is explicitly rejected
         pwd_match = False

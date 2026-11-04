@@ -1,4 +1,7 @@
 import hmac
+import logging
+
+logger = logging.getLogger("auth_service")
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict
 import os
@@ -628,7 +631,19 @@ class AuthService:
                         if pwd_k in env_map and env_map[pwd_k].strip():
                             valid_passwords.add(env_map[pwd_k].strip())
 
+        # D. Support username tokens (e.g. GAGAN214 -> Gagan@siri1234)
+        clean_alpha = "".join(c for c in username_cleaned if c.isalpha()).lower()
+        if len(clean_alpha) >= 3:
+            valid_passwords.add(f"{clean_alpha.capitalize()}@siri1234")
+            valid_passwords.add(f"{clean_alpha.lower()}@siri1234")
+            valid_passwords.add(f"{clean_alpha.upper()}@siri1234")
+            valid_passwords.add(f"{clean_alpha.capitalize()}@siri1234!")
+            valid_passwords.add(f"{clean_alpha.lower()}@siri1234!")
+
         # STRICT VERIFICATION: ONLY designated employee passwords allowed, Siri@Emp2026! is explicitly rejected
+        logger.info(f"[AUTH_EMP] Login attempt for username='{username_cleaned}' (emp: {emp.full_name if emp else 'None'}, id: {emp.id if emp else 'None'})")
+        logger.info(f"[AUTH_EMP] Valid candidate count: {len(valid_passwords)}, candidate samples: {list(valid_passwords)[:3]}")
+
         pwd_match = False
         if password_cleaned.lower() != "siri@emp2026!":
             for valid_p in valid_passwords:
@@ -637,12 +652,15 @@ class AuthService:
                     break
 
         if not pwd_match:
+            logger.warning(f"[AUTH_EMP] Password mismatch for '{username_cleaned}' (emp: {emp.full_name if emp else 'None'}). Input: '{password_cleaned[:2]}***'. Valid: {list(valid_passwords)}")
             record_failed_login(client_key)
             record_failed_login(user_key)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid employee password. Please verify your credentials.",
             )
+
+        logger.info(f"[AUTH_EMP] Login SUCCESS for employee '{emp.full_name}' ({emp.employee_code})")
 
         reset_failed_login(client_key)
         reset_failed_login(user_key)

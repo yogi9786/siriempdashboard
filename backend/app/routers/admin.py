@@ -1819,12 +1819,15 @@ def list_admin_customer_activities(
         )
 
     activities = q.order_by(CustomerActivity.activity_date.desc(), CustomerActivity.id.desc()).all()
+    mgr_map = {u.id: u.full_name for u in db.query(User).all()}
     results = []
     for act in activities:
         b = db.query(Branch).filter(Branch.id == act.branch_id).first()
         emp = db.query(Employee).filter(Employee.id == act.employee_id).first()
         clean_act_notes = _format_clean_breakdown(act.notes, "") if act.notes and ("{" in act.notes or "[" in act.notes) else act.notes
         clean_act_bd = _format_clean_breakdown(act.breakdown, act.status)
+        rev_by_id = getattr(act, "reviewed_by_id", None)
+        rev_by_name = mgr_map.get(rev_by_id) if rev_by_id else None
         results.append(
             {
                 "id": act.id,
@@ -1844,6 +1847,12 @@ def list_admin_customer_activities(
                 "notes": clean_act_notes,
                 "customers_count": act.customers_count or 1,
                 "breakdown": clean_act_bd,
+                "approval_status": getattr(act, "approval_status", "APPROVED") or "APPROVED",
+                "reviewed_by_id": rev_by_id,
+                "reviewed_by_name": rev_by_name,
+                "reviewed_at": act.reviewed_at.isoformat() if getattr(act, "reviewed_at", None) else None,
+                "rejection_reason": getattr(act, "rejection_reason", None),
+                "created_by_role": getattr(act, "created_by_role", "EMPLOYEE"),
             }
         )
     return results

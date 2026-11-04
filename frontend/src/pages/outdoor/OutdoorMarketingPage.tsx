@@ -45,7 +45,6 @@ import {
   OutdoorCustomerDetail,
 } from '../../types';
 import api from '../../api/client';
-import { SCHEMES as STANDARD_SCHEMES } from '../../constants/schemes';
 
 // ----------------------------------------------------
 // Data Interfaces
@@ -62,7 +61,6 @@ interface CustomerEntryState {
   has_customer_feedback: boolean;
   feedback_rating: number;
   feedback_text: string;
-  scheme_name: string;
   interested_gold: boolean;
   interested_diamond: boolean;
   interested_silver: boolean;
@@ -71,7 +69,6 @@ interface CustomerEntryState {
 
 interface DutyFormState {
   area: string;
-  scheme_name: string;
   customers_attended_count: number;
   converted_customers_count: number;
   google_ratings_count: number;
@@ -418,8 +415,7 @@ export const OutdoorMarketingPage: React.FC = () => {
             has_customer_feedback: existing?.has_customer_feedback || false,
             feedback_rating: existing?.feedback_rating || 5,
             feedback_text: existing?.feedback_text || '',
-            scheme_name: existing?.scheme_name || duty.scheme_name || '',
-            interested_gold: intStr.includes('gold'),
+              interested_gold: intStr.includes('gold'),
             interested_diamond: intStr.includes('diamond'),
             interested_silver: intStr.includes('silver'),
             notes: existing?.notes || '',
@@ -432,7 +428,6 @@ export const OutdoorMarketingPage: React.FC = () => {
 
         formMap[duty.id] = {
           area: duty.area || '',
-          scheme_name: duty.scheme_name || STANDARD_SCHEMES[0],
           customers_attended_count: attendedCount,
           converted_customers_count: 0,
           google_ratings_count: duty.google_ratings_count || 0,
@@ -550,7 +545,6 @@ export const OutdoorMarketingPage: React.FC = () => {
             has_customer_feedback: false,
             feedback_rating: 5,
             feedback_text: '',
-            scheme_name: form.scheme_name || '',
             interested_gold: false,
             interested_diamond: false,
             interested_silver: false,
@@ -592,7 +586,6 @@ export const OutdoorMarketingPage: React.FC = () => {
             has_customer_feedback: false,
             feedback_rating: 5,
             feedback_text: '',
-            scheme_name: form.scheme_name || STANDARD_SCHEMES[0],
             interested_gold: false,
             interested_diamond: false,
             interested_silver: false,
@@ -799,7 +792,6 @@ export const OutdoorMarketingPage: React.FC = () => {
             has_customer_feedback: c.has_customer_feedback,
             feedback_rating: c.has_customer_feedback ? (c.feedback_rating || 5) : undefined,
             feedback_text: c.has_customer_feedback && c.feedback_text.trim() ? c.feedback_text.trim() : undefined,
-            scheme_name: c.scheme_name || form.scheme_name,
             area_name: form.area,
             interested_in: interestedArr.length > 0 ? interestedArr.join(', ') : undefined,
             notes: c.notes.trim() || undefined,
@@ -812,7 +804,6 @@ export const OutdoorMarketingPage: React.FC = () => {
 
       await api.put(`/api/v1/outdoor-marketing/duties/${dutyId}`, {
         area: form.area.trim(),
-        scheme_name: form.scheme_name.trim(),
         customers_attended_count: form.customers_attended_count,
         converted_customers_count: 0,
         google_ratings_count: totalGoogleRatings,
@@ -856,7 +847,6 @@ export const OutdoorMarketingPage: React.FC = () => {
         duty_employee_name: d.employee_name,
         duty_employee_code: d.employee_code,
         duty_area: d.area,
-        duty_scheme: d.scheme_name,
       }))
     );
 
@@ -871,7 +861,6 @@ export const OutdoorMarketingPage: React.FC = () => {
       'Date of Birth (DOB)',
       'Wedding Anniversary',
       'Status',
-      'Enrolled / Interested Scheme',
       'Campaign Area',
       'Staff Representative',
       'Staff Code',
@@ -897,7 +886,6 @@ export const OutdoorMarketingPage: React.FC = () => {
       escapeCsv(c.dob || ''),
       escapeCsv(c.anniversary_date || ''),
       escapeCsv(c.is_converted ? 'Converted' : (c.status || 'Attended')),
-      escapeCsv(c.scheme_name || c.duty_scheme || ''),
       escapeCsv(c.area_name || c.duty_area || ''),
       escapeCsv(c.duty_employee_name || ''),
       escapeCsv(c.duty_employee_code || ''),
@@ -949,7 +937,6 @@ export const OutdoorMarketingPage: React.FC = () => {
     return (
       c.customer_name?.toLowerCase().includes(q) ||
       c.phone?.includes(q) ||
-      c.scheme_name?.toLowerCase().includes(q) ||
       c.area_name?.toLowerCase().includes(q) ||
       c.notes?.toLowerCase().includes(q)
     );
@@ -1278,7 +1265,6 @@ export const OutdoorMarketingPage: React.FC = () => {
               {assignedDuties.map((duty) => {
                 const form = dutyForms[duty.id] || {
                   area: '',
-                  scheme_name: STANDARD_SCHEMES[0],
                   customers_attended_count: 0,
                   converted_customers_count: 0,
                   google_ratings_count: 0,
@@ -1347,58 +1333,19 @@ export const OutdoorMarketingPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Area & Scheme Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-extrabold text-[#1D1D1B] mb-1.5 flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-[#23815F]" />
-                          <span>Targeted Location / Area <strong className="text-[#C24141]">*</strong></span>
-                        </label>
-                        <input
-                          type="text"
-                          value={form.area}
-                          onChange={(e) => updateDutyFormField(duty.id, 'area', e.target.value)}
-                          placeholder="e.g. Yelahanka Old Town Market"
-                          className="w-full px-3.5 py-2.5 input-luxury-beige rounded-xl text-xs font-semibold"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-extrabold text-[#1D1D1B] mb-1.5 flex items-center gap-1.5">
-                          <Award className="w-3.5 h-3.5 text-[#9A782F]" />
-                          <span>Promoted Jewellery Scheme</span>
-                        </label>
-                        <select
-                          value={form.scheme_name}
-                          onChange={(e) => updateDutyFormField(duty.id, 'scheme_name', e.target.value)}
-                          className="w-full px-3.5 py-2.5 select-luxury-slate rounded-xl text-xs font-semibold cursor-pointer"
-                        >
-                          {STANDARD_SCHEMES.map((sch) => (
-                            <option key={sch} value={sch}>
-                              {sch}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {STANDARD_SCHEMES.map((sch) => {
-                            const isSelected = form.scheme_name === sch;
-                            return (
-                              <button
-                                key={sch}
-                                type="button"
-                                onClick={() => updateDutyFormField(duty.id, 'scheme_name', sch)}
-                                className={`px-2 py-1 text-[10px] font-bold rounded-lg border transition-all text-left ${
-                                  isSelected
-                                    ? 'bg-[#FEF3C7] border-[#D97706] text-[#92400E] shadow-2xs font-extrabold'
-                                    : 'bg-white border-[#E4DFD4] text-[#5E5A52] hover:bg-[#FAF8F3]'
-                                }`}
-                              >
-                                {isSelected ? '✓ ' : ''}{sch}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
+                    {/* Targeted Field Location / Area */}
+                    <div>
+                      <label className="text-xs font-extrabold text-[#1D1D1B] mb-1.5 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#23815F]" />
+                        <span>Targeted Field Location / Market Area <strong className="text-[#C24141]">*</strong></span>
+                      </label>
+                      <input
+                        type="text"
+                        value={form.area}
+                        onChange={(e) => updateDutyFormField(duty.id, 'area', e.target.value)}
+                        placeholder="e.g. Yelahanka Old Town Market / Gandhi Circle"
+                        className="w-full px-3.5 py-2.5 input-luxury-beige rounded-xl text-xs font-semibold"
+                      />
                     </div>
 
                     {/* Compact Field Photos Strip (Small in front, Expandable on click) */}
@@ -1634,42 +1581,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                                   </div>
                                 </div>
 
-                                {/* Scheme Selection for Customer */}
-                                <div>
-                                  <label className="text-[10px] font-bold text-[#8A8479] block mb-1">
-                                    Enrolled / Interested Scheme
-                                  </label>
-                                  <select
-                                    value={cust.scheme_name || form.scheme_name || STANDARD_SCHEMES[0]}
-                                    onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'scheme_name', e.target.value)}
-                                    className="w-full px-2.5 py-1.5 select-luxury-slate rounded-lg text-xs font-semibold cursor-pointer"
-                                  >
-                                    {STANDARD_SCHEMES.map((sch) => (
-                                      <option key={sch} value={sch}>
-                                        {sch}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {STANDARD_SCHEMES.map((sch) => {
-                                      const isSelected = (cust.scheme_name || form.scheme_name || STANDARD_SCHEMES[0]) === sch;
-                                      return (
-                                        <button
-                                          key={sch}
-                                          type="button"
-                                          onClick={() => updateAttendedCustomer(duty.id, cIdx, 'scheme_name', sch)}
-                                          className={`px-2 py-0.5 text-[9px] font-bold rounded-md border transition-all text-left ${
-                                            isSelected
-                                              ? 'bg-[#FEF3C7] border-[#D97706] text-[#92400E] shadow-2xs font-extrabold'
-                                              : 'bg-white border-[#E4DFD4] text-[#5E5A52] hover:bg-[#FAF8F3]'
-                                          }`}
-                                        >
-                                          {isSelected ? '✓ ' : ''}{sch}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
+
 
                                 {/* Customer Notes */}
                                 <div>
@@ -1807,10 +1719,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                           <MapPin className="w-3.5 h-3.5 text-[#23815F]" />
                           <span>{duty.area || 'Area Pending Entry'}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[11px] text-[#5E5A52] truncate">
-                          <Award className="w-3.5 h-3.5 text-[#9A782F]" />
-                          <span>{duty.scheme_name || 'Scheme Not Selected'}</span>
-                        </div>
+
                       </div>
 
                       {/* Performance Metric Badges */}
@@ -1971,7 +1880,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                               photos,
                               pIdx,
                               `${duty.employee_name} — Photo #${pIdx + 1}`,
-                              `Area: ${duty.area || 'Field Area'} • Date: ${duty.date} • Scheme: ${duty.scheme_name || 'N/A'}`
+                              `Area: ${duty.area || 'Field Area'} • Date: ${duty.date}`
                             )
                           }
                           className="relative group shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-[#C5E3D5] bg-black/5 hover:border-[#23815F] shadow-2xs hover:shadow-md transition-all cursor-pointer"

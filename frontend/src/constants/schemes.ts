@@ -1,9 +1,11 @@
 /**
  * Standard Jewelry Schemes for Siri Samruddhi Gold Palace
- * Exactly 3 active schemes across all showroom & outdoor modules:
+ * Exactly 3 active schemes across all showroom modules:
  * 1. SIRISAMRUDDHI GOLDEN DREAMS
  * 2. SIRISAMRUDDHI GOLDEN AMBARI
  * 3. SIRISAMRUDDHI GOLDEN NIDHI
+ *
+ * Plus 'None' option for deselection / no scheme.
  */
 
 export const SCHEMES = [
@@ -14,7 +16,25 @@ export const SCHEMES = [
 
 export type SchemeName = (typeof SCHEMES)[number];
 
+export const SCHEME_NONE = 'None' as const;
+
 export const DEFAULT_SCHEME: SchemeName = SCHEMES[0];
+
+export const SCHEMES_WITH_NONE = [
+  SCHEME_NONE,
+  ...SCHEMES,
+] as const;
+
+export const isRealScheme = (name?: string | null): boolean => {
+  if (!name) return false;
+  const trimmed = name.trim();
+  return (
+    trimmed !== '' &&
+    trimmed.toLowerCase() !== 'none' &&
+    trimmed.toLowerCase() !== 'no scheme' &&
+    trimmed.toLowerCase() !== '-- no scheme / none --'
+  );
+};
 
 export const SCHEME_DETAILS: Record<
   SchemeName,

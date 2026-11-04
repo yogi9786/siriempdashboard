@@ -983,22 +983,78 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                     />
                   </div>
 
-                  {/* 1. Jewellery Savings Schemes (Dropdown only, no checkbox) */}
-                  <div className="p-3 rounded-xl bg-[#FAF8F3] border border-[#E8E4D9] space-y-2">
-                    <label className="text-xs font-bold text-[#1D1D1B] flex items-center gap-1.5">
-                      <Award className="w-4 h-4 text-[#D97706]" />
-                      <span>Jewellery Savings Scheme (Optional)</span>
-                    </label>
+                  {/* 1. Jewellery Savings Schemes (3 Schemes + None to Deselect) */}
+                  <div className="p-3 rounded-xl bg-[#FAF8F3] border border-[#E8E4D9] space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-[#1D1D1B] flex items-center gap-1.5">
+                        <Award className="w-4 h-4 text-[#D97706]" />
+                        <span>Jewellery Savings Scheme (Optional)</span>
+                      </label>
+                      {item.scheme_name && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleCustomerFieldChange(idx, 'scheme_name', '');
+                            handleCustomerFieldChange(idx, 'has_scheme', false);
+                            handleCustomerFieldChange(idx, 'scheme_amount', '');
+                          }}
+                          className="text-[10px] font-bold text-[#DC2626] hover:underline cursor-pointer"
+                        >
+                          ✕ Deselect Scheme
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Quick Selection Pills with None */}
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCustomerFieldChange(idx, 'scheme_name', '');
+                          handleCustomerFieldChange(idx, 'has_scheme', false);
+                          handleCustomerFieldChange(idx, 'scheme_amount', '');
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                          !item.scheme_name
+                            ? 'bg-[#1D1D1B] text-white shadow-xs'
+                            : 'bg-white border border-[#E4DFD4] text-[#5E5A52] hover:bg-[#F5F2EB]'
+                        }`}
+                      >
+                        None
+                      </button>
+                      {SCHEMES.map((sch) => {
+                        const isSelected = item.scheme_name === sch;
+                        return (
+                          <button
+                            key={sch}
+                            type="button"
+                            onClick={() => {
+                              handleCustomerFieldChange(idx, 'scheme_name', sch);
+                              handleCustomerFieldChange(idx, 'has_scheme', true);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#D97706] text-white shadow-xs'
+                                : 'bg-white border border-[#E4DFD4] text-[#5E5A52] hover:bg-[#F5F2EB]'
+                            }`}
+                          >
+                            {isSelected ? '✓ ' : ''}{sch}
+                          </button>
+                        );
+                      })}
+                    </div>
+
                     <select
                       value={item.scheme_name || ''}
                       onChange={(e) => {
                         const val = e.target.value;
                         handleCustomerFieldChange(idx, 'scheme_name', val);
                         handleCustomerFieldChange(idx, 'has_scheme', Boolean(val));
+                        if (!val) handleCustomerFieldChange(idx, 'scheme_amount', '');
                       }}
                       className="w-full text-xs font-semibold select-luxury-slate rounded-xl px-3 py-2 cursor-pointer"
                     >
-                      <option value="">-- No Scheme / None --</option>
+                      <option value="">None (No Scheme / Deselect)</option>
                       {SCHEMES.map((sch) => (
                         <option key={sch} value={sch}>
                           {sch}

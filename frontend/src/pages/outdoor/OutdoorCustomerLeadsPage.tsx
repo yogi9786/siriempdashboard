@@ -36,7 +36,6 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
-import { SCHEMES, DEFAULT_SCHEME } from '../../constants/schemes';
 import api from '../../api/client';
 
 export const OutdoorCustomerLeadsPage: React.FC = () => {
@@ -51,7 +50,6 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedEmpFilter, setSelectedEmpFilter] = useState<string>('all');
   const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all');
-  const [selectedSchemeFilter, setSelectedSchemeFilter] = useState<string>('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
   const [reviewFilter, setReviewFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
@@ -73,7 +71,6 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
     anniversary_date: string;
     marketing_employee_id: string;
     area_name: string;
-    scheme_name: string;
     status: string;
     interested_gold: boolean;
     interested_diamond: boolean;
@@ -93,7 +90,6 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
     anniversary_date: '',
     marketing_employee_id: '',
     area_name: '',
-    scheme_name: DEFAULT_SCHEME,
     status: 'Lead',
     interested_gold: false,
     interested_diamond: false,
@@ -115,7 +111,6 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       if (selectedEmpFilter !== 'all') params.employee_id = parseInt(selectedEmpFilter);
       if (selectedStatusFilter !== 'all') params.status = selectedStatusFilter;
       if (selectedAreaFilter !== 'all') params.area = selectedAreaFilter;
-      if (selectedSchemeFilter !== 'all') params.scheme_name = selectedSchemeFilter;
       if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom') {
         params.date_filter = dateFilter;
       }
@@ -143,7 +138,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [selectedEmpFilter, selectedStatusFilter, selectedAreaFilter, selectedSchemeFilter, dateFilter, fromDate, toDate]);
+  }, [selectedEmpFilter, selectedStatusFilter, selectedAreaFilter, dateFilter, fromDate, toDate]);
 
   // Unique campaign areas list for filter dropdown
   const uniqueAreas = useMemo(() => {
@@ -198,10 +193,9 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
         const matchesName = c.customer_name?.toLowerCase().includes(q);
         const matchesPhone = c.phone?.toLowerCase().includes(q);
         const matchesArea = c.area_name?.toLowerCase().includes(q);
-        const matchesScheme = c.scheme_name?.toLowerCase().includes(q);
-        const matchesNotes = c.notes?.toLowerCase().includes(q);
+                const matchesNotes = c.notes?.toLowerCase().includes(q);
         const matchesEmp = c.marketing_employee_name?.toLowerCase().includes(q) || (c.marketing_employee_code && c.marketing_employee_code.toLowerCase().includes(q));
-        if (!matchesName && !matchesPhone && !matchesArea && !matchesScheme && !matchesNotes && !matchesEmp) {
+        if (!matchesName && !matchesPhone && !matchesArea && !matchesNotes && !matchesEmp) {
           return false;
         }
       }
@@ -215,14 +209,12 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
     const totalLeads = filteredCustomers.length;
     const convertedCount = filteredCustomers.filter((c) => c.is_converted || c.status.toLowerCase().includes('converted') || c.status.toLowerCase().includes('closed')).length;
     const conversionRate = totalLeads > 0 ? Math.round((convertedCount / totalLeads) * 100) : 0;
-    const schemesCount = filteredCustomers.filter((c) => c.scheme_name && c.scheme_name.trim()).length;
-    const googleReviewsCount = filteredCustomers.filter((c) => c.has_google_review).length;
+        const googleReviewsCount = filteredCustomers.filter((c) => c.has_google_review).length;
 
     return {
       totalLeads,
       convertedCount,
       conversionRate,
-      schemesCount,
       googleReviewsCount,
     };
   }, [filteredCustomers]);
@@ -237,8 +229,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       anniversary_date: '',
       marketing_employee_id: employees[0]?.id?.toString() || '',
       area_name: '',
-      scheme_name: DEFAULT_SCHEME,
-      status: 'Lead',
+        status: 'Lead',
       interested_gold: false,
       interested_diamond: false,
       interested_silver: false,
@@ -265,7 +256,6 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       anniversary_date: c.anniversary_date || '',
       marketing_employee_id: c.marketing_employee_id?.toString() || employees[0]?.id?.toString() || '',
       area_name: c.area_name || '',
-      scheme_name: c.scheme_name || DEFAULT_SCHEME,
       status: c.status || 'Lead',
       interested_gold: intStr.includes('gold'),
       interested_diamond: intStr.includes('diamond'),
@@ -306,7 +296,6 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       dob: formData.dob || undefined,
       anniversary_date: formData.anniversary_date || undefined,
       area_name: formData.area_name.trim() || undefined,
-      scheme_name: formData.scheme_name || undefined,
       status: formData.status,
       interested_in: interestedArr.join(', ') || undefined,
       has_google_review: formData.has_google_review,
@@ -370,7 +359,6 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       'Assisting Field Marketer',
       'Marketer Staff Code',
       'Interested In',
-      'Promoted Jewellery Scheme',
       'Lead Status',
       'Google Review Given?',
       'Google Rating (Stars)',
@@ -394,7 +382,6 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
         `"${(c.marketing_employee_name || 'Staff').replace(/"/g, '""')}"`,
         c.marketing_employee_code || '',
         `"${(c.interested_in || '').replace(/"/g, '""')}"`,
-        `"${(c.scheme_name || '').replace(/"/g, '""')}"`,
         `"${c.status}"`,
         c.has_google_review ? 'Yes' : 'No',
         c.has_google_review && c.google_review_rating ? c.google_review_rating.toString() : '',
@@ -424,7 +411,6 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
     setSearchTerm('');
     setSelectedEmpFilter('all');
     setSelectedAreaFilter('all');
-    setSelectedSchemeFilter('all');
     setSelectedStatusFilter('all');
     setReviewFilter('all');
     setDateFilter('all');
@@ -511,15 +497,15 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
         <div className="p-4 rounded-2xl bg-white border border-[#E8E6E1] shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-[#8A8479] uppercase tracking-wider block">
-              Schemes Promoted
+              Active Prospects
             </span>
-            <div className="text-2xl font-black text-[#7E22CE] mt-1">{stats.schemesCount}</div>
+            <div className="text-2xl font-black text-[#7E22CE] mt-1">{stats.totalLeads - stats.convertedCount}</div>
             <span className="text-[11px] font-semibold text-[#7E22CE]">
-              Interested in 3 Gold Plans
+              Field Leads in Progress
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] flex items-center justify-center text-[#7E22CE]">
-            <Award className="w-6 h-6" />
+            <Compass className="w-6 h-6" />
           </div>
         </div>
 
@@ -547,7 +533,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by customer name, phone, area, scheme, notes, or staff..."
+              placeholder="Search by customer name, phone, area, notes, or staff..."
               className="w-full pl-10 pr-4 py-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-none focus:border-[#10B981]"
             />
           </div>
@@ -584,21 +570,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
             </select>
           </div>
 
-          {/* Scheme Filter (The 3 schemes) */}
-          <div className="flex items-center gap-1.5 w-full lg:w-auto">
-            <select
-              value={selectedSchemeFilter}
-              onChange={(e) => setSelectedSchemeFilter(e.target.value)}
-              className="w-full lg:w-56 px-3 py-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs font-bold text-[#7E22CE] focus:outline-none cursor-pointer"
-            >
-              <option value="all">All 3 Jewellery Schemes</option>
-              {SCHEMES.map((sch) => (
-                <option key={sch} value={sch}>
-                  {sch}
-                </option>
-              ))}
-            </select>
-          </div>
+
 
           {/* Lead Status Filter */}
           <div className="flex items-center gap-1.5 w-full lg:w-auto">
@@ -678,7 +650,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
             <span className="text-xs text-[#8A8479] font-medium">
               Showing <b className="text-[#1D1D1B]">{filteredCustomers.length}</b> outdoor leads
             </span>
-            {(searchTerm || selectedEmpFilter !== 'all' || selectedAreaFilter !== 'all' || selectedSchemeFilter !== 'all' || selectedStatusFilter !== 'all' || reviewFilter !== 'all' || dateFilter !== 'all' || fromDate) && (
+            {(searchTerm || selectedEmpFilter !== 'all' || selectedAreaFilter !== 'all' || selectedStatusFilter !== 'all' || reviewFilter !== 'all' || dateFilter !== 'all' || fromDate) && (
               <button
                 onClick={handleResetFilters}
                 className="text-xs font-bold text-[#C24141] hover:underline flex items-center gap-1 cursor-pointer ml-2"
@@ -714,7 +686,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                   <th className="px-4 py-3.5">Customer Contact & Celebrations</th>
                   <th className="px-4 py-3.5">Assisting Field Marketer</th>
                   <th className="px-4 py-3.5">Campaign Location / Status</th>
-                  <th className="px-4 py-3.5">Promoted Scheme & Interest</th>
+                  <th className="px-4 py-3.5">Jewellery Interest & Target</th>
                   <th className="px-4 py-3.5">Google 5-Star Review</th>
                   <th className="px-4 py-3.5">Field Inquiries & Notes</th>
                   <th className="px-4 py-3.5 text-right">Actions</th>
@@ -824,35 +796,28 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* 4. Scheme & Jewelry Interest */}
+                    {/* 4. Jewelry Interest */}
                     <td className="px-4 py-3.5 align-top">
-                      {c.scheme_name ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-bold text-[10px] block w-fit">
-                          <Award className="w-3 h-3 text-[#D97706]" />
-                          <span>{c.scheme_name}</span>
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-[#A1A1AA] italic block">—</span>
-                      )}
-
-                      {c.interested_in && (
-                        <div className="flex items-center gap-1 flex-wrap mt-1.5">
+                      {c.interested_in ? (
+                        <div className="flex items-center gap-1 flex-wrap">
                           {c.interested_in.toLowerCase().includes('gold') && (
-                            <span className="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 text-[9px] font-bold">
+                            <span className="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
                               🟡 Gold
                             </span>
                           )}
                           {c.interested_in.toLowerCase().includes('diamond') && (
-                            <span className="px-1.5 py-0.5 rounded bg-cyan-50 border border-cyan-200 text-cyan-800 text-[9px] font-bold">
+                            <span className="px-1.5 py-0.5 rounded bg-cyan-50 border border-cyan-200 text-cyan-800 text-[10px] font-bold">
                               💎 Diamond
                             </span>
                           )}
                           {c.interested_in.toLowerCase().includes('silver') && (
-                            <span className="px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 text-[9px] font-bold">
+                            <span className="px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-bold">
                               ⚪ Silver
                             </span>
                           )}
                         </div>
+                      ) : (
+                        <span className="text-[10px] text-[#A1A1AA] italic block">—</span>
                       )}
                     </td>
 
@@ -1001,39 +966,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
             />
           </div>
 
-          {/* Scheme Selection (The 3 schemes) */}
-          <div>
-            <label className="block text-xs font-semibold text-[#1D1D1B] mb-1.5">
-              Promoted Jewellery Scheme
-            </label>
-            <select
-              value={formData.scheme_name}
-              onChange={(e) => setFormData({ ...formData, scheme_name: e.target.value })}
-              className="w-full text-xs font-semibold select-luxury-beige rounded-xl p-2.5 cursor-pointer"
-            >
-              {SCHEMES.map((sch) => (
-                <option key={sch} value={sch}>
-                  {sch}
-                </option>
-              ))}
-            </select>
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {SCHEMES.map((sch) => (
-                <button
-                  key={sch}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, scheme_name: sch })}
-                  className={`px-2 py-1 text-[10px] font-bold rounded-lg border transition-all ${
-                    formData.scheme_name === sch
-                      ? 'bg-[#FEF3C7] border-[#D97706] text-[#92400E] shadow-2xs font-extrabold'
-                      : 'bg-white border-[#E4DFD4] text-[#5E5A52] hover:bg-[#FAF8F3]'
-                  }`}
-                >
-                  {formData.scheme_name === sch ? '✓ ' : ''}{sch}
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           {/* Jewelry Interest Checkboxes */}
           <div>

@@ -32,7 +32,6 @@ import { EmptyState } from '../../../components/ui/EmptyState';
 import { Button } from '../../../components/ui/Button';
 import { useAdminBranch } from '../../../context/AdminBranchContext';
 import { useToast } from '../../../context/ToastContext';
-import { SCHEMES } from '../../../constants/schemes';
 import api from '../../../api/client';
 
 // ----------------------------------------------------
@@ -130,7 +129,6 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
   const [branchFilter, setBranchFilter] = useState<string>(selectedBranchId?.toString() || 'all');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [schemeFilter, setSchemeFilter] = useState<string>('all');
 
   // Modals
   const [viewDetailDuty, setViewDetailDuty] = useState<AdminOutdoorDuty | null>(null);
@@ -222,28 +220,24 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
 
   // Filtered lists
   const filteredCustomers = customers.filter((c) => {
-    if (schemeFilter !== 'all' && c.scheme_name !== schemeFilter) return false;
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
     return (
       c.customer_name?.toLowerCase().includes(q) ||
       c.phone?.includes(q) ||
       c.area_name?.toLowerCase().includes(q) ||
-      c.scheme_name?.toLowerCase().includes(q) ||
       c.branch_name?.toLowerCase().includes(q) ||
       c.marketing_employee_name?.toLowerCase().includes(q)
     );
   });
 
   const filteredDuties = duties.filter((d) => {
-    if (schemeFilter !== 'all' && d.scheme_name !== schemeFilter) return false;
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
     return (
       d.employee_name?.toLowerCase().includes(q) ||
       d.employee_code?.toLowerCase().includes(q) ||
       d.area?.toLowerCase().includes(q) ||
-      d.scheme_name?.toLowerCase().includes(q) ||
       d.branch_name?.toLowerCase().includes(q)
     );
   });
@@ -296,22 +290,7 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
             </select>
           </div>
 
-          {/* Scheme Filter */}
-          <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-[#E4DFD4] shadow-2xs">
-            <Award className="w-4 h-4 text-[#9A782F] ml-1.5" />
-            <select
-              value={schemeFilter}
-              onChange={(e) => setSchemeFilter(e.target.value)}
-              className="bg-transparent text-xs font-bold text-[#9A782F] pr-2 focus:outline-none cursor-pointer"
-            >
-              <option value="all">All 3 Schemes</option>
-              {SCHEMES.map((sch) => (
-                <option key={sch} value={sch}>
-                  {sch}
-                </option>
-              ))}
-            </select>
-          </div>
+
 
           {/* Date Picker */}
           <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-[#E4DFD4] shadow-2xs">
@@ -522,15 +501,11 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Area & Scheme */}
-                          <div className="p-2.5 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] space-y-1 text-xs">
+                          {/* Targeted Location / Area */}
+                          <div className="p-2.5 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs">
                             <div className="flex items-center gap-1.5 font-bold text-[#1D1D1B] truncate">
                               <MapPin className="w-3.5 h-3.5 text-[#21845F] shrink-0" />
-                              <span className="truncate">{duty.area || 'Area Not Logged'}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-[11px] text-[#9A782F] font-semibold truncate">
-                              <Award className="w-3.5 h-3.5 text-[#9A782F] shrink-0" />
-                              <span className="truncate">{duty.scheme_name || 'General Scheme'}</span>
+                              <span className="truncate">{duty.area || 'Field Area'}</span>
                             </div>
                           </div>
 
@@ -605,7 +580,7 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
                       <th className="px-4 py-3.5">DOB & Anniversary</th>
                       <th className="px-4 py-3.5">Google Review</th>
                       <th className="px-4 py-3.5">Staff Rep</th>
-                      <th className="px-4 py-3.5">Area & Scheme</th>
+                      <th className="px-4 py-3.5">Target Location / Area</th>
                       <th className="px-4 py-3.5">Interested In</th>
                       <th className="px-4 py-3.5">Notes</th>
                     </tr>
@@ -716,7 +691,7 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
                       <th className="px-4 py-3.5">Code</th>
                       <th className="px-4 py-3.5">Staff Dispatched</th>
                       <th className="px-4 py-3.5">Customers Attended</th>
-                      <th className="px-4 py-3.5">Schemes Converted</th>
+                      <th className="px-4 py-3.5">Leads Converted</th>
                       <th className="px-4 py-3.5">Google ⭐ Reviews</th>
                       <th className="px-4 py-3.5">Conversion Rate</th>
                     </tr>

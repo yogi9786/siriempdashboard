@@ -27,6 +27,7 @@ import {
   exportCustomerActivitiesToCSV,
 } from '../../../utils/customerUtils';
 import api from '../../../api/client';
+import { SCHEMES } from '../../../constants/schemes';
 
 export const AdminCustomerActivitiesPage: React.FC = () => {
   const { branches, selectedBranchId } = useAdminBranch();
@@ -39,6 +40,7 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
     selectedBranchId ? selectedBranchId.toString() : 'all'
   );
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [schemeFilter, setSchemeFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
@@ -85,6 +87,7 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
     setSearchTerm('');
     setBranchFilter('all');
     setStatusFilter('all');
+    setSchemeFilter('all');
     setDateFilter('all');
     setFromDate('');
     setToDate('');
@@ -94,6 +97,7 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
     searchTerm.trim() !== '' ||
     branchFilter !== 'all' ||
     statusFilter !== 'all' ||
+    schemeFilter !== 'all' ||
     dateFilter !== 'all' ||
     fromDate !== '' ||
     toDate !== '';
@@ -166,6 +170,15 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
         );
     }
   };
+
+  const filteredActivities = activities.filter((a) => {
+    if (schemeFilter === 'all') return true;
+    const items = parseCustomerBreakdown(a.breakdown, a.customers_count || 1, a.status);
+    const hasSch = items.some((i) => i.has_scheme || Boolean(i.scheme_name));
+    if (schemeFilter === 'no_scheme') return !hasSch;
+    if (schemeFilter === 'has_scheme') return hasSch;
+    return items.some((i) => i.scheme_name === schemeFilter);
+  });
 
   return (
     <div className="space-y-7 pb-16">
@@ -290,6 +303,22 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
             <option value="Lost">Lost</option>
           </select>
 
+          {/* Scheme Filter (3 Schemes + None) */}
+          <select
+            value={schemeFilter}
+            onChange={(e) => setSchemeFilter(e.target.value)}
+            className="px-3 py-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs font-bold text-[#7E22CE] focus:outline-none cursor-pointer"
+          >
+            <option value="all">All Schemes / Any</option>
+            <option value="no_scheme">None (No Scheme)</option>
+            <option value="has_scheme">✨ Any Scheme Enrolled</option>
+            {SCHEMES.map((sch) => (
+              <option key={sch} value={sch}>
+                {sch}
+              </option>
+            ))}
+          </select>
+
           {/* Date Filter Dropdown */}
           <select
             value={dateFilter}
@@ -353,15 +382,17 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Customer Info</th>
                   <th className="px-4 py-3">Showroom Branch</th>
-                  <th className="px-4 py-3">Attending Staff</th>
+                  <th className="px-4 py-3">Attending Sales Staff</th>
                   <th className="px-4 py-3">DOB & Anniversary</th>
                   <th className="px-4 py-3">Outcome Status</th>
                   <th className="px-4 py-3">Product Value (₹)</th>
+                  <th className="px-4 py-3">Enrolled Scheme</th>
+                  <th className="px-4 py-3">Manager Verification</th>
                   <th className="px-4 py-3">Notes & Remarks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EBE6DC] font-medium">
-                {activities.map((a) => {
+                {filteredActivities.map((a) => {
                   const count = a.customers_count || 1;
                   const customerItems = parseCustomerBreakdown(
                     a.breakdown,
@@ -463,6 +494,66 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
                           </span>
                         ) : (
                           <span className="text-[#A1A1AA] font-normal">—</span>
+                        )}
+                      </td>
+
+                      {/* Enrolled Scheme (The 3 Schemes or None) */}
+                      <td className="px-4 py-3.5">
+                        {(() => {
+                          const schemeItem = customerItems.find((ci) => ci.has_scheme || ci.scheme_name);
+                          if (schemeItem && schemeItem.scheme_name) {
+                            return (
+                              <div className="space-y-0.5">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FAF5FF] text-[#7E22CE] border border-[#E9D5FF]">
+                                  ✨ {schemeItem.scheme_name}
+                                </span>
+                                {schemeItem.scheme_amount && (
+                                  <div className="text-[10px] font-mono font-bold text-[#8A8479]">
+                                    ₹{Number(schemeItem.scheme_amount).toLocaleString('en-IN')}/mo
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+                          return (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F4F4F5] text-[#71717A] border border-[#E4E4E7]">
+                              None
+                            </span>
+                          );
+                        })()}
+                      </td>
+
+                      {/* Manager Verification (Who approved / rejected) */}
+                      <td className="px-4 py-3.5">
+                        {a.approval_status === 'APPROVED' ? (
+                          <div className="space-y-0.5">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]">
+                              <CheckCircle2 className="w-3 h-3 text-[#21845F]" />
+                              <span>Approved by {a.reviewed_by_name || 'Manager'}</span>
+                            </span>
+                            {a.reviewed_at && (
+                              <div className="text-[9px] font-mono text-[#8A8479]">
+                                {new Date(a.reviewed_at).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                        ) : a.approval_status === 'REJECTED' ? (
+                          <div className="space-y-0.5">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA]">
+                              <XCircle className="w-3 h-3 text-[#DC2626]" />
+                              <span>Rejected by {a.reviewed_by_name || 'Manager'}</span>
+                            </span>
+                            {a.rejection_reason && (
+                              <p className="text-[10px] text-[#DC2626] italic truncate max-w-[140px]" title={a.rejection_reason}>
+                                {a.rejection_reason}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
+                            <Clock className="w-3 h-3 text-[#D97706]" />
+                            <span>Pending Review</span>
+                          </span>
                         )}
                       </td>
 

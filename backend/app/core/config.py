@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     )
 
     APP_NAME: str = "Siri Samruddhi Gold Palace Management Dashboard"
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = "production"
     LOG_LEVEL: str = "INFO"
 
     # Database

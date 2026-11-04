@@ -1,6 +1,6 @@
 # Application Settings
 APP_NAME=Siri Samruddhi Gold Palace Management Dashboard
-ENVIRONMENT=development
+ENVIRONMENT=production
 LOG_LEVEL=INFO
 
 # Security & JWT Token Security

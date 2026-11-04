@@ -261,11 +261,13 @@ export const LoginPage: React.FC = () => {
 
   const handleManagerChange = (username: string) => {
     setSelectedManagerUsername(username);
+    setPassword('');
     setErrorMessage('');
   };
 
   const handleEmployeeChange = (empCode: string) => {
     setSelectedEmployeeUsername(empCode);
+    setPassword('');
     setErrorMessage('');
   };
 
@@ -512,7 +514,7 @@ export const LoginPage: React.FC = () => {
         {/* -------------------------------------------------------------
             STEP 2: CREDENTIALS & SIGN IN FORM
         ------------------------------------------------------------- */}
-        <form onSubmit={handleSubmit} className="space-y-4 pt-1 border-t border-[#EBE6DC]">
+        <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4 pt-1 border-t border-[#EBE6DC]">
           <label className="text-xs font-semibold text-[#5E5A52] tracking-wide flex items-center gap-2 pt-1">
             <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold ${
               portalMode === 'manager'
@@ -589,6 +591,7 @@ export const LoginPage: React.FC = () => {
               <Lock className={`absolute left-3.5 w-4 h-4 ${portalMode === 'manager' ? 'text-[#7E22CE]' : 'text-[#2563EB]'}`} />
               <input
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={portalMode === 'manager' ? "Enter showroom manager password" : "Enter employee password"}

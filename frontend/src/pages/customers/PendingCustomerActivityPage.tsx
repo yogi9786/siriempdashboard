@@ -707,13 +707,13 @@ export const PendingCustomerActivityPage: React.FC = () => {
                         {isApproved && (
                           <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[10px] font-bold">
                             <CheckCircle2 className="w-3 h-3 text-[#16A34A]" />
-                            <span>Approved</span>
+                            <span>Approved{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
                           </div>
                         )}
                         {isRejected && (
                           <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[10px] font-bold">
                             <XCircle className="w-3 h-3 text-[#DC2626]" />
-                            <span>Rejected</span>
+                            <span>Rejected{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
                           </div>
                         )}
                       </div>
@@ -954,14 +954,14 @@ export const PendingCustomerActivityPage: React.FC = () => {
                         {isApproved && (
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[11px] font-bold">
                             <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />
-                            <span>Approved</span>
+                            <span>Approved{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
                           </div>
                         )}
                         {isRejected && (
                           <div>
                             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[11px] font-bold">
                               <XCircle className="w-3.5 h-3.5 text-[#DC2626]" />
-                              <span>Rejected</span>
+                              <span>Rejected{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
                             </div>
                             {act.rejection_reason && (
                               <p className="text-[10px] text-[#991B1B] mt-1 max-w-[140px] truncate" title={act.rejection_reason}>
@@ -1324,7 +1324,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
                       ? 'bg-[#F0FDF4] text-[#166534] border-[#BBF7D0]'
                       : 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA]'
                 }`}>
-                  {inspectActivity.approval_status}
+                  {inspectActivity.approval_status}{inspectActivity.reviewed_by_name && inspectActivity.approval_status !== 'PENDING' ? ` by ${inspectActivity.reviewed_by_name}` : ''}
                 </span>
               </div>
             </div>

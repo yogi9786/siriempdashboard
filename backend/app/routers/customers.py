@@ -99,7 +99,11 @@ def list_customer_activities(
         )
 
     records = query.order_by(CustomerActivity.activity_date.desc(), CustomerActivity.id.desc()).all()
-    return [_build_activity_response(r) for r in records]
+    mgr_ids = {r.reviewed_by_id for r in records if r.reviewed_by_id} | {
+        r.created_by_id for r in records if r.created_by_id and getattr(r, "created_by_role", "") == "MANAGER"
+    }
+    mgr_map = {u.id: u.full_name for u in db.query(User).filter(User.id.in_(mgr_ids)).all()} if mgr_ids else {}
+    return [_build_activity_response(r, mgr_map) for r in records]
 
 
 class PendingCountsResponse(BaseModel):
@@ -156,7 +160,11 @@ def list_pending_customer_activities(
         query = query.filter(CustomerActivity.employee_id == employee_id)
 
     records = query.order_by(CustomerActivity.id.desc()).all()
-    return [_build_activity_response(r) for r in records]
+    mgr_ids = {r.reviewed_by_id for r in records if r.reviewed_by_id} | {
+        r.created_by_id for r in records if r.created_by_id and getattr(r, "created_by_role", "") == "MANAGER"
+    }
+    mgr_map = {u.id: u.full_name for u in db.query(User).filter(User.id.in_(mgr_ids)).all()} if mgr_ids else {}
+    return [_build_activity_response(r, mgr_map) for r in records]
 
 
 @router.post("/{record_id:int}/review", response_model=CustomerActivityResponse, summary="Approve or Reject an employee-submitted customer activity")
@@ -232,7 +240,8 @@ def review_customer_activity(
         db.refresh(record)
         _sync_activity_subrecords(record, db)
 
-    return _build_activity_response(record)
+    mgr_map = {current_user.id: current_user.full_name}
+    return _build_activity_response(record, mgr_map)
 
 
 
@@ -530,12 +539,27 @@ def _commit_activity_update(record: CustomerActivity, db: Session) -> None:
         )
 
 
-def _build_activity_response(record: CustomerActivity) -> CustomerActivityResponse:
+def _build_activity_response(record: CustomerActivity, mgr_map: Optional[dict] = None) -> CustomerActivityResponse:
     """Build a CustomerActivityResponse from an ORM record."""
     emp_name = record.employee.full_name if record.employee else None
     emp_code = record.employee.employee_code if record.employee else None
     b_name = record.branch.name if record.branch else None
     b_code = record.branch.code if record.branch else None
+
+    reviewed_name = None
+    rev_id = getattr(record, 'reviewed_by_id', None)
+    if rev_id and mgr_map and rev_id in mgr_map:
+        reviewed_name = mgr_map[rev_id]
+    elif rev_id:
+        reviewed_name = "Showroom Manager"
+    elif getattr(record, 'approval_status', '') in ['APPROVED', 'REJECTED']:
+        c_role = getattr(record, 'created_by_role', '')
+        c_id = getattr(record, 'created_by_id', None)
+        if c_role == 'MANAGER' and c_id and mgr_map and c_id in mgr_map:
+            reviewed_name = mgr_map[c_id]
+        else:
+            reviewed_name = "Showroom Manager"
+
     return CustomerActivityResponse(
         id=record.id,
         branch_id=record.branch_id,
@@ -559,6 +583,7 @@ def _build_activity_response(record: CustomerActivity) -> CustomerActivityRespon
         rejection_reason=getattr(record, 'rejection_reason', None),
         reviewed_by_id=getattr(record, 'reviewed_by_id', None),
         reviewed_at=getattr(record, 'reviewed_at', None),
+        reviewed_by_name=reviewed_name,
         notes=record.notes,
         created_at=record.created_at,
         updated_at=record.updated_at,
@@ -566,6 +591,7 @@ def _build_activity_response(record: CustomerActivity) -> CustomerActivityRespon
 
 
 
+# PUT
 @router.put("/{record_id:int}", response_model=CustomerActivityResponse, summary="Update a customer activity record (full replace)")
 def put_customer_activity(
     record_id: int,

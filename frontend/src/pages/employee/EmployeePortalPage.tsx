@@ -73,6 +73,7 @@ export interface DetailedReviewItem {
   videoTitle?: string;
   photoProofUrl?: string;
   approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedByName?: string;
   rejectionReason?: string;
   pointsEarned: number;
   notes?: string;
@@ -1184,14 +1185,14 @@ export const EmployeePortalPage: React.FC = () => {
                             {isApproved && (
                               <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[10px] font-bold">
                                 <CheckCircle2 className="w-3 h-3 text-[#16A34A]" />
-                                <span>Approved</span>
+                                <span>Approved{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
                               </div>
                             )}
                             {isRejected && (
                               <div>
                                 <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[10px] font-bold">
                                   <XCircle className="w-3 h-3 text-[#EF4444]" />
-                                  <span>Rejected</span>
+                                  <span>Rejected{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
                                 </div>
                                 {act.rejection_reason && (
                                   <p className="text-[10px] text-[#DC2626] mt-0.5 max-w-[150px] truncate" title={act.rejection_reason}>
@@ -1400,14 +1401,14 @@ export const EmployeePortalPage: React.FC = () => {
                               {isApproved && (
                                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[11px] font-bold shadow-2xs">
                                   <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />
-                                  <span>Approved</span>
+                                  <span>Approved{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
                                 </div>
                               )}
                               {isRejected && (
                                 <div>
                                   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[11px] font-bold shadow-2xs">
                                     <XCircle className="w-3.5 h-3.5 text-[#EF4444]" />
-                                    <span>Rejected</span>
+                                    <span>Rejected{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
                                   </div>
                                   {act.rejection_reason && (
                                     <p className="text-[10px] text-[#DC2626] mt-1 max-w-[150px] truncate" title={act.rejection_reason}>
@@ -1893,6 +1894,7 @@ export const EmployeePortalPage: React.FC = () => {
                           reviewText: item.google_review_text || '',
                           photoProofUrl: item.google_review_screenshot || item.screenshot_url || '',
                           approvalStatus: (act.approval_status || 'PENDING') as any,
+                          reviewedByName: act.reviewed_by_name || undefined,
                           rejectionReason: act.rejection_reason,
                           pointsEarned: 1,
                           notes: item.notes || act.notes,
@@ -1917,6 +1919,7 @@ export const EmployeePortalPage: React.FC = () => {
                           videoTitle: item.video_title || '',
                           photoProofUrl: item.video_screenshot || item.screenshot_url || '',
                           approvalStatus: (act.approval_status || 'PENDING') as any,
+                          reviewedByName: act.reviewed_by_name || undefined,
                           rejectionReason: act.rejection_reason,
                           pointsEarned: vCount * 5, // Exactly 5 points per video!
                           notes: item.notes || act.notes,
@@ -1961,6 +1964,7 @@ export const EmployeePortalPage: React.FC = () => {
                     reviewText: r.review_text || '',
                     photoProofUrl: r.screenshot_url || '',
                     approvalStatus: (r.status || 'PENDING').toUpperCase() as any,
+                    reviewedByName: r.reviewed_by_name || undefined,
                     rejectionReason: r.rejection_reason,
                     pointsEarned: 1,
                     notes: r.notes,
@@ -2002,6 +2006,7 @@ export const EmployeePortalPage: React.FC = () => {
                     videoTitle: v.video_title || '',
                     photoProofUrl: v.screenshot_url || '',
                     approvalStatus: (v.status || 'PENDING').toUpperCase() as any,
+                    reviewedByName: v.reviewed_by_name || undefined,
                     rejectionReason: v.rejection_reason,
                     pointsEarned: vCount * 5,
                     notes: v.notes,
@@ -2232,7 +2237,7 @@ export const EmployeePortalPage: React.FC = () => {
                             {isApproved ? (
                               <span className="text-[11px] font-extrabold text-[#21845F] flex items-center gap-1">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-[#21845F]" />
-                                Approved by Manager
+                                Approved{item.reviewedByName ? ` by ${item.reviewedByName}` : ' by Manager'}
                               </span>
                             ) : isPending ? (
                               <span className="text-[11px] font-bold text-[#854D0E] flex items-center gap-1">
@@ -2243,7 +2248,7 @@ export const EmployeePortalPage: React.FC = () => {
                               <div className="flex flex-col">
                                 <span className="text-[11px] font-extrabold text-[#C24141] flex items-center gap-1">
                                   <XCircle className="w-3.5 h-3.5 text-[#C24141]" />
-                                  Rejected
+                                  Rejected{item.reviewedByName ? ` by ${item.reviewedByName}` : ''}
                                 </span>
                                 {item.rejectionReason && (
                                   <span className="text-[10px] text-[#C24141]/80 line-clamp-1" title={item.rejectionReason}>

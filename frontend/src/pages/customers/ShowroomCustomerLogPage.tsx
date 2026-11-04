@@ -47,6 +47,7 @@ export interface FlattenedCustomerRow {
   employeeId: number;
   employeeName: string;
   employeeCode?: string;
+  reviewedByName?: string;
   // Customer details
   sequenceNumber: number;
   customerName: string;
@@ -163,6 +164,7 @@ export const ShowroomCustomerLogPage: React.FC = () => {
           employeeId: act.employee_id,
           employeeName: act.employee_name || 'Staff Representative',
           employeeCode: act.employee_code || (employees.find((e) => e.id === act.employee_id)?.employee_code || ''),
+          reviewedByName: act.reviewed_by_name || undefined,
           sequenceNumber: idx + 1,
           customerName: cName,
           phone: cPhone,
@@ -718,6 +720,12 @@ export const ShowroomCustomerLogPage: React.FC = () => {
                             <span>•</span>
                             <span className="truncate max-w-[120px]">{row.branchName}</span>
                           </div>
+                          {row.reviewedByName && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#166534] bg-[#F0FDF4] border border-[#BBF7D0] px-1.5 py-0.5 rounded-md mt-1 block w-fit">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-[#16A34A]" />
+                              Approved by {row.reviewedByName}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="text-[10px] text-[#8A8479] mt-1.5 flex items-center gap-1 font-mono">

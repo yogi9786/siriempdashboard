@@ -9,7 +9,7 @@ from sqlalchemy import or_, func
 
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
-from backend.app.models.branch import Branch
+from backend.app.models.branch import Branch, User
 from backend.app.models.employee import Employee
 from backend.app.models.activity import CustomerActivity, EmployeeCallLog, GoogleReview, VideoReview, SchemeRecord, AttireRecord
 from backend.app.models.feedback import CustomerFeedback
@@ -83,9 +83,28 @@ class EmployeeNotificationResponse(BaseModel):
     notifications: List[EmployeeNotificationItem]
 
 
-def _build_emp_activity_response(record: CustomerActivity, emp: Employee) -> CustomerActivityResponse:
+def _build_emp_activity_response(
+    record: CustomerActivity,
+    emp: Employee,
+    mgr_map: Optional[dict] = None,
+) -> CustomerActivityResponse:
     b_name = emp.branch.name if emp.branch else None
     b_code = emp.branch.code if emp.branch else None
+
+    reviewed_name = None
+    rev_id = getattr(record, "reviewed_by_id", None)
+    if rev_id and mgr_map and rev_id in mgr_map:
+        reviewed_name = mgr_map[rev_id]
+    elif rev_id:
+        reviewed_name = "Showroom Manager"
+    elif getattr(record, "approval_status", "") in ["APPROVED", "REJECTED"]:
+        c_role = getattr(record, "created_by_role", "")
+        c_id = getattr(record, "created_by_id", None)
+        if c_role == "MANAGER" and c_id and mgr_map and c_id in mgr_map:
+            reviewed_name = mgr_map[c_id]
+        else:
+            reviewed_name = "Showroom Manager"
+
     return CustomerActivityResponse(
         id=record.id,
         branch_id=record.branch_id,
@@ -109,6 +128,7 @@ def _build_emp_activity_response(record: CustomerActivity, emp: Employee) -> Cus
         rejection_reason=getattr(record, "rejection_reason", None),
         reviewed_by_id=getattr(record, "reviewed_by_id", None),
         reviewed_at=getattr(record, "reviewed_at", None),
+        reviewed_by_name=reviewed_name,
         notes=record.notes,
         created_at=record.created_at,
         updated_at=record.updated_at,
@@ -246,7 +266,11 @@ def list_employee_customer_activities(
         )
 
     records = query.order_by(CustomerActivity.activity_date.desc(), CustomerActivity.id.desc()).all()
-    return [_build_emp_activity_response(r, current_emp) for r in records]
+    mgr_ids = {r.reviewed_by_id for r in records if r.reviewed_by_id} | {
+        r.created_by_id for r in records if r.created_by_id and getattr(r, "created_by_role", "") == "MANAGER"
+    }
+    mgr_map = {u.id: u.full_name for u in db.query(User).filter(User.id.in_(mgr_ids)).all()} if mgr_ids else {}
+    return [_build_emp_activity_response(r, current_emp, mgr_map) for r in records]
 
 
 @router.post("/customers", response_model=CustomerActivityResponse, status_code=status.HTTP_201_CREATED, summary="Submit a customer interaction log by employee (Pending Manager Approval)")
@@ -690,6 +714,8 @@ def list_employee_google_reviews(
             query = query.filter(GoogleReview.status == st_clean)
 
     records = query.order_by(GoogleReview.review_date.desc(), GoogleReview.id.desc()).all()
+    mgr_ids = {r.reviewed_by_id for r in records if r.reviewed_by_id}
+    mgr_map = {u.id: u.full_name for u in db.query(User).filter(User.id.in_(mgr_ids)).all()} if mgr_ids else {}
     return [
         GoogleReviewResponse(
             id=r.id,
@@ -707,6 +733,7 @@ def list_employee_google_reviews(
             rejection_reason=r.rejection_reason,
             reviewed_by_id=r.reviewed_by_id,
             reviewed_at=r.reviewed_at,
+            reviewed_by_name=mgr_map.get(r.reviewed_by_id) or ("Showroom Manager" if r.status in ["APPROVED", "REJECTED"] else None),
             submitted_by_role=r.submitted_by_role,
             points=r.points,
             created_at=r.created_at,
@@ -812,6 +839,8 @@ def list_employee_video_reviews(
             query = query.filter(VideoReview.status == st_clean)
 
     records = query.order_by(VideoReview.review_date.desc(), VideoReview.id.desc()).all()
+    mgr_ids = {r.reviewed_by_id for r in records if r.reviewed_by_id}
+    mgr_map = {u.id: u.full_name for u in db.query(User).filter(User.id.in_(mgr_ids)).all()} if mgr_ids else {}
     return [
         VideoReviewResponse(
             id=r.id,
@@ -829,6 +858,7 @@ def list_employee_video_reviews(
             rejection_reason=r.rejection_reason,
             reviewed_by_id=r.reviewed_by_id,
             reviewed_at=r.reviewed_at,
+            reviewed_by_name=mgr_map.get(r.reviewed_by_id) or ("Showroom Manager" if r.status in ["APPROVED", "REJECTED"] else None),
             submitted_by_role=r.submitted_by_role,
             points=r.points,
             created_at=r.created_at,

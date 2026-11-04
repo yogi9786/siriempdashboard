@@ -204,6 +204,7 @@ class CustomerActivityResponse(BaseModel):
     rejection_reason: Optional[str] = None
     reviewed_by_id: Optional[int] = None
     reviewed_at: Optional[datetime] = None
+    reviewed_by_name: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
@@ -329,6 +330,7 @@ class GoogleReviewResponse(BaseModel):
     rejection_reason: Optional[str] = None
     reviewed_by_id: Optional[int] = None
     reviewed_at: Optional[datetime] = None
+    reviewed_by_name: Optional[str] = None
     submitted_by_role: Optional[str] = "EMPLOYEE"
     points: int = 1
     created_at: datetime
@@ -383,6 +385,7 @@ class VideoReviewResponse(BaseModel):
     rejection_reason: Optional[str] = None
     reviewed_by_id: Optional[int] = None
     reviewed_at: Optional[datetime] = None
+    reviewed_by_name: Optional[str] = None
     submitted_by_role: Optional[str] = "EMPLOYEE"
     points: int = 1
     created_at: datetime

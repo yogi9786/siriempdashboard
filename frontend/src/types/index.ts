@@ -170,6 +170,7 @@ export interface CustomerActivity {
   rejection_reason?: string;
   reviewed_by_id?: number;
   reviewed_at?: string;
+  reviewed_by_name?: string | null;
   notes?: string;
   created_at?: string;
   updated_at?: string;
@@ -272,6 +273,7 @@ export interface GoogleReview {
   rejection_reason?: string | null;
   reviewed_by_id?: number | null;
   reviewed_at?: string | null;
+  reviewed_by_name?: string | null;
   submitted_by_role?: string;
   points?: number;
   created_at?: string;
@@ -296,6 +298,7 @@ export interface VideoReview {
   rejection_reason?: string | null;
   reviewed_by_id?: number | null;
   reviewed_at?: string | null;
+  reviewed_by_name?: string | null;
   submitted_by_role?: string;
   points?: number;
   created_at?: string;

@@ -843,6 +843,12 @@ export const CustomerActivityPage: React.FC = () => {
                             <span className="font-mono text-[10px] text-[#536B8A]">
                               {act.employee_code || `ID #${act.employee_id}`}
                             </span>
+                            {act.reviewed_by_name && (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#166534] bg-[#F0FDF4] border border-[#BBF7D0] px-1.5 py-0.5 rounded-md mt-0.5 block w-fit">
+                                <CheckCircle2 className="w-2.5 h-2.5 text-[#16A34A]" />
+                                Approved by {act.reviewed_by_name}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>

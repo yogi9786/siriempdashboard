@@ -29,10 +29,29 @@ def create_db_engine():
             echo=(settings.ENVIRONMENT == "development" and settings.LOG_LEVEL == "DEBUG"),
             future=True,
         )
-        # Verify connection test
+        # Verify connection and ensure dedicated schema & users table exist
         with engine.connect() as conn:
             if "postgresql" in str(engine.url):
                 conn.execute(text("CREATE SCHEMA IF NOT EXISTS siridashboard;"))
+                conn.execute(text("SET search_path TO siridashboard;"))
+                # Pre-create dedicated siridashboard.users with auto-increment SERIAL id
+                # This guarantees isolation from any public.users table created by other projects
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS siridashboard.users (
+                        id SERIAL PRIMARY KEY,
+                        branch_id INTEGER,
+                        email VARCHAR(100) UNIQUE,
+                        username VARCHAR(100) UNIQUE NOT NULL,
+                        manager_code VARCHAR(50),
+                        hashed_password VARCHAR(255) NOT NULL,
+                        full_name VARCHAR(100) NOT NULL,
+                        role VARCHAR(50) NOT NULL DEFAULT 'MANAGER',
+                        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                        last_login TIMESTAMP WITH TIME ZONE,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+                    );
+                """))
                 conn.commit()
             conn.execute(text("SELECT 1"))
         logger.info(f"Connected successfully to PostgreSQL database: {db_url}")
@@ -49,15 +68,22 @@ def create_db_engine():
 
 engine = create_db_engine()
 
-# Enable WAL mode and 30-second busy timeout for concurrent read/write across multiple showroom managers
+# Connection listener: WAL mode for SQLite, dedicated siridashboard search_path for PostgreSQL
 @event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
+def set_connection_pragmas(dbapi_connection, connection_record):
     if "sqlite" in str(engine.url):
         try:
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA journal_mode=WAL")
             cursor.execute("PRAGMA synchronous=NORMAL")
             cursor.execute("PRAGMA busy_timeout=30000")
+            cursor.close()
+        except Exception:
+            pass
+    elif "postgresql" in str(engine.url):
+        try:
+            cursor = dbapi_connection.cursor()
+            cursor.execute("SET search_path TO siridashboard")
             cursor.close()
         except Exception:
             pass
@@ -109,7 +135,7 @@ def auto_migrate_db_schema():
                             username VARCHAR(100) NOT NULL,
                             hashed_password VARCHAR(255) NOT NULL,
                             full_name VARCHAR(100) NOT NULL,
-                            role VARCHAR(50) NOT NULL,
+                            role VARCHAR(50) NOT NULL DEFAULT 'MANAGER',
                             is_active BOOLEAN NOT NULL DEFAULT 1,
                             last_login DATETIME,
                             created_at DATETIME NOT NULL,

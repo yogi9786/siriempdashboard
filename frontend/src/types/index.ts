@@ -200,6 +200,9 @@ export interface EmployeeDashboardSummary {
   pending_reviews_count?: number;
   pending_google_reviews?: number;
   pending_video_reviews?: number;
+  total_outdoor_duties?: number;
+  total_outdoor_customers?: number;
+  pending_outdoor_duties?: number;
 }
 
 

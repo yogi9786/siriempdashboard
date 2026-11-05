@@ -5,7 +5,12 @@ from datetime import date, datetime, timezone
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
+import json
+from sqlalchemy import or_, func, case
+from backend.app.models.outdoor_marketing import OutdoorMarketingDuty, OutdoorMarketingCustomer
+from backend.app.schemas.outdoor_marketing import OutdoorDutyResponse, OutdoorDutyUpdate
+from backend.app.routers.outdoor_marketing import format_duty_response
+
 
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
@@ -65,6 +70,9 @@ class EmployeeDashboardSummary(BaseModel):
     pending_reviews_count: int = 0
     pending_google_reviews: int = 0
     pending_video_reviews: int = 0
+    total_outdoor_duties: int = 0
+    total_outdoor_customers: int = 0
+    pending_outdoor_duties: int = 0
 
 
 class EmployeeNotificationItem(BaseModel):
@@ -144,41 +152,48 @@ def get_employee_dashboard(
     b_name = branch.name if branch else "Showroom"
     b_code = branch.code if branch else "SHOWROOM"
 
-    # Customer Activities counts
-    total_act = db.query(CustomerActivity).filter(CustomerActivity.employee_id == current_emp.id).count()
-    pending_act = db.query(CustomerActivity).filter(
-        CustomerActivity.employee_id == current_emp.id,
-        CustomerActivity.approval_status == "PENDING",
-    ).count()
-    approved_act = db.query(CustomerActivity).filter(
-        CustomerActivity.employee_id == current_emp.id,
-        CustomerActivity.approval_status == "APPROVED",
-    ).count()
-    rejected_act = db.query(CustomerActivity).filter(
-        CustomerActivity.employee_id == current_emp.id,
-        CustomerActivity.approval_status == "REJECTED",
-    ).count()
+    # Fast Single-Pass Aggregation for Customer Activities
+    act_counts = db.query(
+        func.count(CustomerActivity.id).label("total"),
+        func.count(case((CustomerActivity.approval_status == "PENDING", 1))).label("pending"),
+        func.count(case((CustomerActivity.approval_status == "APPROVED", 1))).label("approved"),
+        func.count(case((CustomerActivity.approval_status == "REJECTED", 1))).label("rejected"),
+    ).filter(CustomerActivity.employee_id == current_emp.id).first()
 
-    # Call logs counts
-    total_calls = db.query(EmployeeCallLog).filter(EmployeeCallLog.employee_id == current_emp.id).count()
-    done_calls = db.query(EmployeeCallLog).filter(
-        EmployeeCallLog.employee_id == current_emp.id,
-        EmployeeCallLog.call_status == "Done",
-    ).count()
-    pending_calls = db.query(EmployeeCallLog).filter(
-        EmployeeCallLog.employee_id == current_emp.id,
-        EmployeeCallLog.call_status == "Pending",
-    ).count()
+    total_act = (act_counts.total or 0) if act_counts else 0
+    pending_act = (act_counts.pending or 0) if act_counts else 0
+    approved_act = (act_counts.approved or 0) if act_counts else 0
+    rejected_act = (act_counts.rejected or 0) if act_counts else 0
+
+    # Fast Single-Pass Aggregation for Call Logs
+    call_counts = db.query(
+        func.count(EmployeeCallLog.id).label("total"),
+        func.count(case((EmployeeCallLog.call_status == "Done", 1))).label("done"),
+        func.count(case((EmployeeCallLog.call_status == "Pending", 1))).label("pending"),
+    ).filter(EmployeeCallLog.employee_id == current_emp.id).first()
+
+    total_calls = (call_counts.total or 0) if call_counts else 0
+    done_calls = (call_counts.done or 0) if call_counts else 0
+    pending_calls = (call_counts.pending or 0) if call_counts else 0
+
+    # Fast Single-Pass Aggregation for Outdoor Marketing Duties
+    outdoor_counts = db.query(
+        func.count(OutdoorMarketingDuty.id).label("total_duties"),
+        func.coalesce(func.sum(OutdoorMarketingDuty.customers_attended_count), 0).label("total_customers"),
+        func.count(case((OutdoorMarketingDuty.status.in_(["Pending Review", "PENDING", "In Progress", "Assigned"]), 1))).label("pending_duties"),
+    ).filter(OutdoorMarketingDuty.employee_id == current_emp.id).first()
+
+    total_outdoor_duties = (outdoor_counts.total_duties or 0) if outdoor_counts else 0
+    total_outdoor_cust = int(outdoor_counts.total_customers or 0) if outdoor_counts else 0
+    pending_outdoor_duties = (outdoor_counts.pending_duties or 0) if outdoor_counts else 0
 
     # Review Points & Approvals
-    # 1. Approved Google Reviews: 1 customer = 1 point
     approved_g_reviews = db.query(GoogleReview).filter(
         GoogleReview.employee_id == current_emp.id,
         func.upper(GoogleReview.status).in_(["APPROVED", "VERIFIED", "PUBLISHED"]),
     ).all()
     google_points = sum(max(1, r.customers_count or 1) for r in approved_g_reviews)
 
-    # 2. Approved Video Reviews: 1 video = 1 point, 2 videos = 2 points
     approved_v_reviews = db.query(VideoReview).filter(
         VideoReview.employee_id == current_emp.id,
         func.upper(VideoReview.status).in_(["APPROVED", "VERIFIED", "PUBLISHED"]),
@@ -188,14 +203,15 @@ def get_employee_dashboard(
     total_points = google_points + video_points
 
     # Pending review counts
-    pending_g_count = db.query(GoogleReview).filter(
-        GoogleReview.employee_id == current_emp.id,
-        func.upper(GoogleReview.status) == "PENDING",
-    ).count()
-    pending_v_count = db.query(VideoReview).filter(
-        VideoReview.employee_id == current_emp.id,
-        func.upper(VideoReview.status) == "PENDING",
-    ).count()
+    review_counts = db.query(
+        func.count(case((func.upper(GoogleReview.status) == "PENDING", 1))).label("pending_g"),
+    ).filter(GoogleReview.employee_id == current_emp.id).first()
+    pending_g_count = (review_counts.pending_g or 0) if review_counts else 0
+
+    video_counts = db.query(
+        func.count(case((func.upper(VideoReview.status) == "PENDING", 1))).label("pending_v"),
+    ).filter(VideoReview.employee_id == current_emp.id).first()
+    pending_v_count = (video_counts.pending_v or 0) if video_counts else 0
 
     return EmployeeDashboardSummary(
         employee_id=current_emp.id,
@@ -221,6 +237,9 @@ def get_employee_dashboard(
         pending_reviews_count=pending_g_count + pending_v_count,
         pending_google_reviews=pending_g_count,
         pending_video_reviews=pending_v_count,
+        total_outdoor_duties=total_outdoor_duties,
+        total_outdoor_customers=total_outdoor_cust,
+        pending_outdoor_duties=pending_outdoor_duties,
     )
 
 
@@ -1115,3 +1134,164 @@ def list_employee_attire(
         )
         for r in records
     ]
+
+
+# ---------------------------------------------------------------------------
+# Employee Outdoor Marketing Routes (Fast, Non-Generalized, Zero WhatsApp)
+# ---------------------------------------------------------------------------
+@router.get("/outdoor/duty", response_model=Optional[OutdoorDutyResponse], summary="Get employee's outdoor duty for a specific date")
+def get_employee_outdoor_duty(
+    date_filter: Optional[date] = Query(None, description="Duty date (defaults to today)"),
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    target_date = date_filter or date.today()
+    duty = (
+        db.query(OutdoorMarketingDuty)
+        .filter(
+            OutdoorMarketingDuty.employee_id == current_emp.id,
+            OutdoorMarketingDuty.date == target_date,
+        )
+        .first()
+    )
+    if not duty:
+        return None
+    return format_duty_response(duty)
+
+
+@router.post("/outdoor/duty", response_model=OutdoorDutyResponse, summary="Save or update employee's outdoor customer log (Sends to Pending Review, NO WhatsApp)")
+def save_employee_outdoor_duty(
+    payload: OutdoorDutyUpdate,
+    duty_date: Optional[date] = Query(None, description="Duty date (defaults to today)"),
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    target_date = duty_date or date.today()
+    duty = (
+        db.query(OutdoorMarketingDuty)
+        .filter(
+            OutdoorMarketingDuty.employee_id == current_emp.id,
+            OutdoorMarketingDuty.date == target_date,
+        )
+        .first()
+    )
+
+    if not duty:
+        duty = OutdoorMarketingDuty(
+            branch_id=current_emp.branch_id,
+            employee_id=current_emp.id,
+            date=target_date,
+            status="Pending Review",
+        )
+        db.add(duty)
+        db.flush()
+
+    if payload.area is not None:
+        duty.area = payload.area.strip()
+    if payload.customers_attended_count is not None:
+        duty.customers_attended_count = payload.customers_attended_count
+    if payload.converted_customers_count is not None:
+        duty.converted_customers_count = payload.converted_customers_count
+    if payload.google_ratings_count is not None:
+        duty.google_ratings_count = payload.google_ratings_count
+    if payload.photo_urls is not None:
+        duty.photo_urls = json.dumps(payload.photo_urls)
+        if payload.photo_urls and not duty.photo_url:
+            duty.photo_url = payload.photo_urls[0]
+    elif payload.photo_url is not None:
+        duty.photo_url = payload.photo_url
+    if payload.notes is not None:
+        duty.notes = payload.notes.strip() if payload.notes else None
+
+    # CRITICAL: Always set status to 'Pending Review' upon employee save/update
+    duty.status = "Pending Review"
+
+    # Save customer entries if provided
+    if payload.customers is not None:
+        db.query(OutdoorMarketingCustomer).filter(
+            OutdoorMarketingCustomer.duty_id == duty.id,
+            OutdoorMarketingCustomer.marketing_employee_id == current_emp.id,
+        ).delete(synchronize_session=False)
+
+        for c in payload.customers:
+            if not c.customer_name or not c.customer_name.strip():
+                continue
+            new_cust = OutdoorMarketingCustomer(
+                branch_id=current_emp.branch_id,
+                marketing_employee_id=current_emp.id,
+                duty_id=duty.id,
+                customer_name=c.customer_name.strip(),
+                phone=c.phone.strip() if c.phone else None,
+                dob=c.dob,
+                anniversary_date=c.anniversary_date,
+                area_name=c.area_name or duty.area,
+                date=duty.date,
+                is_converted=c.is_converted,
+                has_google_review=c.has_google_review,
+                google_review_rating=c.google_review_rating or 5,
+                google_review_text=c.google_review_text,
+                has_customer_feedback=getattr(c, "has_customer_feedback", False) or False,
+                feedback_rating=getattr(c, "feedback_rating", 5) or 5,
+                feedback_text=getattr(c, "feedback_text", None),
+                status="Converted" if c.is_converted else "Contacted",
+                interested_in=c.interested_in,
+                notes=c.notes,
+            )
+            db.add(new_cust)
+
+    # Strictly NO WhatsApp sending here!
+    try:
+        db.commit()
+        db.refresh(duty)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save outdoor customer log: {str(e)}",
+        )
+
+    return format_duty_response(duty)
+
+
+@router.post("/outdoor/upload-photo", status_code=status.HTTP_201_CREATED, summary="Upload outdoor activity field photo by employee")
+async def upload_employee_outdoor_photo(
+    file: UploadFile = File(...),
+    current_emp: Employee = Depends(get_current_employee),
+):
+    if file.content_type not in ALLOWED_IMAGE_MIMES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file format '{file.content_type}'. Please upload JPG, PNG, or WEBP images.",
+        )
+
+    upload_dir = os.path.join(settings.MEDIA_DIR, "outdoor", "photos")
+    os.makedirs(upload_dir, exist_ok=True)
+
+    file_ext = ALLOWED_IMAGE_MIMES[file.content_type]
+    file_id = f"outdoor_emp_{current_emp.id}_{uuid.uuid4().hex[:10]}{file_ext}"
+    file_path = os.path.join(upload_dir, file_id)
+
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Photo file size exceeds 10MB limit.")
+
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    rel_url = f"/uploads/outdoor/photos/{file_id}"
+    return {"url": rel_url, "photo_url": rel_url, "message": "Photo uploaded successfully."}
+
+
+@router.get("/outdoor/history", response_model=List[OutdoorDutyResponse], summary="List employee's past outdoor duties")
+def get_employee_outdoor_history(
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    duties = (
+        db.query(OutdoorMarketingDuty)
+        .filter(OutdoorMarketingDuty.employee_id == current_emp.id)
+        .order_by(OutdoorMarketingDuty.date.desc())
+        .limit(30)
+        .all()
+    )
+    return [format_duty_response(d) for d in duties]

@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Compass,
+  MapPin,
+  Save,
   Users,
   User,
   Phone,
@@ -40,7 +43,7 @@ import {
   Bell,
 } from 'lucide-react';
 import api from '../../api/client';
-import { CustomerActivity, EmployeeCallLog, EmployeeDashboardSummary, GoogleReview, VideoReview } from '../../types';
+import { CustomerActivity, EmployeeCallLog, EmployeeDashboardSummary, GoogleReview, VideoReview, OutdoorDuty, OutdoorCustomerDetail } from '../../types';
 import { getMediaUrl } from '../../utils/media';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -162,11 +165,30 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
   };
 };
 
+export interface CustomerEntryState {
+  id?: number;
+  name: string;
+  phone: string;
+  dob: string;
+  anniversary_date: string;
+  has_google_review: boolean;
+  google_review_rating: number;
+  google_review_text: string;
+  has_customer_feedback: boolean;
+  feedback_rating: number;
+  feedback_text: string;
+  interested_gold: boolean;
+  interested_diamond: boolean;
+  interested_silver: boolean;
+  is_converted?: boolean;
+  notes: string;
+}
+
 export const EmployeePortalPage: React.FC = () => {
   const { user, selectedBranch, logout } = useAuth();
   const { success, error: toastError } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'CALLS' | 'REVIEWS'>('CUSTOMERS');
+  const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'CALLS' | 'REVIEWS' | 'OUTDOOR'>('CUSTOMERS');
   const [dashboardSummary, setDashboardSummary] = useState<EmployeeDashboardSummary | null>(null);
 
   // Reviews state & Submissions
@@ -194,6 +216,27 @@ export const EmployeePortalPage: React.FC = () => {
     selectedFile: null as File | null,
     previewUrl: null as string | null,
   });
+
+
+  // Outdoor Marketing Duty State
+  const [selectedOutdoorDate, setSelectedOutdoorDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [outdoorDuty, setOutdoorDuty] = useState<OutdoorDuty | null>(null);
+  const [outdoorForm, setOutdoorForm] = useState<{
+    area: string;
+    notes: string;
+    photo_urls: string[];
+    customers: CustomerEntryState[];
+  }>({
+    area: '',
+    notes: '',
+    photo_urls: [],
+    customers: [],
+  });
+  const [isLoadingOutdoor, setIsLoadingOutdoor] = useState<boolean>(false);
+  const [isSavingOutdoor, setIsSavingOutdoor] = useState<boolean>(false);
+  const [isUploadingOutdoorPhoto, setIsUploadingOutdoorPhoto] = useState<boolean>(false);
+  const [outdoorHistory, setOutdoorHistory] = useState<OutdoorDuty[]>([]);
+  const [loadedTabs, setLoadedTabs] = useState<Record<string, boolean>>({ CUSTOMERS: true });
 
   // Customer activities state
   const [customerActivities, setCustomerActivities] = useState<CustomerActivity[]>([]);
@@ -426,20 +469,46 @@ export const EmployeePortalPage: React.FC = () => {
     }
   };
 
+  // Fast Concurrent Initial Data Load
   useEffect(() => {
-    fetchSummary();
-    fetchNotifications();
+    Promise.all([
+      fetchSummary(),
+      fetchNotifications(),
+      fetchCustomerActivities(),
+    ]).catch(() => {});
   }, []);
+
+  // Instant Tab Switching (Zero-Latency Rendering)
+  useEffect(() => {
+    if (activeTab === 'CUSTOMERS' && !loadedTabs.CUSTOMERS) {
+      fetchCustomerActivities().then(() => setLoadedTabs((prev) => ({ ...prev, CUSTOMERS: true })));
+    } else if (activeTab === 'CALLS' && !loadedTabs.CALLS) {
+      fetchCallLogs().then(() => setLoadedTabs((prev) => ({ ...prev, CALLS: true })));
+    } else if (activeTab === 'REVIEWS' && !loadedTabs.REVIEWS) {
+      fetchReviews().then(() => setLoadedTabs((prev) => ({ ...prev, REVIEWS: true })));
+    } else if (activeTab === 'OUTDOOR') {
+      fetchOutdoorDuty(selectedOutdoorDate);
+      fetchOutdoorHistory();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === 'CUSTOMERS') {
       fetchCustomerActivities();
-    } else if (activeTab === 'CALLS') {
-      fetchCallLogs();
-    } else if (activeTab === 'REVIEWS') {
-      fetchReviews();
     }
-  }, [activeTab, customerApprovalFilter, customerStatusFilter, callStatusFilter]);
+  }, [customerApprovalFilter, customerStatusFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'CALLS') {
+      fetchCallLogs();
+    }
+  }, [callStatusFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'OUTDOOR') {
+      fetchOutdoorDuty(selectedOutdoorDate);
+    }
+  }, [selectedOutdoorDate]);
 
   // Open Add Customer Modal
   const handleOpenAddCustomer = () => {
@@ -504,6 +573,224 @@ export const EmployeePortalPage: React.FC = () => {
     } finally {
       setIsSubmittingCall(false);
     }
+  };
+
+  // Fetch Outdoor Duty for Date
+  const fetchOutdoorDuty = async (dateVal: string) => {
+    setIsLoadingOutdoor(true);
+    try {
+      const res = await api.get<OutdoorDuty | null>(`/api/v1/employee/outdoor/duty?date_filter=${dateVal}`);
+      const duty = res.data;
+      setOutdoorDuty(duty);
+      if (duty) {
+        const custs: CustomerEntryState[] = (duty.customers || []).map((c) => {
+          const intStr = ((c as any).interested_in || '').toLowerCase();
+          return {
+            id: c.id,
+            name: c.customer_name || '',
+            phone: c.phone || '',
+            dob: c.dob ? String(c.dob) : '',
+            anniversary_date: c.anniversary_date ? String(c.anniversary_date) : '',
+            has_google_review: Boolean(c.has_google_review),
+            google_review_rating: c.google_review_rating || 5,
+            google_review_text: c.google_review_text || '',
+            has_customer_feedback: Boolean((c as any).has_customer_feedback),
+            feedback_rating: (c as any).feedback_rating || 5,
+            feedback_text: (c as any).feedback_text || '',
+            interested_gold: intStr.includes('gold'),
+            interested_diamond: intStr.includes('diamond'),
+            interested_silver: intStr.includes('silver'),
+            is_converted: Boolean(c.is_converted),
+            notes: c.notes || '',
+          };
+        });
+
+        let photos: string[] = [];
+        if (Array.isArray(duty.photo_urls)) {
+          photos = duty.photo_urls;
+        } else if (duty.photo_url) {
+          photos = [duty.photo_url];
+        }
+
+        setOutdoorForm({
+          area: duty.area || '',
+          notes: duty.notes || '',
+          photo_urls: photos,
+          customers: custs,
+        });
+      } else {
+        setOutdoorForm({
+          area: '',
+          notes: '',
+          photo_urls: [],
+          customers: [],
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load outdoor duty:', err);
+    } finally {
+      setIsLoadingOutdoor(false);
+    }
+  };
+
+  const fetchOutdoorHistory = async () => {
+    try {
+      const res = await api.get<OutdoorDuty[]>('/api/v1/employee/outdoor/history');
+      setOutdoorHistory(res.data || []);
+    } catch (err) {
+      console.error('Failed to load outdoor history:', err);
+    }
+  };
+
+  // Add Customer Row in Outdoor Entry
+  const handleAddOutdoorCustomer = () => {
+    setOutdoorForm((prev) => ({
+      ...prev,
+      customers: [
+        ...prev.customers,
+        {
+          name: '',
+          phone: '',
+          dob: '',
+          anniversary_date: '',
+          has_google_review: false,
+          google_review_rating: 5,
+          google_review_text: '',
+          has_customer_feedback: false,
+          feedback_rating: 5,
+          feedback_text: '',
+          interested_gold: false,
+          interested_diamond: false,
+          interested_silver: false,
+          is_converted: false,
+          notes: '',
+        },
+      ],
+    }));
+  };
+
+  // Update Customer Field in Outdoor Entry
+  const handleUpdateOutdoorCustomer = (index: number, field: keyof CustomerEntryState, value: any) => {
+    setOutdoorForm((prev) => {
+      const updated = [...prev.customers];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, customers: updated };
+    });
+  };
+
+  // Remove Customer Row in Outdoor Entry
+  const handleRemoveOutdoorCustomer = (index: number) => {
+    setOutdoorForm((prev) => ({
+      ...prev,
+      customers: prev.customers.filter((_, idx) => idx !== index),
+    }));
+  };
+
+  // Upload Outdoor Photo
+  const handleUploadOutdoorPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingOutdoorPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post<{ url: string }>('/api/v1/employee/outdoor/upload-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const photoUrl = res.data.url;
+      setOutdoorForm((prev) => ({
+        ...prev,
+        photo_urls: [...prev.photo_urls, photoUrl],
+      }));
+      success('Field photo uploaded successfully!');
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to upload photo.');
+    } finally {
+      setIsUploadingOutdoorPhoto(false);
+      e.target.value = '';
+    }
+  };
+
+  // Remove Photo
+  const handleRemoveOutdoorPhoto = (idx: number) => {
+    setOutdoorForm((prev) => ({
+      ...prev,
+      photo_urls: prev.photo_urls.filter((_, i) => i !== idx),
+    }));
+  };
+
+  // Save Outdoor Duty Log (Sends to Pending Review, ZERO WhatsApp)
+  const handleSaveOutdoorDuty = async () => {
+    if (!outdoorForm.area.trim()) {
+      toastError('Please enter the targeted area / market location for this outdoor duty.');
+      return;
+    }
+
+    setIsSavingOutdoor(true);
+    try {
+      const customersPayload = outdoorForm.customers
+        .filter((c) => c.name.trim() !== '')
+        .map((c) => {
+          const interests: string[] = [];
+          if (c.interested_gold) interests.push('Gold');
+          if (c.interested_diamond) interests.push('Diamond');
+          if (c.interested_silver) interests.push('Silver');
+
+          return {
+            id: c.id,
+            customer_name: c.name.trim(),
+            phone: c.phone.trim() || undefined,
+            dob: c.dob || undefined,
+            anniversary_date: c.anniversary_date || undefined,
+            is_converted: Boolean(c.is_converted),
+            has_google_review: Boolean(c.has_google_review),
+            google_review_rating: c.has_google_review ? Number(c.google_review_rating) : 5,
+            google_review_text: c.has_google_review ? (c.google_review_text?.trim() || undefined) : undefined,
+            has_customer_feedback: Boolean(c.has_customer_feedback),
+            feedback_rating: c.has_customer_feedback ? Number(c.feedback_rating) : 5,
+            feedback_text: c.has_customer_feedback ? (c.feedback_text?.trim() || undefined) : undefined,
+            interested_in: interests.join(', '),
+            notes: c.notes?.trim() || undefined,
+            area_name: outdoorForm.area.trim(),
+            date: selectedOutdoorDate,
+          };
+        });
+
+      const convertedCount = customersPayload.filter((c) => c.is_converted).length;
+      const googleReviewsCount = customersPayload.filter((c) => c.has_google_review).length;
+
+      const payload = {
+        area: outdoorForm.area.trim(),
+        customers_attended_count: customersPayload.length,
+        converted_customers_count: convertedCount,
+        google_ratings_count: googleReviewsCount,
+        photo_url: outdoorForm.photo_urls[0] || null,
+        photo_urls: outdoorForm.photo_urls,
+        notes: outdoorForm.notes.trim() || null,
+        status: 'Pending Review',
+        customers: customersPayload,
+      };
+
+      const res = await api.post<OutdoorDuty>(`/api/v1/employee/outdoor/duty?duty_date=${selectedOutdoorDate}`, payload);
+      setOutdoorDuty(res.data);
+      success('Outdoor customer log saved and sent to Showroom Manager for review!');
+      fetchSummary();
+      fetchOutdoorHistory();
+    } catch (err: any) {
+      console.error('Failed to save outdoor duty:', err);
+      toastError(err.response?.data?.detail || 'Failed to save outdoor customer log.');
+    } finally {
+      setIsSavingOutdoor(false);
+    }
+  };
+
+  // Date Shift helper
+  const handleOutdoorDateShift = (days: number) => {
+    const curr = new Date(selectedOutdoorDate);
+    curr.setDate(curr.getDate() + days);
+    const newDateStr = curr.toISOString().split('T')[0];
+    setSelectedOutdoorDate(newDateStr);
   };
 
   // Toggle Call Status
@@ -839,7 +1126,7 @@ export const EmployeePortalPage: React.FC = () => {
 
         {/* Tab Selection & Main Action Header */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-[#E6E1D6] pb-4">
-          <div className="w-full sm:w-auto grid grid-cols-3 sm:flex items-center gap-1.5 p-1.5 bg-white border border-[#D8B4FE]/70 rounded-2xl shadow-xs">
+          <div className="w-full sm:w-auto grid grid-cols-2 sm:grid-cols-4 sm:flex items-center gap-1.5 p-1.5 bg-white border border-[#D8B4FE]/70 rounded-2xl shadow-xs">
             {/* Tab 1: Customer Logs */}
             <button
               onClick={() => setActiveTab('CUSTOMERS')}
@@ -902,6 +1189,27 @@ export const EmployeePortalPage: React.FC = () => {
                 🏆 {dashboardSummary?.total_points ?? 0}
               </span>
             </button>
+
+            {/* Tab 4: Outdoor Entry */}
+            <button
+              onClick={() => setActiveTab('OUTDOOR')}
+              className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'OUTDOOR'
+                  ? 'bg-[#23815F] text-white shadow-xs scale-[1.01]'
+                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#E8F4EE]'
+              }`}
+            >
+              <Compass className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Outdoor Entry</span>
+              <span className="sm:hidden text-[11px] truncate">Outdoor</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
+                activeTab === 'OUTDOOR'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-[#E8F4EE] text-[#23815F] border border-[#C5E3D5]'
+              }`}>
+                {outdoorDuty?.customers?.length ?? (dashboardSummary?.total_outdoor_customers ?? 0)}
+              </span>
+            </button>
           </div>
 
           {/* Primary Action Button */}
@@ -922,6 +1230,17 @@ export const EmployeePortalPage: React.FC = () => {
               <Plus className="w-4 h-4 text-white" />
               <span>Log Customer Call</span>
             </Button>
+          )}
+          {activeTab === 'OUTDOOR' && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                onClick={handleAddOutdoorCustomer}
+                className="w-full sm:w-auto bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-white" />
+                <span>+ Add Attended Customer</span>
+              </Button>
+            </div>
           )}
           {activeTab === 'REVIEWS' && (
             <div className="flex items-center gap-2 w-full sm:w-auto">

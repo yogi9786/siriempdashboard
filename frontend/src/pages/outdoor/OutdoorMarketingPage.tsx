@@ -1301,10 +1301,12 @@ export const OutdoorMarketingPage: React.FC = () => {
                               className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                 form.status === 'Completed'
                                   ? 'bg-[#E8F4EE] text-[#23815F] border border-[#C5E3D5]'
+                                  : form.status === 'Pending Review'
+                                  ? 'bg-[#FEFCE8] text-[#854D0E] border border-[#EAB308] animate-pulse'
                                   : 'bg-[#FAF8F3] text-[#8A8479] border border-[#E4DFD4]'
                               }`}
                             >
-                              {form.status}
+                              {form.status === 'Pending Review' ? '⏳ Pending Review' : form.status}
                             </span>
                           </div>
                           <p className="text-xs text-[#5E5A52] font-medium mt-0.5">
@@ -1320,7 +1322,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-linear-to-r from-[#23815F] to-[#1B694C] hover:from-[#1B694C] hover:to-[#14533C] text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer hover:scale-[1.02] disabled:opacity-50"
                         >
                           <Save className="w-3.5 h-3.5" />
-                          <span>{form.isSaving ? 'Saving...' : 'Save Employee Log'}</span>
+                          <span>{form.isSaving ? 'Saving...' : form.status === 'Pending Review' ? '✓ Approve & Save Log' : 'Save Employee Log'}</span>
                         </button>
 
                         <button
@@ -1706,10 +1708,12 @@ export const OutdoorMarketingPage: React.FC = () => {
                           className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 ${
                             duty.status === 'Completed'
                               ? 'bg-[#E8F4EE] text-[#23815F] border border-[#C5E3D5]'
+                              : duty.status === 'Pending Review'
+                              ? 'bg-[#FEFCE8] text-[#854D0E] border border-[#EAB308]'
                               : 'bg-[#FAF6EB] text-[#9A782F] border border-[#C6A45C]/30'
                           }`}
                         >
-                          {duty.status}
+                          {duty.status === 'Pending Review' ? '⏳ Pending Review' : duty.status}
                         </span>
                       </div>
 

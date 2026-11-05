@@ -200,6 +200,41 @@ def get_employee_dashboard(
     ).all()
     video_points = sum(max(1, v.videos_count or 1) * 5 for v in approved_v_reviews)
 
+    # Robust aggregation: also account for approved CustomerActivity records with review breakdown
+    approved_acts = (
+        db.query(CustomerActivity)
+        .filter(
+            CustomerActivity.employee_id == current_emp.id,
+            CustomerActivity.approval_status == "APPROVED",
+            CustomerActivity.breakdown.isnot(None),
+        )
+        .all()
+    )
+
+    g_act_notes = {r.notes for r in approved_g_reviews if r.notes}
+    v_act_notes = {v.notes for v in approved_v_reviews if v.notes}
+
+    extra_g_pts = 0
+    extra_v_pts = 0
+
+    for act in approved_acts:
+        tag = f"Activity #{act.id}"
+        has_g = any(tag in n for n in g_act_notes)
+        has_v = any(tag in n for n in v_act_notes)
+        try:
+            items = json.loads(act.breakdown)
+            if isinstance(items, list):
+                for item in items:
+                    if not has_g and (item.get("has_google_review") or item.get("google_review_text")):
+                        extra_g_pts += 1
+                    if not has_v and (item.get("has_video_review") or item.get("video_title") or item.get("video_screenshot")):
+                        v_cnt = max(1, int(item.get("videos_count") or 1))
+                        extra_v_pts += v_cnt * 5
+        except Exception:
+            pass
+
+    google_points += extra_g_pts
+    video_points += extra_v_pts
     total_points = google_points + video_points
 
     # Pending review counts
@@ -1100,6 +1135,38 @@ def get_employee_notifications(
             )
         )
 
+    # 5. Outdoor Customer Follow-up Notifications
+    today_val = date.today()
+    outdoor_custs = (
+        db.query(OutdoorMarketingCustomer)
+        .filter(
+            OutdoorMarketingCustomer.marketing_employee_id == current_emp.id,
+            OutdoorMarketingCustomer.follow_up_date.isnot(None),
+        )
+        .order_by(OutdoorMarketingCustomer.follow_up_date.asc())
+        .limit(20)
+        .all()
+    )
+    for oc in outdoor_custs:
+        f_date = oc.follow_up_date
+        f_str = f_date.strftime("%d %b %Y") if hasattr(f_date, "strftime") else str(f_date)
+        is_today = f_date == today_val
+        is_past = f_date < today_val
+        st_label = "Due Today" if is_today else ("Overdue" if is_past else "Upcoming")
+        b_color = "red" if is_past else ("amber" if is_today else "blue")
+        notifications.append(
+            EmployeeNotificationItem(
+                id=f"outdoor_followup_{oc.id}",
+                category="outdoor_followup",
+                title=f"Outdoor Follow-up: {oc.customer_name}",
+                status=st_label,
+                message=f"Follow-up scheduled for {oc.customer_name} ({oc.phone or 'No phone'}) in {oc.area_name or 'Field area'}. Remarks: {oc.notes or 'No remarks'}",
+                date=f_str,
+                created_at=oc.created_at.isoformat() if hasattr(oc.created_at, "isoformat") else str(oc.created_at),
+                badge_color=b_color,
+            )
+        )
+
     # Sort notifications by created_at descending
     notifications.sort(key=lambda x: x.created_at or x.date or "", reverse=True)
 
@@ -1186,17 +1253,24 @@ def save_employee_outdoor_duty(
         db.add(duty)
         db.flush()
 
-    if payload.area is not None:
+    if payload.area is not None and payload.area.strip():
         duty.area = payload.area.strip()
+    elif payload.customers and any(c.area_name for c in payload.customers if c.area_name):
+        first_area = next((c.area_name for c in payload.customers if c.area_name and c.area_name.strip()), None)
+        if first_area:
+            duty.area = first_area.strip()
+    elif not duty.area:
+        duty.area = "Field Marketing"
+
     if payload.customers_attended_count is not None:
         duty.customers_attended_count = payload.customers_attended_count
     if payload.converted_customers_count is not None:
         duty.converted_customers_count = payload.converted_customers_count
     if payload.google_ratings_count is not None:
         duty.google_ratings_count = payload.google_ratings_count
-    if payload.photo_urls is not None:
+    if payload.photo_urls is not None and payload.photo_urls:
         duty.photo_urls = json.dumps(payload.photo_urls)
-        if payload.photo_urls and not duty.photo_url:
+        if not duty.photo_url:
             duty.photo_url = payload.photo_urls[0]
     elif payload.photo_url is not None:
         duty.photo_url = payload.photo_url
@@ -1213,9 +1287,12 @@ def save_employee_outdoor_duty(
             OutdoorMarketingCustomer.marketing_employee_id == current_emp.id,
         ).delete(synchronize_session=False)
 
+        cust_photos = []
         for c in payload.customers:
             if not c.customer_name or not c.customer_name.strip():
                 continue
+            if c.photo_url:
+                cust_photos.append(c.photo_url)
             new_cust = OutdoorMarketingCustomer(
                 branch_id=current_emp.branch_id,
                 marketing_employee_id=current_emp.id,
@@ -1224,7 +1301,9 @@ def save_employee_outdoor_duty(
                 phone=c.phone.strip() if c.phone else None,
                 dob=c.dob,
                 anniversary_date=c.anniversary_date,
-                area_name=c.area_name or duty.area,
+                follow_up_date=c.follow_up_date,
+                photo_url=c.photo_url,
+                area_name=c.area_name or duty.area or "Field Marketing",
                 date=duty.date,
                 is_converted=c.is_converted,
                 has_google_review=c.has_google_review,
@@ -1238,6 +1317,10 @@ def save_employee_outdoor_duty(
                 notes=c.notes,
             )
             db.add(new_cust)
+
+        if cust_photos and not duty.photo_url:
+            duty.photo_url = cust_photos[0]
+            duty.photo_urls = json.dumps(cust_photos)
 
     # Strictly NO WhatsApp sending here!
     try:

@@ -50,6 +50,8 @@ class OutdoorCustomerDetail(BaseModel):
     phone: Optional[str] = None
     dob: Optional[date] = None
     anniversary_date: Optional[date] = None
+    follow_up_date: Optional[date] = None
+    photo_url: Optional[str] = None
     is_converted: bool = False
     has_google_review: bool = False
     google_review_rating: Optional[int] = 5
@@ -62,6 +64,19 @@ class OutdoorCustomerDetail(BaseModel):
     interested_in: Optional[str] = None
     notes: Optional[str] = None
 
+    @field_validator("dob", "anniversary_date", "follow_up_date", mode="before")
+    @classmethod
+    def parse_optional_dates(cls, v: Any) -> Optional[date]:
+        if v is None or v == "" or (isinstance(v, str) and not v.strip()):
+            return None
+        if isinstance(v, str):
+            try:
+                clean = v.strip().split("T")[0]
+                return date.fromisoformat(clean)
+            except Exception:
+                return None
+        return v
+
 
 class OutdoorCustomerCreate(BaseModel):
     marketing_employee_id: int
@@ -70,6 +85,8 @@ class OutdoorCustomerCreate(BaseModel):
     phone: Optional[str] = None
     dob: Optional[date] = None
     anniversary_date: Optional[date] = None
+    follow_up_date: Optional[date] = None
+    photo_url: Optional[str] = None
     area_name: Optional[str] = None
     scheme_name: Optional[str] = None
     date: Optional[date] = None
@@ -84,6 +101,19 @@ class OutdoorCustomerCreate(BaseModel):
     interested_in: Optional[str] = None
     notes: Optional[str] = None
 
+    @field_validator("dob", "anniversary_date", "follow_up_date", "date", mode="before")
+    @classmethod
+    def parse_create_dates(cls, v: Any) -> Optional[date]:
+        if v is None or v == "" or (isinstance(v, str) and not v.strip()):
+            return None
+        if isinstance(v, str):
+            try:
+                clean = v.strip().split("T")[0]
+                return date.fromisoformat(clean)
+            except Exception:
+                return None
+        return v
+
 
 class OutdoorCustomerUpdate(BaseModel):
     marketing_employee_id: Optional[int] = None
@@ -92,6 +122,8 @@ class OutdoorCustomerUpdate(BaseModel):
     phone: Optional[str] = None
     dob: Optional[date] = None
     anniversary_date: Optional[date] = None
+    follow_up_date: Optional[date] = None
+    photo_url: Optional[str] = None
     area_name: Optional[str] = None
     scheme_name: Optional[str] = None
     date: Optional[date] = None
@@ -119,6 +151,8 @@ class OutdoorCustomerResponse(BaseModel):
     phone: Optional[str] = None
     dob: Optional[date] = None
     anniversary_date: Optional[date] = None
+    follow_up_date: Optional[date] = None
+    photo_url: Optional[str] = None
     area_name: Optional[str] = None
     scheme_name: Optional[str] = None
     date: date

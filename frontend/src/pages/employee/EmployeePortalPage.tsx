@@ -172,6 +172,9 @@ export interface CustomerEntryState {
   phone: string;
   dob: string;
   anniversary_date: string;
+  follow_up_date: string;
+  area_name: string;
+  photo_url: string;
   has_google_review: boolean;
   google_review_rating: number;
   google_review_text: string;
@@ -592,6 +595,9 @@ export const EmployeePortalPage: React.FC = () => {
             phone: c.phone || '',
             dob: c.dob ? String(c.dob) : '',
             anniversary_date: c.anniversary_date ? String(c.anniversary_date) : '',
+            follow_up_date: (c as any).follow_up_date ? String((c as any).follow_up_date) : '',
+            area_name: (c as any).area_name || duty.area || '',
+            photo_url: (c as any).photo_url || '',
             has_google_review: Boolean(c.has_google_review),
             google_review_rating: c.google_review_rating || 5,
             google_review_text: c.google_review_text || '',
@@ -619,6 +625,9 @@ export const EmployeePortalPage: React.FC = () => {
             phone: '',
             dob: '',
             anniversary_date: '',
+            follow_up_date: '',
+            area_name: duty.area || '',
+            photo_url: '',
             has_google_review: false,
             google_review_rating: 5,
             google_review_text: '',
@@ -650,6 +659,9 @@ export const EmployeePortalPage: React.FC = () => {
               phone: '',
               dob: '',
               anniversary_date: '',
+              follow_up_date: '',
+              area_name: '',
+              photo_url: '',
               has_google_review: false,
               google_review_rating: 5,
               google_review_text: '',
@@ -681,6 +693,8 @@ export const EmployeePortalPage: React.FC = () => {
     }
   };
 
+  const [uploadingCustomerPhotoIdx, setUploadingCustomerPhotoIdx] = useState<number | null>(null);
+
   // Add Customer Row in Outdoor Entry
   const handleAddOutdoorCustomer = () => {
     setOutdoorForm((prev) => ({
@@ -692,6 +706,9 @@ export const EmployeePortalPage: React.FC = () => {
           phone: '',
           dob: '',
           anniversary_date: '',
+          follow_up_date: '',
+          area_name: prev.area || '',
+          photo_url: '',
           has_google_review: false,
           google_review_rating: 5,
           google_review_text: '',
@@ -706,6 +723,29 @@ export const EmployeePortalPage: React.FC = () => {
         },
       ],
     }));
+  };
+
+  // Upload Photo for Specific Customer Row in Outdoor Entry
+  const handleUploadCustomerPhoto = async (cIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCustomerPhotoIdx(cIdx);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post<{ url: string }>('/api/v1/employee/outdoor/upload-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const photoUrl = res.data.url;
+      handleUpdateOutdoorCustomer(cIdx, 'photo_url', photoUrl);
+      success('Customer field photo uploaded successfully!');
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to upload photo.');
+    } finally {
+      setUploadingCustomerPhotoIdx(null);
+      e.target.value = '';
+    }
   };
 
   // Update Customer Field in Outdoor Entry
@@ -761,51 +801,57 @@ export const EmployeePortalPage: React.FC = () => {
 
   // Save Outdoor Duty Log (Sends to Pending Review, ZERO WhatsApp)
   const handleSaveOutdoorDuty = async () => {
-    if (!outdoorForm.area.trim()) {
-      toastError('Please enter the targeted area / market location for this outdoor duty.');
-      return;
-    }
+    const validCustomers = outdoorForm.customers.filter((c) => c.name.trim() !== '');
+    const firstArea =
+      validCustomers.find((c) => c.area_name?.trim())?.area_name?.trim() ||
+      outdoorForm.area.trim() ||
+      'Field Marketing';
 
     setIsSavingOutdoor(true);
     try {
-      const customersPayload = outdoorForm.customers
-        .filter((c) => c.name.trim() !== '')
-        .map((c) => {
-          const interests: string[] = [];
-          if (c.interested_gold) interests.push('Gold');
-          if (c.interested_diamond) interests.push('Diamond');
-          if (c.interested_silver) interests.push('Silver');
+      const customersPayload = validCustomers.map((c) => {
+        const interests: string[] = [];
+        if (c.interested_gold) interests.push('Gold');
+        if (c.interested_diamond) interests.push('Diamond');
+        if (c.interested_silver) interests.push('Silver');
 
-          return {
-            id: c.id,
-            customer_name: c.name.trim(),
-            phone: c.phone.trim() || undefined,
-            dob: c.dob || undefined,
-            anniversary_date: c.anniversary_date || undefined,
-            is_converted: Boolean(c.is_converted),
-            has_google_review: Boolean(c.has_google_review),
-            google_review_rating: c.has_google_review ? Number(c.google_review_rating) : 5,
-            google_review_text: c.has_google_review ? (c.google_review_text?.trim() || undefined) : undefined,
-            has_customer_feedback: Boolean(c.has_customer_feedback),
-            feedback_rating: c.has_customer_feedback ? Number(c.feedback_rating) : 5,
-            feedback_text: c.has_customer_feedback ? (c.feedback_text?.trim() || undefined) : undefined,
-            interested_in: interests.join(', '),
-            notes: c.notes?.trim() || undefined,
-            area_name: outdoorForm.area.trim(),
-            date: selectedOutdoorDate,
-          };
-        });
+        return {
+          id: c.id,
+          customer_name: c.name.trim(),
+          phone: c.phone.trim() || undefined,
+          dob: c.dob || undefined,
+          anniversary_date: c.anniversary_date || undefined,
+          follow_up_date: c.follow_up_date || undefined,
+          area_name: c.area_name?.trim() || firstArea,
+          photo_url: c.photo_url?.trim() || undefined,
+          is_converted: Boolean(c.is_converted),
+          has_google_review: Boolean(c.has_google_review),
+          google_review_rating: c.has_google_review ? Number(c.google_review_rating) : 5,
+          google_review_text: c.has_google_review ? (c.google_review_text?.trim() || undefined) : undefined,
+          has_customer_feedback: Boolean(c.has_customer_feedback),
+          feedback_rating: c.has_customer_feedback ? Number(c.feedback_rating) : 5,
+          feedback_text: c.has_customer_feedback ? (c.feedback_text?.trim() || undefined) : undefined,
+          interested_in: interests.join(', '),
+          notes: c.notes?.trim() || undefined,
+          date: selectedOutdoorDate,
+        };
+      });
 
       const convertedCount = customersPayload.filter((c) => c.is_converted).length;
       const googleReviewsCount = customersPayload.filter((c) => c.has_google_review).length;
 
+      const customerPhotos = validCustomers
+        .map((c) => c.photo_url?.trim())
+        .filter((p): p is string => Boolean(p));
+      const mergedPhotos = Array.from(new Set([...customerPhotos, ...outdoorForm.photo_urls]));
+
       const payload = {
-        area: outdoorForm.area.trim(),
+        area: firstArea,
         customers_attended_count: customersPayload.length,
         converted_customers_count: convertedCount,
         google_ratings_count: googleReviewsCount,
-        photo_url: outdoorForm.photo_urls[0] || null,
-        photo_urls: outdoorForm.photo_urls,
+        photo_url: mergedPhotos[0] || null,
+        photo_urls: mergedPhotos,
         notes: outdoorForm.notes.trim() || null,
         status: 'Pending Review',
         customers: customersPayload,
@@ -2784,110 +2830,6 @@ export const EmployeePortalPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Area & Location + Proof Photos Container */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Area & Campaign Details Card */}
-              <div className="lg:col-span-2 bg-white border border-[#E6E1D6] rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
-                <div>
-                  <label className="block text-xs font-black text-[#1D1D1B] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#23815F]" />
-                    <span>Target Area / Field Location <span className="text-red-500">*</span></span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Yelahanka Satellite Town, Major Road Campaign, Market Booth, Community Hub..."
-                    value={outdoorForm.area}
-                    onChange={(e) => setOutdoorForm((prev) => ({ ...prev, area: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#5E5A52] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                    <Edit2 className="w-3.5 h-3.5 text-[#7E22CE]" />
-                    <span>Duty Field Notes / Team Observations</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Key highlights, market feedback, competitor activity, campaign response summary..."
-                    value={outdoorForm.notes}
-                    onChange={(e) => setOutdoorForm((prev) => ({ ...prev, notes: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 font-medium resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* Field Proof Photos Card */}
-              <div className="bg-white border border-[#E6E1D6] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-black text-[#1D1D1B] uppercase tracking-wider flex items-center gap-1.5">
-                      <Camera className="w-3.5 h-3.5 text-[#23815F]" />
-                      <span>Field Photos ({outdoorForm.photo_urls.length})</span>
-                    </label>
-                    <label className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#E8F4EE] hover:bg-[#D1FAE5] text-[#21845F] text-[11px] font-extrabold rounded-lg border border-[#C5E3D5] cursor-pointer transition-all">
-                      {isUploadingOutdoorPhoto ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Plus className="w-3 h-3" />
-                      )}
-                      <span>{isUploadingOutdoorPhoto ? 'Uploading...' : '+ Add Photo'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleUploadOutdoorPhoto}
-                        disabled={isUploadingOutdoorPhoto}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                  <p className="text-[11px] text-[#8A8479] leading-tight">
-                    Attach photo proof of booth, flyers, banner setup, or customer interactions.
-                  </p>
-                </div>
-
-                {/* Photos Preview Grid */}
-                {outdoorForm.photo_urls.length > 0 ? (
-                  <div className="flex items-center gap-2 overflow-x-auto py-1">
-                    {outdoorForm.photo_urls.map((pUrl, pIdx) => (
-                      <div
-                        key={pIdx}
-                        onClick={() => setViewProofUrl(getMediaUrl(pUrl))}
-                        className="relative group shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-[#C5E3D5] bg-black/5 cursor-pointer shadow-2xs hover:shadow-md transition-all"
-                      >
-                        <img
-                          src={getMediaUrl(pUrl)}
-                          alt={`Proof #${pIdx + 1}`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                          <span className="p-1 bg-white/90 text-[#1D1D1B] rounded-md shadow-xs">
-                            <Eye className="w-3 h-3" />
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveOutdoorPhoto(pIdx);
-                            }}
-                            className="p-1 bg-red-600 text-white rounded-md hover:bg-red-700 shadow-xs cursor-pointer"
-                            title="Delete Photo"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-3 rounded-xl border border-dashed border-[#CBD5E1] bg-[#FAF8F5] text-center text-[11px] text-[#8A8479]">
-                    No proof photos attached yet.
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Outdoor Customer Leads & Interactions List */}
             <div className="bg-white border border-[#C5E3D5] rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#EBE6DC] pb-3">
@@ -2967,241 +2909,340 @@ export const EmployeePortalPage: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Form Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        {/* 1. Name */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                            <User className="w-3 h-3 text-[#23815F]" />
-                            <span>Customer Name <span className="text-red-500">*</span></span>
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Full name"
-                            value={cust.name}
-                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'name', e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium"
-                          />
+                      {/* Customer Details Form */}
+                      <div className="space-y-3.5">
+                        {/* Row 1: Name & Phone */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* 1. Name */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                              <User className="w-3 h-3 text-[#23815F]" />
+                              <span>Customer Name <span className="text-red-500">*</span></span>
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Full name"
+                              value={cust.name}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'name', e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium"
+                            />
+                          </div>
+
+                          {/* 2. Phone */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                              <Phone className="w-3 h-3 text-[#23815F]" />
+                              <span>Mobile Number</span>
+                            </label>
+                            <input
+                              type="tel"
+                              placeholder="10-digit mobile"
+                              value={cust.phone}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'phone', e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-mono"
+                            />
+                          </div>
                         </div>
 
-                        {/* 2. Phone */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-[#23815F]" />
-                            <span>Mobile Number</span>
-                          </label>
-                          <input
-                            type="tel"
-                            placeholder="10-digit mobile"
-                            value={cust.phone}
-                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'phone', e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-mono"
-                          />
+                        {/* Row 2: Location & Proof Photo (1) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Field Location */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-[#23815F]" />
+                              <span>Field Location / Market Area</span>
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Market Booth, Yelahanka 4th Cross..."
+                              value={cust.area_name}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'area_name', e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium"
+                            />
+                          </div>
+
+                          {/* Field Photo (1) */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                              <Camera className="w-3 h-3 text-[#23815F]" />
+                              <span>Field Photo (1) Proof</span>
+                            </label>
+
+                            {cust.photo_url ? (
+                              <div className="flex items-center gap-2 bg-white border border-[#C5E3D5] rounded-xl p-1.5 shadow-2xs">
+                                <img
+                                  src={getMediaUrl(cust.photo_url)}
+                                  alt="Customer Photo Proof"
+                                  className="w-10 h-10 object-cover rounded-lg border border-[#E6E1D6] shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[11px] font-bold text-[#23815F] truncate">Photo Attached</p>
+                                  <p className="text-[10px] text-[#8A8479]">1 proof uploaded</p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0 pr-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setViewProofUrl(getMediaUrl(cust.photo_url))}
+                                    className="p-1.5 rounded-lg bg-[#E8F4EE] hover:bg-[#D1FAE5] text-[#21845F] transition-all cursor-pointer"
+                                    title="View Photo"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateOutdoorCustomer(cIdx, 'photo_url', '')}
+                                    className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all cursor-pointer"
+                                    title="Remove Photo"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <label className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-dashed border-[#CBD5E1] hover:border-[#23815F] bg-white hover:bg-[#E8F4EE] text-xs font-bold text-[#23815F] cursor-pointer transition-all shadow-2xs">
+                                {uploadingCustomerPhotoIdx === cIdx ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#23815F]" />
+                                ) : (
+                                  <Camera className="w-3.5 h-3.5 text-[#23815F]" />
+                                )}
+                                <span>{uploadingCustomerPhotoIdx === cIdx ? 'Uploading photo...' : '+ Upload Field Photo (1)'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  onChange={(e) => handleUploadCustomerPhoto(cIdx, e)}
+                                  disabled={uploadingCustomerPhotoIdx === cIdx}
+                                  className="hidden"
+                                />
+                              </label>
+                            )}
+                          </div>
                         </div>
 
-                        {/* 3. DOB */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-[#7E22CE]" />
-                            <span>Date of Birth</span>
-                          </label>
-                          <input
-                            type="date"
-                            value={cust.dob}
-                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'dob', e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium cursor-pointer"
-                          />
+                        {/* Row 3: Important Dates (DOB, Anniversary, Follow-up / Notification Date) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {/* DOB */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-[#7E22CE]" />
+                              <span>Date of Birth</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={cust.dob}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'dob', e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium cursor-pointer"
+                            />
+                          </div>
+
+                          {/* Anniversary Date */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                              <Gift className="w-3 h-3 text-[#D97706]" />
+                              <span>Anniversary Date</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={cust.anniversary_date}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'anniversary_date', e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium cursor-pointer"
+                            />
+                          </div>
+
+                          {/* Follow-up / Notification Date */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                              <Bell className="w-3 h-3 text-[#2563EB]" />
+                              <span className="text-[#1E40AF] font-black">Follow-up / Notification Date</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={cust.follow_up_date}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'follow_up_date', e.target.value)}
+                              className="w-full px-3 py-2 bg-[#EFF6FF] border border-[#93C5FD] rounded-xl text-xs text-[#1E3A8A] focus:border-[#2563EB] focus:outline-hidden font-medium cursor-pointer"
+                            />
+                          </div>
                         </div>
 
-                        {/* 4. Anniversary Date */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                            <Gift className="w-3 h-3 text-[#D97706]" />
-                            <span>Anniversary Date</span>
-                          </label>
-                          <input
-                            type="date"
-                            value={cust.anniversary_date}
-                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'anniversary_date', e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium cursor-pointer"
-                          />
-                        </div>
-                      </div>
+                        {/* Jewelry Interest & Conversion Row */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#EBE6DC]/80">
+                          {/* Interest Toggles */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] font-bold text-[#5E5A52] uppercase mr-1">
+                              Interested In:
+                            </span>
+                            {/* Gold Pill */}
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_gold', !cust.interested_gold)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                cust.interested_gold
+                                  ? 'bg-[#FEFCE8] text-[#854D0E] border-[#CA8A04] shadow-2xs font-black'
+                                  : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                              }`}
+                            >
+                              <span>🪙 Gold</span>
+                              {cust.interested_gold && <Check className="w-3 h-3 text-[#854D0E]" />}
+                            </button>
 
-                      {/* Jewelry Interest & Conversion Row */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#EBE6DC]/80">
-                        {/* Interest Toggles */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[11px] font-bold text-[#5E5A52] uppercase mr-1">
-                            Interested In:
-                          </span>
-                          {/* Gold Pill */}
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_gold', !cust.interested_gold)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                              cust.interested_gold
-                                ? 'bg-[#FEFCE8] text-[#854D0E] border-[#CA8A04] shadow-2xs font-black'
-                                : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
-                            }`}
-                          >
-                            <span>🪙 Gold</span>
-                            {cust.interested_gold && <Check className="w-3 h-3 text-[#854D0E]" />}
-                          </button>
+                            {/* Diamond Pill */}
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_diamond', !cust.interested_diamond)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                cust.interested_diamond
+                                  ? 'bg-[#EFF6FF] text-[#1E40AF] border-[#3B82F6] shadow-2xs font-black'
+                                  : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                              }`}
+                            >
+                              <span>💎 Diamond</span>
+                              {cust.interested_diamond && <Check className="w-3 h-3 text-[#1E40AF]" />}
+                            </button>
 
-                          {/* Diamond Pill */}
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_diamond', !cust.interested_diamond)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                              cust.interested_diamond
-                                ? 'bg-[#EFF6FF] text-[#1E40AF] border-[#3B82F6] shadow-2xs font-black'
-                                : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
-                            }`}
-                          >
-                            <span>💎 Diamond</span>
-                            {cust.interested_diamond && <Check className="w-3 h-3 text-[#1E40AF]" />}
-                          </button>
+                            {/* Silver Pill */}
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_silver', !cust.interested_silver)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                cust.interested_silver
+                                  ? 'bg-[#F1F5F9] text-[#334155] border-[#64748B] shadow-2xs font-black'
+                                  : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                              }`}
+                            >
+                              <span>🥈 Silver</span>
+                              {cust.interested_silver && <Check className="w-3 h-3 text-[#334155]" />}
+                            </button>
+                          </div>
 
-                          {/* Silver Pill */}
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_silver', !cust.interested_silver)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                              cust.interested_silver
-                                ? 'bg-[#F1F5F9] text-[#334155] border-[#64748B] shadow-2xs font-black'
-                                : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
-                            }`}
-                          >
-                            <span>🥈 Silver</span>
-                            {cust.interested_silver && <Check className="w-3 h-3 text-[#334155]" />}
-                          </button>
-                        </div>
-
-                        {/* Conversion Checkbox */}
-                        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#CBD5E1] hover:border-[#23815F] text-xs font-bold text-[#1D1D1B] cursor-pointer shadow-2xs transition-all">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(cust.is_converted)}
-                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'is_converted', e.target.checked)}
-                            className="w-4 h-4 text-[#23815F] rounded border-[#CBD5E1] focus:ring-[#23815F]"
-                          />
-                          <span className={cust.is_converted ? 'text-[#21845F] font-black' : 'text-[#5E5A52]'}>
-                            Converted to Sale / Order
-                          </span>
-                        </label>
-                      </div>
-
-                      {/* Reviews & Feedback Row */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-[#EBE6DC]/80">
-                        {/* Google Review Box */}
-                        <div className={`p-3 rounded-xl border transition-all ${
-                          cust.has_google_review ? 'bg-[#FEFCE8] border-[#CA8A04]' : 'bg-white border-[#E6E1D6]'
-                        }`}>
-                          <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
+                          {/* Conversion Checkbox */}
+                          <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#CBD5E1] hover:border-[#23815F] text-xs font-bold text-[#1D1D1B] cursor-pointer shadow-2xs transition-all">
                             <input
                               type="checkbox"
-                              checked={cust.has_google_review}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'has_google_review', e.target.checked)}
-                              className="w-4 h-4 text-[#CA8A04] rounded border-[#CBD5E1] focus:ring-[#CA8A04]"
+                              checked={Boolean(cust.is_converted)}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'is_converted', e.target.checked)}
+                              className="w-4 h-4 text-[#23815F] rounded border-[#CBD5E1] focus:ring-[#23815F]"
                             />
-                            <span className="flex items-center gap-1 text-[#854D0E] font-black">
-                              <Star className="w-3.5 h-3.5 fill-[#CA8A04] text-[#CA8A04]" />
-                              <span>Google 5-Star Review Given</span>
+                            <span className={cust.is_converted ? 'text-[#21845F] font-black' : 'text-[#5E5A52]'}>
+                              Converted to Sale / Order
                             </span>
                           </label>
-
-                          {cust.has_google_review && (
-                            <div className="space-y-2 mt-2 pt-2 border-t border-[#FDE047]">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] font-bold text-[#854D0E]">Rating:</span>
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <button
-                                    key={star}
-                                    type="button"
-                                    onClick={() => handleUpdateOutdoorCustomer(cIdx, 'google_review_rating', star)}
-                                    className="p-0.5 cursor-pointer"
-                                  >
-                                    <Star
-                                      className={`w-4 h-4 ${
-                                        star <= (cust.google_review_rating || 5)
-                                          ? 'fill-[#F59E0B] text-[#F59E0B]'
-                                          : 'text-gray-300'
-                                      }`}
-                                    />
-                                  </button>
-                                ))}
-                              </div>
-                              <input
-                                type="text"
-                                placeholder="Review text or customer praise summary..."
-                                value={cust.google_review_text}
-                                onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'google_review_text', e.target.value)}
-                                className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#CA8A04] focus:outline-hidden"
-                              />
-                            </div>
-                          )}
                         </div>
 
-                        {/* Customer Feedback Box */}
-                        <div className={`p-3 rounded-xl border transition-all ${
-                          cust.has_customer_feedback ? 'bg-[#FAF5FF] border-[#A855F7]' : 'bg-white border-[#E6E1D6]'
-                        }`}>
-                          <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
-                            <input
-                              type="checkbox"
-                              checked={cust.has_customer_feedback}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'has_customer_feedback', e.target.checked)}
-                              className="w-4 h-4 text-[#7E22CE] rounded border-[#CBD5E1] focus:ring-[#7E22CE]"
-                            />
-                            <span className="flex items-center gap-1 text-[#7E22CE] font-black">
-                              <MessageSquareHeart className="w-3.5 h-3.5 text-[#7E22CE]" />
-                              <span>Customer Feedback Recorded</span>
-                            </span>
+                        {/* Reviews & Feedback Row */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-[#EBE6DC]/80">
+                          {/* Google Review Box */}
+                          <div className={`p-3 rounded-xl border transition-all ${
+                            cust.has_google_review ? 'bg-[#FEFCE8] border-[#CA8A04]' : 'bg-white border-[#E6E1D6]'
+                          }`}>
+                            <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
+                              <input
+                                type="checkbox"
+                                checked={cust.has_google_review}
+                                onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'has_google_review', e.target.checked)}
+                                className="w-4 h-4 text-[#CA8A04] rounded border-[#CBD5E1] focus:ring-[#CA8A04]"
+                              />
+                              <span className="flex items-center gap-1 text-[#854D0E] font-black">
+                                <Star className="w-3.5 h-3.5 fill-[#CA8A04] text-[#CA8A04]" />
+                                <span>Google 5-Star Review Given</span>
+                              </span>
+                            </label>
+
+                            {cust.has_google_review && (
+                              <div className="space-y-2 mt-2 pt-2 border-t border-[#FDE047]">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[11px] font-bold text-[#854D0E]">Rating:</span>
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                      key={star}
+                                      type="button"
+                                      onClick={() => handleUpdateOutdoorCustomer(cIdx, 'google_review_rating', star)}
+                                      className="p-0.5 cursor-pointer"
+                                    >
+                                      <Star
+                                        className={`w-4 h-4 ${
+                                          star <= (cust.google_review_rating || 5)
+                                            ? 'fill-[#F59E0B] text-[#F59E0B]'
+                                            : 'text-gray-300'
+                                        }`}
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                                <input
+                                  type="text"
+                                  placeholder="Review text or customer praise summary..."
+                                  value={cust.google_review_text}
+                                  onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'google_review_text', e.target.value)}
+                                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#CA8A04] focus:outline-hidden"
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Customer Feedback Box */}
+                          <div className={`p-3 rounded-xl border transition-all ${
+                            cust.has_customer_feedback ? 'bg-[#FAF5FF] border-[#A855F7]' : 'bg-white border-[#E6E1D6]'
+                          }`}>
+                            <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
+                              <input
+                                type="checkbox"
+                                checked={cust.has_customer_feedback}
+                                onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'has_customer_feedback', e.target.checked)}
+                                className="w-4 h-4 text-[#7E22CE] rounded border-[#CBD5E1] focus:ring-[#7E22CE]"
+                              />
+                              <span className="flex items-center gap-1 text-[#7E22CE] font-black">
+                                <MessageSquareHeart className="w-3.5 h-3.5 text-[#7E22CE]" />
+                                <span>Customer Feedback Recorded</span>
+                              </span>
+                            </label>
+
+                            {cust.has_customer_feedback && (
+                              <div className="space-y-2 mt-2 pt-2 border-t border-[#E9D5FF]">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[11px] font-bold text-[#7E22CE]">Rating:</span>
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                      key={star}
+                                      type="button"
+                                      onClick={() => handleUpdateOutdoorCustomer(cIdx, 'feedback_rating', star)}
+                                      className="p-0.5 cursor-pointer"
+                                    >
+                                      <Star
+                                        className={`w-4 h-4 ${
+                                          star <= (cust.feedback_rating || 5)
+                                            ? 'fill-[#7E22CE] text-[#7E22CE]'
+                                            : 'text-gray-300'
+                                        }`}
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                                <input
+                                  type="text"
+                                  placeholder="Feedback notes, designs inquired, customer impressions..."
+                                  value={cust.feedback_text}
+                                  onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'feedback_text', e.target.value)}
+                                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#7E22CE] focus:outline-hidden"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Row 6: Duty Field Notes / Team Observations for this Customer */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                            <Edit2 className="w-3 h-3 text-[#7E22CE]" />
+                            <span>Duty Field Notes / Team Observations</span>
                           </label>
-
-                          {cust.has_customer_feedback && (
-                            <div className="space-y-2 mt-2 pt-2 border-t border-[#E9D5FF]">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] font-bold text-[#7E22CE]">Rating:</span>
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <button
-                                    key={star}
-                                    type="button"
-                                    onClick={() => handleUpdateOutdoorCustomer(cIdx, 'feedback_rating', star)}
-                                    className="p-0.5 cursor-pointer"
-                                  >
-                                    <Star
-                                      className={`w-4 h-4 ${
-                                        star <= (cust.feedback_rating || 5)
-                                          ? 'fill-[#7E22CE] text-[#7E22CE]'
-                                          : 'text-gray-300'
-                                      }`}
-                                    />
-                                  </button>
-                                ))}
-                              </div>
-                              <input
-                                type="text"
-                                placeholder="Feedback notes, designs inquired, customer impressions..."
-                                value={cust.feedback_text}
-                                onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'feedback_text', e.target.value)}
-                                className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#7E22CE] focus:outline-hidden"
-                              />
-                            </div>
-                          )}
+                          <textarea
+                            rows={2}
+                            placeholder="Key conversation notes, customer requirements (e.g. looking for 22kt antique choker, budget ₹1.5L), follow-up observations..."
+                            value={cust.notes}
+                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'notes', e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium resize-none"
+                          />
                         </div>
-                      </div>
-
-                      {/* Notes & Requirements Row */}
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="Additional notes / specific customer requirements (e.g. looking for 22kt antique choker, budget ₹1.5L)..."
-                          value={cust.notes}
-                          onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'notes', e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium"
-                        />
                       </div>
                     </div>
                   ))}

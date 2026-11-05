@@ -212,6 +212,8 @@ def format_duty_response(d: OutdoorMarketingDuty) -> OutdoorDutyResponse:
                 phone=c.phone,
                 dob=c.dob,
                 anniversary_date=c.anniversary_date,
+                follow_up_date=c.follow_up_date,
+                photo_url=c.photo_url,
                 area_name=c.area_name,
                 scheme_name=c.scheme_name,
                 date=c.date,
@@ -393,7 +395,9 @@ def update_outdoor_duty(
                 phone=c.phone.strip() if c.phone else None,
                 dob=c.dob,
                 anniversary_date=c.anniversary_date,
-                area_name=c.area_name or duty.area,
+                follow_up_date=c.follow_up_date,
+                photo_url=c.photo_url,
+                area_name=c.area_name or duty.area or "Field Marketing",
                 scheme_name=c.scheme_name or duty.scheme_name,
                 date=duty.date,
                 is_converted=c.is_converted,
@@ -408,6 +412,12 @@ def update_outdoor_duty(
                 notes=c.notes,
             )
             db.add(new_cust)
+
+        # Collect customer photos and update duty thumbnail if not provided
+        cust_photos = [c.photo_url for c in payload.customers if c.photo_url]
+        if cust_photos and not duty.photo_url:
+            duty.photo_url = cust_photos[0]
+            duty.photo_urls = json.dumps(cust_photos)
 
 
     try:

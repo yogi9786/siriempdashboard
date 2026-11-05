@@ -33,6 +33,11 @@ import {
   ZoomIn,
   Sparkles,
   MessageSquareHeart,
+  User,
+  Bell,
+  Edit2,
+  Loader2,
+  Check,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -55,6 +60,10 @@ interface CustomerEntryState {
   phone: string;
   dob: string;
   anniversary_date: string;
+  follow_up_date: string;
+  area_name: string;
+  photo_url: string;
+  is_converted: boolean;
   has_google_review: boolean;
   google_review_rating: number;
   google_review_text: string;
@@ -409,13 +418,17 @@ export const OutdoorMarketingPage: React.FC = () => {
             phone: existing?.phone || '',
             dob: existing?.dob ? String(existing.dob) : '',
             anniversary_date: existing?.anniversary_date ? String(existing.anniversary_date) : '',
+            follow_up_date: (existing as any)?.follow_up_date ? String((existing as any).follow_up_date) : '',
+            area_name: (existing as any)?.area_name || duty.area || '',
+            photo_url: (existing as any)?.photo_url || '',
+            is_converted: Boolean(existing?.is_converted),
             has_google_review: existing?.has_google_review || false,
             google_review_rating: existing?.google_review_rating || 5,
             google_review_text: existing?.google_review_text || '',
             has_customer_feedback: existing?.has_customer_feedback || false,
             feedback_rating: existing?.feedback_rating || 5,
             feedback_text: existing?.feedback_text || '',
-              interested_gold: intStr.includes('gold'),
+            interested_gold: intStr.includes('gold'),
             interested_diamond: intStr.includes('diamond'),
             interested_silver: intStr.includes('silver'),
             notes: existing?.notes || '',
@@ -539,6 +552,10 @@ export const OutdoorMarketingPage: React.FC = () => {
             phone: '',
             dob: '',
             anniversary_date: '',
+            follow_up_date: '',
+            area_name: form.area || '',
+            photo_url: '',
+            is_converted: false,
             has_google_review: false,
             google_review_rating: 5,
             google_review_text: '',
@@ -580,6 +597,10 @@ export const OutdoorMarketingPage: React.FC = () => {
             phone: '',
             dob: '',
             anniversary_date: '',
+            follow_up_date: '',
+            area_name: form.area || '',
+            photo_url: '',
+            is_converted: true,
             has_google_review: false,
             google_review_rating: 5,
             google_review_text: '',
@@ -605,6 +626,87 @@ export const OutdoorMarketingPage: React.FC = () => {
         },
       };
     });
+  };
+
+  // Add Attended Customer Item
+  const addAttendedCustomer = (dutyId: number) => {
+    setDutyForms((prev) => {
+      const form = prev[dutyId];
+      if (!form) return prev;
+      const newList: CustomerEntryState[] = [
+        ...form.attendedList,
+        {
+          name: '',
+          phone: '',
+          dob: '',
+          anniversary_date: '',
+          follow_up_date: '',
+          area_name: form.area || '',
+          photo_url: '',
+          is_converted: false,
+          has_google_review: false,
+          google_review_rating: 5,
+          google_review_text: '',
+          has_customer_feedback: false,
+          feedback_rating: 5,
+          feedback_text: '',
+          interested_gold: false,
+          interested_diamond: false,
+          interested_silver: false,
+          notes: '',
+        },
+      ];
+      return {
+        ...prev,
+        [dutyId]: {
+          ...form,
+          customers_attended_count: newList.length,
+          attendedList: newList,
+        },
+      };
+    });
+  };
+
+  // Remove Attended Customer Item
+  const removeAttendedCustomer = (dutyId: number, index: number) => {
+    setDutyForms((prev) => {
+      const form = prev[dutyId];
+      if (!form) return prev;
+      const newList = form.attendedList.filter((_, idx) => idx !== index);
+      return {
+        ...prev,
+        [dutyId]: {
+          ...form,
+          customers_attended_count: newList.length,
+          attendedList: newList,
+        },
+      };
+    });
+  };
+
+  const [uploadingCustomerPhotoKey, setUploadingCustomerPhotoKey] = useState<string | null>(null);
+
+  // Upload Photo for Specific Customer Row in Manager Dashboard
+  const handleCustomerPhotoUpload = async (dutyId: number, cIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCustomerPhotoKey(`${dutyId}-${cIdx}`);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post<{ url: string }>('/api/v1/outdoor-marketing/activities/upload-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const photoUrl = res.data.url;
+      updateAttendedCustomer(dutyId, cIdx, 'photo_url', photoUrl);
+      success('Customer field photo uploaded successfully!');
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to upload photo.');
+    } finally {
+      setUploadingCustomerPhotoKey(null);
+      e.target.value = '';
+    }
   };
 
   // Update Attended Customer Item
@@ -753,25 +855,24 @@ export const OutdoorMarketingPage: React.FC = () => {
     const form = dutyForms[dutyId];
     if (!form) return;
 
-    if (!form.area.trim()) {
-      toastError('Please enter the targeted area / location for this employee.');
-      return;
-    }
-
     updateDutyFormField(dutyId, 'isSaving', true);
 
     try {
       const customersPayload: OutdoorCustomerDetail[] = [];
 
-      // Customers Attended with Interested In & Notes
       form.attendedList.forEach((c) => {
         if (
           c.name.trim() ||
           c.phone.trim() ||
+          c.area_name.trim() ||
+          c.photo_url.trim() ||
+          c.follow_up_date.trim() ||
           c.has_google_review ||
+          c.has_customer_feedback ||
           c.interested_gold ||
           c.interested_diamond ||
           c.interested_silver ||
+          c.is_converted ||
           c.notes.trim()
         ) {
           const interestedArr: string[] = [];
@@ -785,30 +886,43 @@ export const OutdoorMarketingPage: React.FC = () => {
             phone: c.phone.trim() || undefined,
             dob: c.dob || undefined,
             anniversary_date: c.anniversary_date || undefined,
-            is_converted: false,
+            follow_up_date: c.follow_up_date || undefined,
+            area_name: c.area_name.trim() || form.area.trim() || 'Field Marketing',
+            photo_url: c.photo_url.trim() || undefined,
+            is_converted: Boolean(c.is_converted),
             has_google_review: c.has_google_review,
-            google_review_rating: c.google_review_rating || 5,
-            google_review_text: c.google_review_text.trim() || undefined,
+            google_review_rating: c.has_google_review ? (c.google_review_rating || 5) : 5,
+            google_review_text: c.has_google_review ? (c.google_review_text.trim() || undefined) : undefined,
             has_customer_feedback: c.has_customer_feedback,
-            feedback_rating: c.has_customer_feedback ? (c.feedback_rating || 5) : undefined,
+            feedback_rating: c.has_customer_feedback ? (c.feedback_rating || 5) : 5,
             feedback_text: c.has_customer_feedback && c.feedback_text.trim() ? c.feedback_text.trim() : undefined,
-            area_name: form.area,
             interested_in: interestedArr.length > 0 ? interestedArr.join(', ') : undefined,
             notes: c.notes.trim() || undefined,
           });
         }
       });
 
+      const firstArea =
+        customersPayload.find((c) => c.area_name?.trim())?.area_name?.trim() ||
+        form.area.trim() ||
+        'Field Marketing';
+
+      const customerPhotos = customersPayload
+        .map((c) => c.photo_url?.trim())
+        .filter((p): p is string => Boolean(p));
+      const allPhotos = Array.from(new Set([...customerPhotos, ...form.photo_urls]));
+
+      const convertedCount = customersPayload.filter((c) => c.is_converted).length;
       const customerReviewsCount = customersPayload.filter((c) => c.has_google_review).length;
       const totalGoogleRatings = Math.max(form.google_ratings_count, customerReviewsCount);
 
       await api.put(`/api/v1/outdoor-marketing/duties/${dutyId}`, {
-        area: form.area.trim(),
-        customers_attended_count: form.customers_attended_count,
-        converted_customers_count: 0,
+        area: firstArea,
+        customers_attended_count: customersPayload.length,
+        converted_customers_count: convertedCount,
         google_ratings_count: totalGoogleRatings,
-        photo_url: form.photo_urls[0] || form.photo_url || null,
-        photo_urls: form.photo_urls,
+        photo_url: allPhotos[0] || null,
+        photo_urls: allPhotos,
         notes: form.notes.trim() || null,
         status: 'Completed',
         customers: customersPayload,
@@ -1335,272 +1449,419 @@ export const OutdoorMarketingPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Targeted Field Location / Area */}
-                    <div>
-                      <label className="text-xs font-extrabold text-[#1D1D1B] mb-1.5 flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-[#23815F]" />
-                        <span>Targeted Field Location / Market Area <strong className="text-[#C24141]">*</strong></span>
-                      </label>
-                      <input
-                        type="text"
-                        value={form.area}
-                        onChange={(e) => updateDutyFormField(duty.id, 'area', e.target.value)}
-                        placeholder="e.g. Yelahanka Old Town Market / Gandhi Circle"
-                        className="w-full px-3.5 py-2.5 input-luxury-beige rounded-xl text-xs font-semibold"
-                      />
-                    </div>
-
-                    {/* Compact Field Photos Strip (Small in front, Expandable on click) */}
-                    <CompactPhotoStrip
-                      photos={form.photo_urls || []}
-                      employeeName={duty.employee_name}
-                      area={form.area || duty.area}
-                      date={selectedDate}
-                      isUploading={form.isUploadingPhotos}
-                      onUpload={(e) => handleMultiplePhotoUpload(duty.id, e)}
-                      onDelete={(url) => handleRemovePhoto(duty.id, url)}
-                      onExpand={handleOpenLightbox}
-                    />
-
-                    {/* Attended Customers Section */}
-                    <div className="space-y-3 bg-[#FAF8F3] border border-[#E4DFD4] rounded-2xl p-4 sm:p-5">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    {/* Outdoor Attended Customers & Leads Section */}
+                    <div className="space-y-4 bg-[#FAF8F3] border border-[#E4DFD4] rounded-2xl p-4 sm:p-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#EBE6DC] pb-3">
                         <div>
-                          <label className="text-xs font-extrabold text-[#1D1D1B] flex items-center gap-1.5">
+                          <label className="text-xs sm:text-sm font-extrabold text-[#1D1D1B] flex items-center gap-1.5">
                             <Users className="w-4 h-4 text-[#23815F]" />
-                            <span>Customers Attended in Field</span>
+                            <span>Outdoor Attended Customers & Leads ({form.attendedList.length})</span>
                           </label>
                           <p className="text-[11px] text-[#5E5A52] mt-0.5">
-                            Select number of attended visitors. Fill in details and Google review status (optional).
+                            Enter individual location, proof photo (1), follow-up date, jewelry interest, and notes per customer.
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-[#5E5A52]">Attended Count:</span>
-                          <select
-                            value={form.customers_attended_count}
-                            onChange={(e) => handleAttendedCountChange(duty.id, parseInt(e.target.value) || 0)}
-                            className="select-luxury-slate rounded-xl px-3 py-1.5 text-xs font-bold cursor-pointer"
-                          >
-                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50].map((num) => (
-                              <option key={num} value={num}>
-                                {num} {num === 1 ? 'Customer' : 'Customers'}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => addAttendedCustomer(duty.id)}
+                          className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl shadow-xs cursor-pointer self-start sm:self-auto"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-white" />
+                          <span>+ Add Customer Lead</span>
+                        </button>
                       </div>
 
-                      {form.customers_attended_count > 0 && (
-                        <div className="space-y-3 pt-2">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {form.attendedList.map((cust, cIdx) => (
-                              <div
-                                key={cIdx}
-                                className="bg-white border border-[#C5E3D5] rounded-2xl p-4 space-y-3 shadow-2xs"
-                              >
-                                <div className="text-xs font-bold text-[#23815F] flex items-center justify-between">
-                                  <span>👤 Attended Customer #{cIdx + 1}</span>
+                      {form.attendedList.length === 0 ? (
+                        <div className="py-8 text-center space-y-2">
+                          <p className="text-xs text-[#8A8479]">No customer leads added yet for this employee.</p>
+                          <button
+                            type="button"
+                            onClick={() => addAttendedCustomer(duty.id)}
+                            className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs inline-flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-xs cursor-pointer"
+                          >
+                            <Plus className="w-4 h-4 text-white" />
+                            <span>+ Add First Customer Lead</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4 pt-1">
+                          {form.attendedList.map((cust, cIdx) => (
+                            <div
+                              key={cIdx}
+                              className="bg-white border border-[#C5E3D5] rounded-2xl p-4 sm:p-4.5 space-y-3.5 shadow-2xs hover:border-[#23815F] transition-all"
+                            >
+                              {/* Customer Header */}
+                              <div className="flex items-center justify-between border-b border-[#EBE6DC] pb-2.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2.5 py-0.5 rounded-lg bg-[#23815F] text-white text-[11px] font-black">
+                                    #{cIdx + 1}
+                                  </span>
+                                  <span className="text-xs font-bold text-[#1D1D1B]">
+                                    {cust.name.trim() || `Customer Lead #${cIdx + 1}`}
+                                  </span>
+                                  {cust.is_converted && (
+                                    <span className="px-2 py-0.5 rounded-md bg-[#E8F4EE] text-[#21845F] border border-[#A7F3D0] text-[10px] font-black">
+                                      ✓ Converted to Sale
+                                    </span>
+                                  )}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => removeAttendedCustomer(duty.id, cIdx)}
+                                  className="p-1 text-[#8A8479] hover:text-red-600 rounded-lg transition-colors cursor-pointer"
+                                  title="Remove this customer lead"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              {/* Form Fields Container */}
+                              <div className="space-y-3.5">
+                                {/* Row 1: Name & Phone */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <div>
-                                    <label className="text-[10px] font-bold text-[#8A8479] block mb-1">
-                                      Customer Name
+                                    <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                                      <User className="w-3 h-3 text-[#23815F]" />
+                                      <span>Customer Name <span className="text-red-500">*</span></span>
                                     </label>
                                     <input
                                       type="text"
                                       value={cust.name}
                                       onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'name', e.target.value)}
-                                      placeholder="e.g. Anand Kumar"
-                                      className="w-full px-2.5 py-1.5 input-luxury-beige rounded-lg text-xs font-medium"
+                                      placeholder="Full name"
+                                      className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium"
                                     />
                                   </div>
 
                                   <div>
-                                    <label className="text-[10px] font-bold text-[#8A8479] block mb-1">
-                                      Phone Number
+                                    <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                                      <Phone className="w-3 h-3 text-[#23815F]" />
+                                      <span>Mobile Number</span>
                                     </label>
                                     <input
                                       type="tel"
                                       value={cust.phone}
                                       onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'phone', e.target.value)}
-                                      placeholder="e.g. 9845012345"
-                                      className="w-full px-2.5 py-1.5 input-luxury-beige rounded-lg text-xs font-medium font-mono"
+                                      placeholder="10-digit mobile"
+                                      className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-mono"
                                     />
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
+                                {/* Row 2: Location & Proof Photo (1) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <div>
-                                    <label className="text-[10px] font-bold text-[#8A8479] mb-1 flex items-center gap-1">
-                                      <Cake className="w-3 h-3 text-[#9A782F]" />
-                                      <span>DOB</span>
+                                    <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                                      <MapPin className="w-3 h-3 text-[#23815F]" />
+                                      <span>Field Location / Market Area</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={cust.area_name}
+                                      onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'area_name', e.target.value)}
+                                      placeholder="e.g. Market Booth, Yelahanka 4th Cross..."
+                                      className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                                      <Camera className="w-3 h-3 text-[#23815F]" />
+                                      <span>Field Photo (1) Proof</span>
+                                    </label>
+
+                                    {cust.photo_url ? (
+                                      <div className="flex items-center gap-2 bg-white border border-[#C5E3D5] rounded-xl p-1.5 shadow-2xs">
+                                        <img
+                                          src={cust.photo_url.startsWith('http') ? cust.photo_url : `/api/media/${cust.photo_url.replace(/^uploads\//, '')}`}
+                                          alt="Customer Photo Proof"
+                                          className="w-10 h-10 object-cover rounded-lg border border-[#E6E1D6] shrink-0"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-[11px] font-bold text-[#23815F] truncate">Photo Attached</p>
+                                          <p className="text-[10px] text-[#8A8479]">1 proof uploaded</p>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0 pr-1">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleOpenLightbox(
+                                                [cust.photo_url],
+                                                0,
+                                                duty.employee_name,
+                                                `${cust.area_name || duty.area} (${selectedDate})`
+                                              )
+                                            }
+                                            className="p-1.5 rounded-lg bg-[#E8F4EE] hover:bg-[#D1FAE5] text-[#21845F] transition-all cursor-pointer"
+                                            title="View Photo"
+                                          >
+                                            <Eye className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => updateAttendedCustomer(duty.id, cIdx, 'photo_url', '')}
+                                            className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all cursor-pointer"
+                                            title="Remove Photo"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <label className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-dashed border-[#CBD5E1] hover:border-[#23815F] bg-white hover:bg-[#E8F4EE] text-xs font-bold text-[#23815F] cursor-pointer transition-all shadow-2xs">
+                                        {uploadingCustomerPhotoKey === `${duty.id}-${cIdx}` ? (
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#23815F]" />
+                                        ) : (
+                                          <Camera className="w-3.5 h-3.5 text-[#23815F]" />
+                                        )}
+                                        <span>
+                                          {uploadingCustomerPhotoKey === `${duty.id}-${cIdx}`
+                                            ? 'Uploading photo...'
+                                            : '+ Upload Field Photo (1)'}
+                                        </span>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          capture="environment"
+                                          onChange={(e) => handleCustomerPhotoUpload(duty.id, cIdx, e)}
+                                          disabled={uploadingCustomerPhotoKey === `${duty.id}-${cIdx}`}
+                                          className="hidden"
+                                        />
+                                      </label>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Row 3: Important Dates (DOB, Anniversary, Follow-up / Notification Date) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                                      <Cake className="w-3 h-3 text-[#7E22CE]" />
+                                      <span>Date of Birth</span>
                                     </label>
                                     <input
                                       type="date"
                                       value={cust.dob}
                                       onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'dob', e.target.value)}
-                                      className="w-full px-2.5 py-1.5 input-luxury-beige rounded-lg text-xs font-medium cursor-pointer"
+                                      className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium cursor-pointer"
                                     />
                                   </div>
 
                                   <div>
-                                    <label className="text-[10px] font-bold text-[#8A8479] mb-1 flex items-center gap-1">
-                                      <Heart className="w-3 h-3 text-[#C24141]" />
-                                      <span>Anniversary</span>
+                                    <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                                      <Heart className="w-3 h-3 text-[#D97706]" />
+                                      <span>Anniversary Date</span>
                                     </label>
                                     <input
                                       type="date"
                                       value={cust.anniversary_date}
                                       onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'anniversary_date', e.target.value)}
-                                      className="w-full px-2.5 py-1.5 input-luxury-beige rounded-lg text-xs font-medium cursor-pointer"
+                                      className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium cursor-pointer"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                                      <Bell className="w-3 h-3 text-[#2563EB]" />
+                                      <span className="text-[#1E40AF] font-black">Follow-up / Notification Date</span>
+                                    </label>
+                                    <input
+                                      type="date"
+                                      value={cust.follow_up_date}
+                                      onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'follow_up_date', e.target.value)}
+                                      className="w-full px-3 py-2 bg-[#EFF6FF] border border-[#93C5FD] rounded-xl text-xs text-[#1E3A8A] focus:border-[#2563EB] focus:outline-hidden font-medium cursor-pointer"
                                     />
                                   </div>
                                 </div>
 
-                                {/* Google Review & Customer Feedback Sections Side by Side */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                                  {/* Customer Google Review Toggle */}
-                                  <div className="p-2.5 rounded-xl bg-[#FAFDFB] border border-[#C5E3D5] space-y-2">
-                                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-[#1D1D1B]">
+                                {/* Jewelry Interest & Conversion Row */}
+                                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#EBE6DC]/80">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-[11px] font-bold text-[#5E5A52] uppercase mr-1">
+                                      Interested In:
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => updateAttendedCustomer(duty.id, cIdx, 'interested_gold', !cust.interested_gold)}
+                                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        cust.interested_gold
+                                          ? 'bg-[#FEFCE8] text-[#854D0E] border-[#CA8A04] shadow-2xs font-black'
+                                          : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                                      }`}
+                                    >
+                                      <span>🪙 Gold</span>
+                                      {cust.interested_gold && <Check className="w-3 h-3 text-[#854D0E]" />}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => updateAttendedCustomer(duty.id, cIdx, 'interested_diamond', !cust.interested_diamond)}
+                                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        cust.interested_diamond
+                                          ? 'bg-[#EFF6FF] text-[#1E40AF] border-[#3B82F6] shadow-2xs font-black'
+                                          : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                                      }`}
+                                    >
+                                      <span>💎 Diamond</span>
+                                      {cust.interested_diamond && <Check className="w-3 h-3 text-[#1E40AF]" />}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => updateAttendedCustomer(duty.id, cIdx, 'interested_silver', !cust.interested_silver)}
+                                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        cust.interested_silver
+                                          ? 'bg-[#F1F5F9] text-[#334155] border-[#64748B] shadow-2xs font-black'
+                                          : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                                      }`}
+                                    >
+                                      <span>🥈 Silver</span>
+                                      {cust.interested_silver && <Check className="w-3 h-3 text-[#334155]" />}
+                                    </button>
+                                  </div>
+
+                                  <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#CBD5E1] hover:border-[#23815F] text-xs font-bold text-[#1D1D1B] cursor-pointer shadow-2xs transition-all">
+                                    <input
+                                      type="checkbox"
+                                      checked={Boolean(cust.is_converted)}
+                                      onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'is_converted', e.target.checked)}
+                                      className="w-4 h-4 text-[#23815F] rounded border-[#CBD5E1] focus:ring-[#23815F]"
+                                    />
+                                    <span className={cust.is_converted ? 'text-[#21845F] font-black' : 'text-[#5E5A52]'}>
+                                      Converted to Sale / Order
+                                    </span>
+                                  </label>
+                                </div>
+
+                                {/* Reviews & Feedback Row */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-[#EBE6DC]/80">
+                                  {/* Google Review Box */}
+                                  <div className={`p-3 rounded-xl border transition-all ${
+                                    cust.has_google_review ? 'bg-[#FEFCE8] border-[#CA8A04]' : 'bg-white border-[#E6E1D6]'
+                                  }`}>
+                                    <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
                                       <input
                                         type="checkbox"
                                         checked={cust.has_google_review}
                                         onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'has_google_review', e.target.checked)}
-                                        className="rounded text-[#23815F] focus:ring-[#23815F]"
+                                        className="w-4 h-4 text-[#CA8A04] rounded border-[#CBD5E1] focus:ring-[#CA8A04]"
                                       />
-                                      <span className="flex items-center gap-1 text-amber-600">
-                                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-                                        <span>Customer Gave Google Review?</span>
+                                      <span className="flex items-center gap-1 text-[#854D0E] font-black">
+                                        <Star className="w-3.5 h-3.5 fill-[#CA8A04] text-[#CA8A04]" />
+                                        <span>Google 5-Star Review Given</span>
                                       </span>
                                     </label>
 
                                     {cust.has_google_review && (
-                                      <div className="grid grid-cols-3 gap-2 pt-1">
-                                        <div>
-                                          <select
-                                            value={cust.google_review_rating}
-                                            onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'google_review_rating', parseInt(e.target.value) || 5)}
-                                            className="w-full px-2 py-1 select-luxury-slate rounded-lg text-xs font-bold"
-                                          >
-                                            <option value="5">⭐⭐⭐⭐⭐ (5 Star)</option>
-                                            <option value="4">⭐⭐⭐⭐ (4 Star)</option>
-                                            <option value="3">⭐⭐⭐ (3 Star)</option>
-                                          </select>
+                                      <div className="space-y-2 mt-2 pt-2 border-t border-[#FDE047]">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[11px] font-bold text-[#854D0E]">Rating:</span>
+                                          {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                              key={star}
+                                              type="button"
+                                              onClick={() => updateAttendedCustomer(duty.id, cIdx, 'google_review_rating', star)}
+                                              className="p-0.5 cursor-pointer"
+                                            >
+                                              <Star
+                                                className={`w-4 h-4 ${
+                                                  star <= (cust.google_review_rating || 5)
+                                                    ? 'fill-[#F59E0B] text-[#F59E0B]'
+                                                    : 'text-gray-300'
+                                                }`}
+                                              />
+                                            </button>
+                                          ))}
                                         </div>
-                                        <div className="col-span-2">
-                                          <input
-                                            type="text"
-                                            value={cust.google_review_text}
-                                            onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'google_review_text', e.target.value)}
-                                            placeholder="Review remark / feedback snippet..."
-                                            className="w-full px-2.5 py-1 input-luxury-beige rounded-lg text-xs"
-                                          />
-                                        </div>
+                                        <input
+                                          type="text"
+                                          placeholder="Review remark / snippet..."
+                                          value={cust.google_review_text}
+                                          onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'google_review_text', e.target.value)}
+                                          className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#CA8A04] focus:outline-hidden"
+                                        />
                                       </div>
                                     )}
                                   </div>
 
-                                  {/* Customer Direct Feedback Section */}
-                                  <div className="p-2.5 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7] space-y-2">
-                                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-[#1D1D1B]">
+                                  {/* Customer Feedback Box */}
+                                  <div className={`p-3 rounded-xl border transition-all ${
+                                    cust.has_customer_feedback ? 'bg-[#FAF5FF] border-[#A855F7]' : 'bg-white border-[#E6E1D6]'
+                                  }`}>
+                                    <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
                                       <input
                                         type="checkbox"
                                         checked={cust.has_customer_feedback || false}
                                         onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'has_customer_feedback', e.target.checked)}
-                                        className="rounded text-[#23815F] focus:ring-[#23815F]"
+                                        className="w-4 h-4 text-[#7E22CE] rounded border-[#CBD5E1] focus:ring-[#7E22CE]"
                                       />
-                                      <span className="flex items-center gap-1 text-[#166534]">
-                                        <MessageSquareHeart className="w-3.5 h-3.5 text-[#23815F]" />
-                                        <span>Customer Feedback & Rating?</span>
+                                      <span className="flex items-center gap-1 text-[#7E22CE] font-black">
+                                        <MessageSquareHeart className="w-3.5 h-3.5 text-[#7E22CE]" />
+                                        <span>Customer Feedback Recorded</span>
                                       </span>
                                     </label>
 
                                     {cust.has_customer_feedback && (
-                                      <div className="grid grid-cols-3 gap-2 pt-1">
-                                        <div>
-                                          <select
-                                            value={cust.feedback_rating || 5}
-                                            onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'feedback_rating', parseInt(e.target.value) || 5)}
-                                            className="w-full px-2 py-1 select-luxury-slate rounded-lg text-xs font-bold"
-                                          >
-                                            <option value="5">⭐⭐⭐⭐⭐ (5 Star)</option>
-                                            <option value="4">⭐⭐⭐⭐ (4 Star)</option>
-                                            <option value="3">⭐⭐⭐ (3 Star)</option>
-                                            <option value="2">⭐⭐ (2 Star)</option>
-                                            <option value="1">⭐ (1 Star)</option>
-                                          </select>
+                                      <div className="space-y-2 mt-2 pt-2 border-t border-[#E9D5FF]">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[11px] font-bold text-[#7E22CE]">Rating:</span>
+                                          {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                              key={star}
+                                              type="button"
+                                              onClick={() => updateAttendedCustomer(duty.id, cIdx, 'feedback_rating', star)}
+                                              className="p-0.5 cursor-pointer"
+                                            >
+                                              <Star
+                                                className={`w-4 h-4 ${
+                                                  star <= (cust.feedback_rating || 5)
+                                                    ? 'fill-[#7E22CE] text-[#7E22CE]'
+                                                    : 'text-gray-300'
+                                                }`}
+                                              />
+                                            </button>
+                                          ))}
                                         </div>
-                                        <div className="col-span-2">
-                                          <input
-                                            type="text"
-                                            value={cust.feedback_text || ''}
-                                            onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'feedback_text', e.target.value)}
-                                            placeholder="Customer feedback / remark notes..."
-                                            className="w-full px-2.5 py-1 input-luxury-beige rounded-lg text-xs"
-                                          />
-                                        </div>
+                                        <input
+                                          type="text"
+                                          placeholder="Customer feedback notes, designs inquired..."
+                                          value={cust.feedback_text || ''}
+                                          onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'feedback_text', e.target.value)}
+                                          className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#7E22CE] focus:outline-hidden"
+                                        />
                                       </div>
                                     )}
                                   </div>
                                 </div>
 
-                                {/* Interested In Section */}
-                                <div className="p-2.5 rounded-xl bg-[#FFFDF7] border border-[#E8DFC8] space-y-2">
-                                  <div className="text-[11px] font-extrabold text-[#7E5E18] uppercase tracking-wider flex items-center gap-1.5">
-                                    <Sparkles className="w-3.5 h-3.5 text-[#C6A45C]" />
-                                    <span>Interested In</span>
-                                  </div>
-                                  <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-[#1D1D1B]">
-                                    <label className="flex items-center gap-1.5 cursor-pointer select-none px-2.5 py-1 rounded-lg border border-[#E8DFC8] bg-white hover:bg-amber-50/50">
-                                      <input
-                                        type="checkbox"
-                                        checked={cust.interested_gold}
-                                        onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'interested_gold', e.target.checked)}
-                                        className="rounded text-amber-600 focus:ring-amber-500"
-                                      />
-                                      <span className="text-amber-800">🟡 Gold</span>
-                                    </label>
-                                    <label className="flex items-center gap-1.5 cursor-pointer select-none px-2.5 py-1 rounded-lg border border-[#E8DFC8] bg-white hover:bg-cyan-50/50">
-                                      <input
-                                        type="checkbox"
-                                        checked={cust.interested_diamond}
-                                        onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'interested_diamond', e.target.checked)}
-                                        className="rounded text-cyan-600 focus:ring-cyan-500"
-                                      />
-                                      <span className="text-cyan-800">💎 Diamond</span>
-                                    </label>
-                                    <label className="flex items-center gap-1.5 cursor-pointer select-none px-2.5 py-1 rounded-lg border border-[#E8DFC8] bg-white hover:bg-slate-50/50">
-                                      <input
-                                        type="checkbox"
-                                        checked={cust.interested_silver}
-                                        onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'interested_silver', e.target.checked)}
-                                        className="rounded text-slate-600 focus:ring-slate-500"
-                                      />
-                                      <span className="text-slate-700">⚪ Silver</span>
-                                    </label>
-                                  </div>
-                                </div>
-
-
-
-                                {/* Customer Notes */}
+                                {/* Row 6: Duty Field Notes / Team Observations for this Customer */}
                                 <div>
-                                  <label className="text-[10px] font-bold text-[#8A8479] block mb-1">
-                                    Customer Notes / Inquiries
+                                  <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                                    <Edit2 className="w-3 h-3 text-[#7E22CE]" />
+                                    <span>Duty Field Notes / Team Observations</span>
                                   </label>
-                                  <input
-                                    type="text"
+                                  <textarea
+                                    rows={2}
+                                    placeholder="Conversation notes, customer inquiries, designs requested, follow-up notes..."
                                     value={cust.notes}
                                     onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'notes', e.target.value)}
-                                    placeholder="e.g. Inquired about SIRISAMRUDDHI GOLDEN DREAMS scheme, follow-up next Monday..."
-                                    className="w-full px-2.5 py-1.5 input-luxury-beige rounded-lg text-xs font-medium"
+                                    className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium resize-none"
                                   />
                                 </div>
                               </div>
-                            ))}
-                          </div>
+                            </div>
+                          ))}
+
+                          <button
+                            type="button"
+                            onClick={() => addAttendedCustomer(duty.id)}
+                            className="w-full py-3.5 rounded-2xl border-2 border-dashed border-[#C5E3D5] hover:border-[#23815F] bg-[#FAF8F5] hover:bg-[#E8F4EE] text-[#23815F] font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>+ Add Another Customer Lead for {duty.employee_name}</span>
+                          </button>
                         </div>
                       )}
                     </div>

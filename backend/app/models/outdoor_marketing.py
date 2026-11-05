@@ -66,6 +66,8 @@ class OutdoorMarketingCustomer(Base):
     phone = Column(String(20), nullable=True)
     dob = Column(Date, nullable=True)
     anniversary_date = Column(Date, nullable=True)
+    follow_up_date = Column(Date, nullable=True)
+    photo_url = Column(String(500), nullable=True)
     area_name = Column(String(150), nullable=True)
     scheme_name = Column(String(150), nullable=True)
     date = Column(Date, default=date.today, index=True, nullable=False)

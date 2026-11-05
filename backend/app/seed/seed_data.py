@@ -190,6 +190,19 @@ def seed_database():
     db = SessionLocal()
 
     try:
+        # PostgreSQL schema sequence protection to prevent null id constraint errors
+        if "postgresql" in str(engine.url):
+            try:
+                from sqlalchemy import text
+                db.execute(text("""
+                    CREATE SEQUENCE IF NOT EXISTS siridashboard.users_id_seq;
+                    ALTER TABLE siridashboard.users ALTER COLUMN id SET DEFAULT nextval('siridashboard.users_id_seq');
+                    SELECT setval('siridashboard.users_id_seq', GREATEST(COALESCE((SELECT MAX(id) FROM siridashboard.users), 0), 1), true);
+                """))
+                db.commit()
+            except Exception:
+                db.rollback()
+
         # Enforce Zero-DB Admin Principle: Purge any legacy super admin database rows
         db.query(User).filter(User.role == "SUPER_ADMIN").delete()
         db.commit()
@@ -247,7 +260,7 @@ def seed_database():
                 hashed_pwd = get_password_hash(m_info["password"])
 
                 if not user:
-                    user = User(
+                    user_kwargs = dict(
                         branch_id=branch.id,
                         username=m_username,
                         email=fallback_email,
@@ -256,8 +269,17 @@ def seed_database():
                         role="MANAGER",
                         is_active=True,
                     )
-                    db.add(user)
-                    db.commit()
+                    try:
+                        user = User(**user_kwargs)
+                        db.add(user)
+                        db.commit()
+                    except Exception:
+                        db.rollback()
+                        from sqlalchemy import func
+                        max_user_id = db.query(func.coalesce(func.max(User.id), 0)).scalar() or 0
+                        user = User(id=max_user_id + 1, **user_kwargs)
+                        db.add(user)
+                        db.commit()
                     db.refresh(user)
                     print(f"    - Created Manager: {user.full_name} (@{user.username}) for {branch.name}")
                 else:

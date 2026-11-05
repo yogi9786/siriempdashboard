@@ -362,6 +362,8 @@ export interface OutdoorMarketingCustomer {
   phone?: string;
   dob?: string;
   anniversary_date?: string;
+  follow_up_date?: string;
+  photo_url?: string;
   area_name?: string;
   scheme_name?: string;
   date: string;
@@ -385,6 +387,8 @@ export interface OutdoorCustomerDetail {
   phone?: string;
   dob?: string;
   anniversary_date?: string;
+  follow_up_date?: string;
+  photo_url?: string;
   is_converted: boolean;
   has_google_review: boolean;
   google_review_rating?: number;

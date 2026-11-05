@@ -133,6 +133,7 @@ class CustomerActivityCreate(BaseModel):
 
 
 class CustomerActivityUpdate(BaseModel):
+    employee_id: Optional[int] = None
     customers_count: Optional[int] = Field(default=None, ge=0)
     customer_name: Optional[str] = None
     phone_number: Optional[str] = None

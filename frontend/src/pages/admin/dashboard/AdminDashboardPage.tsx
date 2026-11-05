@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useAdminBranch } from '../../../context/AdminBranchContext';
+import { useToast } from '../../../context/ToastContext';
 import { AdminDashboardOverview, EmployeePointsRanking } from '../../../types';
 import { AdminKPICard } from '../../../components/admin/ui/AdminKPICard';
 import { ActivityTimeline } from '../../../components/admin/ui/ActivityTimeline';
@@ -34,6 +35,7 @@ import api from '../../../api/client';
 
 export const AdminDashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { success } = useToast();
   const { selectedBranchId, selectedBranch, dateRange } = useAdminBranch();
   const navigate = useNavigate();
 
@@ -77,11 +79,6 @@ export const AdminDashboardPage: React.FC = () => {
   useEffect(() => {
     fetchOverview();
     fetchPointsRanking();
-    const interval = setInterval(() => {
-      fetchOverview();
-      fetchPointsRanking();
-    }, 15000);
-    return () => clearInterval(interval);
   }, [selectedBranchId, dateRange, rankingBranchFilter]);
 
   useEffect(() => {
@@ -154,6 +151,20 @@ export const AdminDashboardPage: React.FC = () => {
 
           {/* Quick Actions */}
           <div className="flex items-center gap-3 self-start md:self-auto shrink-0 flex-wrap">
+            <button
+              onClick={() => {
+                fetchOverview();
+                fetchPointsRanking();
+                success('Admin dashboard synced with live showroom records.');
+              }}
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF8F5] text-[#1D1D1B] text-xs font-bold border border-[#E4DFD4] shadow-2xs transition-all cursor-pointer group"
+              title="Sync admin records"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-[#7E22CE] transition-transform ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 duration-500'}`} />
+              <span>Sync</span>
+            </button>
+
             <button
               onClick={() => navigate('/admin/branches')}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"

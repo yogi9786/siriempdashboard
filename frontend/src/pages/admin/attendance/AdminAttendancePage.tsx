@@ -100,26 +100,9 @@ export const AdminAttendancePage: React.FC = () => {
     [selectedDate, branchFilter]
   );
 
-  // Initial fetch and 1-hour live sync timer
+  // Initial fetch on date / branch change
   useEffect(() => {
     fetchAttendance();
-
-    // 1-Hour auto sync (3,600,000 ms)
-    if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
-    syncIntervalRef.current = setInterval(() => {
-      fetchAttendance();
-    }, 3600000);
-
-    // Countdown minute tracker
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    countdownIntervalRef.current = setInterval(() => {
-      setMinutesUntilSync((prev) => (prev > 1 ? prev - 1 : 60));
-    }, 60000);
-
-    return () => {
-      if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    };
   }, [fetchAttendance]);
 
   const handleBranchChange = (newVal: string) => {
@@ -225,14 +208,14 @@ export const AdminAttendancePage: React.FC = () => {
 
         {/* 1-Hour Live Sync Indicator & Actions */}
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Live Sync Badge */}
+          {/* Sync Badge */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] text-xs shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
             <div className="text-[11px] font-bold text-[#166534]">
-              <span>Auto-syncs every 1 hr</span>
+              <span>Sync on Refresh</span>
               {lastSyncedTime && (
                 <span className="text-[#15803D] font-normal ml-1">
-                  (Last: {lastSyncedTime} • Next ~{minutesUntilSync}m)
+                  (Last: {lastSyncedTime})
                 </span>
               )}
             </div>

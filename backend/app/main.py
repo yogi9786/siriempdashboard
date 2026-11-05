@@ -115,6 +115,7 @@ app.add_middleware(
 # Mount media directory for static image uploads
 os.makedirs(settings.MEDIA_DIR, exist_ok=True)
 app.mount("/media", StaticFiles(directory=settings.MEDIA_DIR), name="media")
+app.mount("/uploads", StaticFiles(directory=settings.MEDIA_DIR), name="uploads")
 
 
 import time
@@ -128,7 +129,7 @@ async def log_and_secure_requests(request: Request, call_next):
 
     # Log incoming API requests with status codes
     path = request.url.path
-    if not path.startswith("/media") and path != "/favicon.ico":
+    if not path.startswith("/media") and not path.startswith("/uploads") and path != "/favicon.ico":
         status_code = response.status_code
         logger.info(f"[HTTP] {request.method} {path} -> {status_code} ({duration_ms}ms)")
 

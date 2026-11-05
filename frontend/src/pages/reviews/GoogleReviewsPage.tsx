@@ -46,7 +46,7 @@ export const GoogleReviewsPage: React.FC = () => {
 
   // Filters
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [filterType, setFilterType] = useState<'all' | 'with_points' | 'pending' | 'floor' | 'outdoor'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'with_points' | 'pending'>('all');
 
   // Selected Employee for Detail Modal
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -174,12 +174,6 @@ export const GoogleReviewsPage: React.FC = () => {
       return false;
     }
     if (filterType === 'pending' && getEmployeePendingCount(emp.id) === 0) {
-      return false;
-    }
-    if (filterType === 'outdoor' && !emp.is_outdoor_marketing_employee) {
-      return false;
-    }
-    if (filterType === 'floor' && emp.is_outdoor_marketing_employee) {
       return false;
     }
     if (searchTerm.trim()) {
@@ -551,8 +545,6 @@ export const GoogleReviewsPage: React.FC = () => {
             { id: 'all', label: `All Staff (${employees.length})` },
             { id: 'with_points', label: 'With Points Only' },
             { id: 'pending', label: totalPendingQueue > 0 ? `Pending (${totalPendingQueue})` : 'Pending' },
-            { id: 'floor', label: 'Floor Sales' },
-            { id: 'outdoor', label: 'Outdoor Staff' },
           ].map((tab) => {
             const isSelected = filterType === tab.id;
             return (
@@ -835,18 +827,8 @@ export const GoogleReviewsPage: React.FC = () => {
                       <Star className="w-8 h-8 text-[#D97706] mx-auto mb-2 opacity-50" />
                       <p className="text-xs font-bold text-[#1D1D1B]">No Google Reviews Credited Yet</p>
                       <p className="text-[11px] text-[#71717A] mt-1">
-                        Use the button below to log a Google Map review and award points to {selectedEmployee.full_name}.
+                        No verified Google Map reviews recorded yet for {selectedEmployee.full_name}.
                       </p>
-                      <button
-                        onClick={() => {
-                          setGSelectedEmployeeId(selectedEmployee.id.toString());
-                          setShowAddGoogleModal(true);
-                        }}
-                        className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-[#D97706] hover:bg-[#B45309] transition-colors cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>+ Award Google Review Point</span>
-                      </button>
                     </div>
                   ) : (
                     getEmployeeGoogleReviews(selectedEmployee.id).map((rev) => {
@@ -980,18 +962,8 @@ export const GoogleReviewsPage: React.FC = () => {
                       <Video className="w-8 h-8 text-[#2563EB] mx-auto mb-2 opacity-50" />
                       <p className="text-xs font-bold text-[#1D1D1B]">No Video Reviews Credited Yet</p>
                       <p className="text-[11px] text-[#71717A] mt-1">
-                        Use the button below to log a customer video review and award 5 points to {selectedEmployee.full_name}.
+                        No customer video reviews recorded yet for {selectedEmployee.full_name}.
                       </p>
-                      <button
-                        onClick={() => {
-                          setVSelectedEmployeeId(selectedEmployee.id.toString());
-                          setShowAddVideoModal(true);
-                        }}
-                        className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] transition-colors cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>+ Award Video Review Points</span>
-                      </button>
                     </div>
                   ) : (
                     getEmployeeVideoReviews(selectedEmployee.id).map((v) => {
@@ -1121,37 +1093,11 @@ export const GoogleReviewsPage: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-5 sm:px-6 py-3.5 bg-[#FAF8F5] border-t border-[#E6E1D6] flex items-center justify-between gap-2.5 shrink-0">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGSelectedEmployeeId(selectedEmployee.id.toString());
-                    setShowAddGoogleModal(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-[#92400E] bg-[#FEF3C7] hover:bg-[#FDE68A] border border-[#FDE68A] transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Award Google Review (+1 Pt)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setVSelectedEmployeeId(selectedEmployee.id.toString());
-                    setShowAddVideoModal(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-[#1E40AF] bg-[#EFF6FF] hover:bg-[#DBEAFE] border border-[#BFDBFE] transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Award Video Review (+5 Pts)</span>
-                </button>
-              </div>
-
+            <div className="px-5 sm:px-6 py-3.5 bg-[#FAF8F5] border-t border-[#E6E1D6] flex items-center justify-end gap-2.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setSelectedEmployee(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-[#525252] hover:bg-[#EAE5D9] transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#18181B] hover:bg-[#27272A] transition-colors cursor-pointer"
               >
                 Close
               </button>

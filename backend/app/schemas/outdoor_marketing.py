@@ -56,15 +56,23 @@ class OutdoorCustomerDetail(BaseModel):
     has_google_review: bool = False
     google_review_rating: Optional[int] = 5
     google_review_text: Optional[str] = None
+    google_review_screenshot: Optional[str] = None
+    has_video_review: bool = False
+    video_review_title: Optional[str] = None
+    video_review_url: Optional[str] = None
+    video_review_proof: Optional[str] = None
     has_customer_feedback: bool = False
     feedback_rating: Optional[int] = 5
     feedback_text: Optional[str] = None
+    customer_feedback_proof: Optional[str] = None
     scheme_name: Optional[str] = None
     area_name: Optional[str] = None
     interested_in: Optional[str] = None
     notes: Optional[str] = None
+    note_notification_date: Optional[date] = None
+    updated_by_manager: bool = False
 
-    @field_validator("dob", "anniversary_date", "follow_up_date", mode="before")
+    @field_validator("dob", "anniversary_date", "follow_up_date", "note_notification_date", mode="before")
     @classmethod
     def parse_optional_dates(cls, v: Any) -> Optional[date]:
         if v is None or v == "" or (isinstance(v, str) and not v.strip()):
@@ -94,14 +102,22 @@ class OutdoorCustomerCreate(BaseModel):
     has_google_review: bool = False
     google_review_rating: Optional[int] = 5
     google_review_text: Optional[str] = None
+    google_review_screenshot: Optional[str] = None
+    has_video_review: bool = False
+    video_review_title: Optional[str] = None
+    video_review_url: Optional[str] = None
+    video_review_proof: Optional[str] = None
     has_customer_feedback: bool = False
     feedback_rating: Optional[int] = 5
     feedback_text: Optional[str] = None
+    customer_feedback_proof: Optional[str] = None
     status: str = Field(default="Lead")
     interested_in: Optional[str] = None
     notes: Optional[str] = None
+    note_notification_date: Optional[date] = None
+    updated_by_manager: bool = False
 
-    @field_validator("dob", "anniversary_date", "follow_up_date", "date", mode="before")
+    @field_validator("dob", "anniversary_date", "follow_up_date", "date", "note_notification_date", mode="before")
     @classmethod
     def parse_create_dates(cls, v: Any) -> Optional[date]:
         if v is None or v == "" or (isinstance(v, str) and not v.strip()):
@@ -131,12 +147,33 @@ class OutdoorCustomerUpdate(BaseModel):
     has_google_review: Optional[bool] = None
     google_review_rating: Optional[int] = None
     google_review_text: Optional[str] = None
+    google_review_screenshot: Optional[str] = None
+    has_video_review: Optional[bool] = None
+    video_review_title: Optional[str] = None
+    video_review_url: Optional[str] = None
+    video_review_proof: Optional[str] = None
     has_customer_feedback: Optional[bool] = None
     feedback_rating: Optional[int] = None
     feedback_text: Optional[str] = None
+    customer_feedback_proof: Optional[str] = None
     status: Optional[str] = None
     interested_in: Optional[str] = None
     notes: Optional[str] = None
+    note_notification_date: Optional[date] = None
+    updated_by_manager: Optional[bool] = True
+
+    @field_validator("dob", "anniversary_date", "follow_up_date", "date", "note_notification_date", mode="before")
+    @classmethod
+    def parse_update_dates(cls, v: Any) -> Optional[date]:
+        if v is None or v == "" or (isinstance(v, str) and not v.strip()):
+            return None
+        if isinstance(v, str):
+            try:
+                clean = v.strip().split("T")[0]
+                return date.fromisoformat(clean)
+            except Exception:
+                return None
+        return v
 
 
 class OutdoorCustomerResponse(BaseModel):
@@ -160,12 +197,20 @@ class OutdoorCustomerResponse(BaseModel):
     has_google_review: bool = False
     google_review_rating: Optional[int] = 5
     google_review_text: Optional[str] = None
+    google_review_screenshot: Optional[str] = None
+    has_video_review: bool = False
+    video_review_title: Optional[str] = None
+    video_review_url: Optional[str] = None
+    video_review_proof: Optional[str] = None
     has_customer_feedback: bool = False
     feedback_rating: Optional[int] = None
     feedback_text: Optional[str] = None
+    customer_feedback_proof: Optional[str] = None
     status: str
     interested_in: Optional[str] = None
     notes: Optional[str] = None
+    note_notification_date: Optional[date] = None
+    updated_by_manager: bool = False
     created_at: datetime
     updated_at: datetime
 

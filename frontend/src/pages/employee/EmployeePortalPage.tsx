@@ -178,14 +178,22 @@ export interface CustomerEntryState {
   has_google_review: boolean;
   google_review_rating: number;
   google_review_text: string;
+  google_review_screenshot?: string;
+  has_video_review?: boolean;
+  video_review_title?: string;
+  video_review_url?: string;
+  video_review_proof?: string;
   has_customer_feedback: boolean;
   feedback_rating: number;
   feedback_text: string;
+  customer_feedback_proof?: string;
   interested_gold: boolean;
   interested_diamond: boolean;
   interested_silver: boolean;
   is_converted?: boolean;
   notes: string;
+  note_notification_date?: string;
+  updated_by_manager?: boolean;
 }
 
 export const EmployeePortalPage: React.FC = () => {
@@ -601,14 +609,22 @@ export const EmployeePortalPage: React.FC = () => {
             has_google_review: Boolean(c.has_google_review),
             google_review_rating: c.google_review_rating || 5,
             google_review_text: c.google_review_text || '',
+            google_review_screenshot: (c as any).google_review_screenshot || '',
+            has_video_review: Boolean((c as any).has_video_review),
+            video_review_title: (c as any).video_review_title || '',
+            video_review_url: (c as any).video_review_url || '',
+            video_review_proof: (c as any).video_review_proof || '',
             has_customer_feedback: Boolean((c as any).has_customer_feedback),
             feedback_rating: (c as any).feedback_rating || 5,
             feedback_text: (c as any).feedback_text || '',
+            customer_feedback_proof: (c as any).customer_feedback_proof || '',
             interested_gold: intStr.includes('gold'),
             interested_diamond: intStr.includes('diamond'),
             interested_silver: intStr.includes('silver'),
             is_converted: Boolean(c.is_converted),
             notes: c.notes || '',
+            note_notification_date: (c as any).note_notification_date ? String((c as any).note_notification_date) : '',
+            updated_by_manager: Boolean((c as any).updated_by_manager),
           };
         });
 
@@ -631,14 +647,22 @@ export const EmployeePortalPage: React.FC = () => {
             has_google_review: false,
             google_review_rating: 5,
             google_review_text: '',
+            google_review_screenshot: '',
+            has_video_review: false,
+            video_review_title: '',
+            video_review_url: '',
+            video_review_proof: '',
             has_customer_feedback: false,
             feedback_rating: 5,
             feedback_text: '',
+            customer_feedback_proof: '',
             interested_gold: false,
             interested_diamond: false,
             interested_silver: false,
             is_converted: false,
             notes: '',
+            note_notification_date: '',
+            updated_by_manager: false,
           });
         }
 
@@ -665,14 +689,22 @@ export const EmployeePortalPage: React.FC = () => {
               has_google_review: false,
               google_review_rating: 5,
               google_review_text: '',
+              google_review_screenshot: '',
+              has_video_review: false,
+              video_review_title: '',
+              video_review_url: '',
+              video_review_proof: '',
               has_customer_feedback: false,
               feedback_rating: 5,
               feedback_text: '',
+              customer_feedback_proof: '',
               interested_gold: false,
               interested_diamond: false,
               interested_silver: false,
               is_converted: false,
               notes: '',
+              note_notification_date: '',
+              updated_by_manager: false,
             },
           ],
         });
@@ -712,17 +744,49 @@ export const EmployeePortalPage: React.FC = () => {
           has_google_review: false,
           google_review_rating: 5,
           google_review_text: '',
+          google_review_screenshot: '',
+          has_video_review: false,
+          video_review_title: '',
+          video_review_url: '',
+          video_review_proof: '',
           has_customer_feedback: false,
           feedback_rating: 5,
           feedback_text: '',
+          customer_feedback_proof: '',
           interested_gold: false,
           interested_diamond: false,
           interested_silver: false,
           is_converted: false,
           notes: '',
+          note_notification_date: '',
+          updated_by_manager: false,
         },
       ],
     }));
+  };
+
+  const [uploadingCustProofKey, setUploadingCustProofKey] = useState<string | null>(null);
+
+  const handleUploadEmployeeProof = async (
+    cIdx: number,
+    field: 'google_review_screenshot' | 'video_review_proof' | 'customer_feedback_proof',
+    file: File
+  ) => {
+    setUploadingCustProofKey(`${cIdx}_${field}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post<{ url: string; proof_url?: string }>('/api/v1/employee/outdoor/upload-proof', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url = res.data.proof_url || res.data.url;
+      handleUpdateOutdoorCustomer(cIdx, field, url);
+      success('Proof uploaded successfully!');
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to upload proof.');
+    } finally {
+      setUploadingCustProofKey(null);
+    }
   };
 
   // Upload Photo for Specific Customer Row in Outdoor Entry
@@ -828,11 +892,19 @@ export const EmployeePortalPage: React.FC = () => {
           has_google_review: Boolean(c.has_google_review),
           google_review_rating: c.has_google_review ? Number(c.google_review_rating) : 5,
           google_review_text: c.has_google_review ? (c.google_review_text?.trim() || undefined) : undefined,
+          google_review_screenshot: c.google_review_screenshot || undefined,
+          has_video_review: Boolean(c.has_video_review),
+          video_review_title: c.has_video_review ? (c.video_review_title?.trim() || undefined) : undefined,
+          video_review_url: c.has_video_review ? (c.video_review_url?.trim() || undefined) : undefined,
+          video_review_proof: c.has_video_review ? (c.video_review_proof || undefined) : undefined,
           has_customer_feedback: Boolean(c.has_customer_feedback),
           feedback_rating: c.has_customer_feedback ? Number(c.feedback_rating) : 5,
           feedback_text: c.has_customer_feedback ? (c.feedback_text?.trim() || undefined) : undefined,
+          customer_feedback_proof: c.customer_feedback_proof || undefined,
           interested_in: interests.join(', '),
           notes: c.notes?.trim() || undefined,
+          note_notification_date: c.note_notification_date || undefined,
+          updated_by_manager: Boolean(c.updated_by_manager),
           date: selectedOutdoorDate,
         };
       });
@@ -2879,7 +2951,7 @@ export const EmployeePortalPage: React.FC = () => {
                     >
                       {/* Row Header */}
                       <div className="flex items-center justify-between border-b border-[#EBE6DC] pb-2.5">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="px-2.5 py-0.5 rounded-lg bg-[#23815F] text-white text-[11px] font-black">
                             #{cIdx + 1}
                           </span>
@@ -2889,6 +2961,12 @@ export const EmployeePortalPage: React.FC = () => {
                           {cust.is_converted && (
                             <span className="px-2 py-0.5 rounded-md bg-[#E8F4EE] text-[#21845F] border border-[#A7F3D0] text-[10px] font-black">
                               ✓ Converted to Sale
+                            </span>
+                          )}
+                          {cust.updated_by_manager && (
+                            <span className="px-2 py-0.5 rounded-md bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] text-[10px] font-black flex items-center gap-1">
+                              <Check className="w-2.5 h-2.5" />
+                              <span>Updated by Manager</span>
                             </span>
                           )}
                         </div>
@@ -3169,6 +3247,55 @@ export const EmployeePortalPage: React.FC = () => {
                                   onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'google_review_text', e.target.value)}
                                   className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#CA8A04] focus:outline-hidden"
                                 />
+
+                                <div>
+                                  <label className="block text-[10px] font-bold text-[#854D0E] uppercase mb-1">
+                                    Google Review Screenshot Proof
+                                  </label>
+                                  {cust.google_review_screenshot ? (
+                                    <div className="flex items-center gap-2 bg-white border border-[#FDE68A] rounded-lg p-1.5 shadow-2xs">
+                                      <img
+                                        src={getMediaUrl(cust.google_review_screenshot)}
+                                        alt="Review Proof"
+                                        className="w-8 h-8 object-cover rounded border border-[#E6E1D6] shrink-0"
+                                      />
+                                      <p className="text-[11px] font-bold text-[#854D0E] flex-1 truncate">Proof Attached</p>
+                                      <button
+                                        type="button"
+                                        onClick={() => setViewProofUrl(getMediaUrl(cust.google_review_screenshot))}
+                                        className="p-1 text-[#854D0E] hover:bg-[#FEF3C7] rounded cursor-pointer"
+                                        title="View"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateOutdoorCustomer(cIdx, 'google_review_screenshot', '')}
+                                        className="p-1 text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                                        title="Remove"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <label className="flex items-center justify-center gap-1.5 w-full py-1.5 px-2.5 rounded-lg border border-dashed border-[#CA8A04]/50 bg-white hover:bg-[#FEFCE8] text-[11px] font-bold text-[#854D0E] cursor-pointer transition-all">
+                                      {uploadingCustProofKey === `${cIdx}_google_review_screenshot` ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <Camera className="w-3 h-3" />
+                                      )}
+                                      <span>{uploadingCustProofKey === `${cIdx}_google_review_screenshot` ? 'Uploading...' : '+ Upload Review Screenshot'}</span>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          if (e.target.files?.[0]) handleUploadEmployeeProof(cIdx, 'google_review_screenshot', e.target.files[0]);
+                                        }}
+                                      />
+                                    </label>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -3218,24 +3345,171 @@ export const EmployeePortalPage: React.FC = () => {
                                   onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'feedback_text', e.target.value)}
                                   className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#7E22CE] focus:outline-hidden"
                                 />
+
+                                <div>
+                                  <label className="block text-[10px] font-bold text-[#7E22CE] uppercase mb-1">
+                                    Customer Feedback Proof / Video
+                                  </label>
+                                  {cust.customer_feedback_proof ? (
+                                    <div className="flex items-center gap-2 bg-white border border-[#E9D5FF] rounded-lg p-1.5 shadow-2xs">
+                                      <div className="w-8 h-8 rounded bg-[#FAF5FF] border border-[#D8B4FE] flex items-center justify-center shrink-0 text-xs">
+                                        {cust.customer_feedback_proof.match(/\.(mp4|webm|mov|avi)$/i) ? '🎬' : '🖼️'}
+                                      </div>
+                                      <p className="text-[11px] font-bold text-[#7E22CE] flex-1 truncate">Feedback Proof Attached</p>
+                                      <button
+                                        type="button"
+                                        onClick={() => setViewProofUrl(getMediaUrl(cust.customer_feedback_proof))}
+                                        className="p-1 text-[#7E22CE] hover:bg-[#FAF5FF] rounded cursor-pointer"
+                                        title="View"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateOutdoorCustomer(cIdx, 'customer_feedback_proof', '')}
+                                        className="p-1 text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                                        title="Remove"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <label className="flex items-center justify-center gap-1.5 w-full py-1.5 px-2.5 rounded-lg border border-dashed border-[#A855F7]/50 bg-white hover:bg-[#FAF5FF] text-[11px] font-bold text-[#7E22CE] cursor-pointer transition-all">
+                                      {uploadingCustProofKey === `${cIdx}_customer_feedback_proof` ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <Camera className="w-3 h-3" />
+                                      )}
+                                      <span>{uploadingCustProofKey === `${cIdx}_customer_feedback_proof` ? 'Uploading...' : '+ Upload Feedback Proof (Photo/Video)'}</span>
+                                      <input
+                                        type="file"
+                                        accept="image/*,video/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          if (e.target.files?.[0]) handleUploadEmployeeProof(cIdx, 'customer_feedback_proof', e.target.files[0]);
+                                        }}
+                                      />
+                                    </label>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
                         </div>
 
-                        {/* Row 6: Duty Field Notes / Team Observations for this Customer */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                            <Edit2 className="w-3 h-3 text-[#7E22CE]" />
-                            <span>Duty Field Notes / Team Observations</span>
+                        {/* Customer Video Review Box */}
+                        <div className={`p-3 rounded-xl border transition-all ${
+                          cust.has_video_review ? 'bg-[#EFF6FF] border-[#3B82F6]' : 'bg-white border-[#E6E1D6]'
+                        }`}>
+                          <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(cust.has_video_review)}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'has_video_review', e.target.checked)}
+                              className="w-4 h-4 text-[#2563EB] rounded border-[#CBD5E1] focus:ring-[#2563EB]"
+                            />
+                            <span className="flex items-center gap-1 text-[#1E40AF] font-black">
+                              <Video className="w-3.5 h-3.5 text-[#2563EB]" />
+                              <span>Customer Video Review Recorded</span>
+                            </span>
                           </label>
-                          <textarea
-                            rows={2}
-                            placeholder="Key conversation notes, customer requirements (e.g. looking for 22kt antique choker, budget ₹1.5L), follow-up observations..."
-                            value={cust.notes}
-                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'notes', e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium resize-none"
-                          />
+
+                          {cust.has_video_review && (
+                            <div className="space-y-2 mt-2 pt-2 border-t border-[#BFDBFE]">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Video title / topic (e.g. Bridal choker review)..."
+                                  value={cust.video_review_title || ''}
+                                  onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'video_review_title', e.target.value)}
+                                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#2563EB] focus:outline-hidden"
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Video link (YouTube, Reel, Drive)..."
+                                  value={cust.video_review_url || ''}
+                                  onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'video_review_url', e.target.value)}
+                                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#2563EB] focus:outline-hidden"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-[#1E40AF] uppercase mb-1">
+                                  Video Review Proof (Photo / Video Clip)
+                                </label>
+                                {cust.video_review_proof ? (
+                                  <div className="flex items-center gap-2 bg-white border border-[#BFDBFE] rounded-lg p-1.5 shadow-2xs">
+                                    <div className="w-8 h-8 rounded bg-[#EFF6FF] border border-[#93C5FD] flex items-center justify-center shrink-0 text-xs">
+                                      {cust.video_review_proof.match(/\.(mp4|webm|mov|avi)$/i) ? '🎬' : '🖼️'}
+                                    </div>
+                                    <p className="text-[11px] font-bold text-[#1E40AF] flex-1 truncate">Video Proof Attached</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => setViewProofUrl(getMediaUrl(cust.video_review_proof))}
+                                      className="p-1 text-[#1E40AF] hover:bg-[#DBEAFE] rounded cursor-pointer"
+                                      title="View"
+                                    >
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateOutdoorCustomer(cIdx, 'video_review_proof', '')}
+                                      className="p-1 text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                                      title="Remove"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label className="flex items-center justify-center gap-1.5 w-full py-1.5 px-2.5 rounded-lg border border-dashed border-[#3B82F6]/50 bg-white hover:bg-[#EFF6FF] text-[11px] font-bold text-[#1E40AF] cursor-pointer transition-all">
+                                    {uploadingCustProofKey === `${cIdx}_video_review_proof` ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Video className="w-3 h-3" />
+                                    )}
+                                    <span>{uploadingCustProofKey === `${cIdx}_video_review_proof` ? 'Uploading...' : '+ Upload Video Proof'}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*,video/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        if (e.target.files?.[0]) handleUploadEmployeeProof(cIdx, 'video_review_proof', e.target.files[0]);
+                                      }}
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Row 6: Duty Field Notes & Note Notification Date */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                              <Edit2 className="w-3 h-3 text-[#7E22CE]" />
+                              <span>Duty Field Notes / Team Observations</span>
+                            </label>
+                            <textarea
+                              rows={2}
+                              placeholder="Key conversation notes, customer requirements (e.g. looking for 22kt antique choker, budget ₹1.5L), follow-up observations..."
+                              value={cust.notes}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'notes', e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium resize-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-[#1E40AF] uppercase mb-1 flex items-center gap-1">
+                              <Bell className="w-3 h-3 text-[#2563EB]" />
+                              <span>Note Notification Date</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={cust.note_notification_date || ''}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'note_notification_date', e.target.value)}
+                              className="w-full px-3 py-2 bg-[#EFF6FF] border border-[#93C5FD] rounded-xl text-xs text-[#1E3A8A] focus:border-[#2563EB] focus:outline-hidden font-medium cursor-pointer"
+                            />
+                            <p className="text-[9px] text-[#6B7280] mt-1">Triggers manager header reminder on this date</p>
+                          </div>
                         </div>
                       </div>
                     </div>

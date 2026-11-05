@@ -75,12 +75,20 @@ class OutdoorMarketingCustomer(Base):
     has_google_review = Column(Boolean, default=False, nullable=False)
     google_review_rating = Column(Integer, default=5, nullable=True)
     google_review_text = Column(Text, nullable=True)
+    google_review_screenshot = Column(String(500), nullable=True)
+    has_video_review = Column(Boolean, default=False, nullable=False)
+    video_review_title = Column(String(200), nullable=True)
+    video_review_url = Column(String(500), nullable=True)
+    video_review_proof = Column(String(500), nullable=True)
     has_customer_feedback = Column(Boolean, default=False, nullable=False)
     feedback_rating = Column(Integer, default=5, nullable=True)
     feedback_text = Column(Text, nullable=True)
+    customer_feedback_proof = Column(String(500), nullable=True)
     status = Column(String(50), default="Lead", nullable=False)  # Lead, Contacted, Interested, Converted, Closed, Lost
     interested_in = Column(String(100), default="", nullable=True)  # Gold, Diamond, Silver
     notes = Column(Text, nullable=True)
+    note_notification_date = Column(Date, nullable=True)
+    updated_by_manager = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=utcnow, nullable=False)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 

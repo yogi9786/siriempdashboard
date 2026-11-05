@@ -1332,12 +1332,20 @@ def save_employee_outdoor_duty(
                 has_google_review=c.has_google_review,
                 google_review_rating=c.google_review_rating or 5,
                 google_review_text=c.google_review_text,
+                google_review_screenshot=getattr(c, "google_review_screenshot", None),
+                has_video_review=getattr(c, "has_video_review", False) or False,
+                video_review_title=getattr(c, "video_review_title", None),
+                video_review_url=getattr(c, "video_review_url", None),
+                video_review_proof=getattr(c, "video_review_proof", None),
                 has_customer_feedback=getattr(c, "has_customer_feedback", False) or False,
                 feedback_rating=getattr(c, "feedback_rating", 5) or 5,
                 feedback_text=getattr(c, "feedback_text", None),
+                customer_feedback_proof=getattr(c, "customer_feedback_proof", None),
                 status="Converted" if c.is_converted else "Contacted",
                 interested_in=c.interested_in,
                 notes=c.notes,
+                note_notification_date=getattr(c, "note_notification_date", None),
+                updated_by_manager=getattr(c, "updated_by_manager", False) or False,
             )
             db.add(new_cust)
 
@@ -1386,6 +1394,46 @@ async def upload_employee_outdoor_photo(
 
     rel_url = f"/uploads/outdoor/photos/{file_id}"
     return {"url": rel_url, "photo_url": rel_url, "message": "Photo uploaded successfully."}
+
+
+@router.post("/outdoor/upload-proof", status_code=status.HTTP_201_CREATED, summary="Upload outdoor customer review or feedback proof by employee")
+async def upload_employee_outdoor_proof(
+    file: UploadFile = File(...),
+    current_emp: Employee = Depends(get_current_employee),
+):
+    content_type = file.content_type.lower() if file.content_type else ""
+    allowed_proof_exts = {
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "video/mp4": ".mp4",
+        "video/webm": ".webm",
+        "video/quicktime": ".mov",
+        "video/x-msvideo": ".avi",
+    }
+    if content_type not in allowed_proof_exts:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file format. Please upload an image (JPEG, PNG, WebP) or video (MP4, WebM, MOV)."
+        )
+
+    upload_dir = os.path.join(settings.MEDIA_DIR, "outdoor", "proofs")
+    os.makedirs(upload_dir, exist_ok=True)
+
+    file_ext = allowed_proof_exts[content_type]
+    file_id = f"proof_emp_{current_emp.id}_{uuid.uuid4().hex[:12]}{file_ext}"
+    file_path = os.path.join(upload_dir, file_id)
+
+    contents = await file.read()
+    if len(contents) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 50MB limit.")
+
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    rel_url = f"/media/outdoor/proofs/{file_id}"
+    return {"url": rel_url, "proof_url": rel_url, "message": "Proof uploaded successfully."}
 
 
 @router.get("/outdoor/history", response_model=List[OutdoorDutyResponse], summary="List employee's past outdoor duties")

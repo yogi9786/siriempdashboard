@@ -371,12 +371,20 @@ export interface OutdoorMarketingCustomer {
   has_google_review?: boolean;
   google_review_rating?: number;
   google_review_text?: string;
+  google_review_screenshot?: string;
+  has_video_review?: boolean;
+  video_review_title?: string;
+  video_review_url?: string;
+  video_review_proof?: string;
   has_customer_feedback?: boolean;
   feedback_rating?: number;
   feedback_text?: string;
+  customer_feedback_proof?: string;
   status: 'Lead' | 'Contacted' | 'Interested' | 'Converted' | 'Closed' | 'Lost' | string;
   interested_in?: string;
   notes?: string;
+  note_notification_date?: string;
+  updated_by_manager?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -393,13 +401,54 @@ export interface OutdoorCustomerDetail {
   has_google_review: boolean;
   google_review_rating?: number;
   google_review_text?: string;
+  google_review_screenshot?: string;
+  has_video_review?: boolean;
+  video_review_title?: string;
+  video_review_url?: string;
+  video_review_proof?: string;
   has_customer_feedback?: boolean;
   feedback_rating?: number;
   feedback_text?: string;
+  customer_feedback_proof?: string;
   scheme_name?: string;
   area_name?: string;
   interested_in?: string;
   notes?: string;
+  note_notification_date?: string;
+  updated_by_manager?: boolean;
+}
+
+export interface ManagerNotificationItemActivity {
+  id: number;
+  customer_name: string;
+  phone_number: string;
+  employee_id: number;
+  employee_name: string;
+  status: string;
+  activity_date: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface ManagerNotificationItemNote {
+  id: number;
+  customer_name: string;
+  phone: string;
+  marketing_employee_id: number;
+  employee_name: string;
+  area_name: string;
+  note_notification_date: string;
+  notes: string;
+  status: string;
+  updated_by_manager: boolean;
+}
+
+export interface ManagerNotificationsResponse {
+  total_count: number;
+  pending_activities_count: number;
+  note_reminders_count: number;
+  pending_activities: ManagerNotificationItemActivity[];
+  note_reminders: ManagerNotificationItemNote[];
 }
 
 export interface OutdoorDuty {

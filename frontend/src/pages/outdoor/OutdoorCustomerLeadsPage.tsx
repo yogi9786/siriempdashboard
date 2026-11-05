@@ -25,6 +25,13 @@ import {
   Building2,
   Gem,
   MessageSquareHeart,
+  Video,
+  Eye,
+  Camera,
+  Bell,
+  FileText,
+  Check,
+  Loader2,
 } from 'lucide-react';
 import { OutdoorMarketingCustomer, Employee } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -36,6 +43,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+import { getMediaUrl } from '../../utils/media';
 import api from '../../api/client';
 
 export const OutdoorCustomerLeadsPage: React.FC = () => {
@@ -62,6 +70,8 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<OutdoorMarketingCustomer | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [previewProofUrl, setPreviewProofUrl] = useState<string | null>(null);
+  const [uploadingProofKey, setUploadingProofKey] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState<{
@@ -78,11 +88,18 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
     has_google_review: boolean;
     google_review_rating: number;
     google_review_text: string;
+    google_review_screenshot: string;
+    has_video_review: boolean;
+    video_review_title: string;
+    video_review_url: string;
+    video_review_proof: string;
     has_customer_feedback: boolean;
     feedback_rating: number;
     feedback_text: string;
+    customer_feedback_proof: string;
     date: string;
     notes: string;
+    note_notification_date: string;
   }>({
     customer_name: '',
     phone: '',
@@ -97,12 +114,40 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
     has_google_review: false,
     google_review_rating: 5,
     google_review_text: '',
+    google_review_screenshot: '',
+    has_video_review: false,
+    video_review_title: '',
+    video_review_url: '',
+    video_review_proof: '',
     has_customer_feedback: false,
     feedback_rating: 5,
     feedback_text: '',
+    customer_feedback_proof: '',
     date: new Date().toISOString().split('T')[0],
     notes: '',
+    note_notification_date: '',
   });
+
+  const handleUploadProof = async (
+    key: 'google_review_screenshot' | 'video_review_proof' | 'customer_feedback_proof',
+    file: File
+  ) => {
+    try {
+      setUploadingProofKey(key);
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post('/api/v1/outdoor-marketing/customers/upload-proof', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url = res.data?.url || res.data?.proof_url || '';
+      setFormData((prev) => ({ ...prev, [key]: url }));
+      success('Proof uploaded successfully.');
+    } catch (err: any) {
+      toastError(err?.response?.data?.detail || 'Failed to upload proof.');
+    } finally {
+      setUploadingProofKey(null);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -229,18 +274,25 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       anniversary_date: '',
       marketing_employee_id: employees[0]?.id?.toString() || '',
       area_name: '',
-        status: 'Lead',
+      status: 'Lead',
       interested_gold: false,
       interested_diamond: false,
       interested_silver: false,
       has_google_review: false,
       google_review_rating: 5,
       google_review_text: '',
+      google_review_screenshot: '',
+      has_video_review: false,
+      video_review_title: '',
+      video_review_url: '',
+      video_review_proof: '',
       has_customer_feedback: false,
       feedback_rating: 5,
       feedback_text: '',
+      customer_feedback_proof: '',
       date: new Date().toISOString().split('T')[0],
       notes: '',
+      note_notification_date: '',
     });
     setShowAddModal(true);
   };
@@ -263,11 +315,18 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       has_google_review: Boolean(c.has_google_review),
       google_review_rating: c.google_review_rating || 5,
       google_review_text: c.google_review_text || '',
+      google_review_screenshot: c.google_review_screenshot || '',
+      has_video_review: Boolean(c.has_video_review),
+      video_review_title: c.video_review_title || '',
+      video_review_url: c.video_review_url || '',
+      video_review_proof: c.video_review_proof || '',
       has_customer_feedback: Boolean(c.has_customer_feedback),
       feedback_rating: c.feedback_rating || 5,
       feedback_text: c.feedback_text || '',
+      customer_feedback_proof: c.customer_feedback_proof || '',
       date: c.date || new Date().toISOString().split('T')[0],
       notes: c.notes || '',
+      note_notification_date: c.note_notification_date || '',
     });
     setShowAddModal(true);
   };
@@ -301,11 +360,18 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
       has_google_review: formData.has_google_review,
       google_review_rating: formData.has_google_review ? formData.google_review_rating : undefined,
       google_review_text: formData.has_google_review && formData.google_review_text.trim() ? formData.google_review_text.trim() : undefined,
+      google_review_screenshot: formData.has_google_review && formData.google_review_screenshot ? formData.google_review_screenshot : undefined,
+      has_video_review: formData.has_video_review,
+      video_review_title: formData.has_video_review && formData.video_review_title.trim() ? formData.video_review_title.trim() : undefined,
+      video_review_url: formData.has_video_review && formData.video_review_url.trim() ? formData.video_review_url.trim() : undefined,
+      video_review_proof: formData.has_video_review && formData.video_review_proof ? formData.video_review_proof : undefined,
       has_customer_feedback: formData.has_customer_feedback,
       feedback_rating: formData.has_customer_feedback ? formData.feedback_rating : undefined,
       feedback_text: formData.has_customer_feedback && formData.feedback_text.trim() ? formData.feedback_text.trim() : undefined,
+      customer_feedback_proof: formData.has_customer_feedback && formData.customer_feedback_proof ? formData.customer_feedback_proof : undefined,
       date: formData.date,
       notes: formData.notes.trim() || undefined,
+      note_notification_date: formData.note_notification_date || undefined,
     };
 
     setIsSubmitting(true);
@@ -821,42 +887,121 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                       )}
                     </td>
 
-                    {/* 5. Google Review & Customer Feedback */}
-                    <td className="px-4 py-3.5 align-top max-w-[200px]">
-                      {c.has_google_review ? (
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-1 text-[#D97706] font-bold text-[11px]">
-                            <Star className="w-3.5 h-3.5 fill-current" />
-                            <span>{c.google_review_rating || 5} Stars</span>
+                    {/* 5. Google Review, Video Review & Customer Feedback */}
+                    <td className="px-4 py-3.5 align-top max-w-[220px]">
+                      <div className="space-y-1.5">
+                        {c.has_google_review && (
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5 text-[#D97706] font-bold text-[11px]">
+                              <Star className="w-3.5 h-3.5 fill-current" />
+                              <span>{c.google_review_rating || 5} Stars Google</span>
+                              {c.google_review_screenshot && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewProofUrl(c.google_review_screenshot!)}
+                                  className="p-0.5 text-[#92400E] hover:bg-[#FEF3C7] rounded cursor-pointer"
+                                  title="View Google Review Proof"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                            {c.google_review_text && (
+                              <p className="text-[11px] text-[#5E5A52] italic truncate" title={c.google_review_text}>
+                                "{c.google_review_text}"
+                              </p>
+                            )}
                           </div>
-                          {c.google_review_text && (
-                            <p className="text-[11px] text-[#5E5A52] italic truncate" title={c.google_review_text}>
-                              "{c.google_review_text}"
-                            </p>
-                          )}
-                        </div>
-                      ) : c.has_customer_feedback ? (
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-1 text-[#065F46] font-bold text-[11px]">
-                            <MessageSquareHeart className="w-3.5 h-3.5 text-[#065F46]" />
-                            <span>{c.feedback_rating || 5}★ Feedback</span>
+                        )}
+
+                        {c.has_video_review && (
+                          <div className="space-y-0.5 pt-0.5">
+                            <div className="flex items-center gap-1.5 text-[#2563EB] font-bold text-[11px]">
+                              <Video className="w-3.5 h-3.5" />
+                              <span>Video Review</span>
+                              {c.video_review_proof && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewProofUrl(c.video_review_proof!)}
+                                  className="p-0.5 text-[#1E40AF] hover:bg-[#EFF6FF] rounded cursor-pointer"
+                                  title="View Video Review Proof"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {c.video_review_url && (
+                                <a
+                                  href={c.video_review_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] text-[#2563EB] underline ml-1"
+                                  title="Open Video URL"
+                                >
+                                  Link
+                                </a>
+                              )}
+                            </div>
+                            {c.video_review_title && (
+                              <p className="text-[10px] text-[#1E40AF] truncate" title={c.video_review_title}>
+                                {c.video_review_title}
+                              </p>
+                            )}
                           </div>
-                          {c.feedback_text && (
-                            <p className="text-[11px] text-[#5E5A52] italic truncate" title={c.feedback_text}>
-                              "{c.feedback_text}"
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-[#A1A1AA] italic">No review</span>
-                      )}
+                        )}
+
+                        {c.has_customer_feedback && (
+                          <div className="space-y-0.5 pt-0.5">
+                            <div className="flex items-center gap-1.5 text-[#065F46] font-bold text-[11px]">
+                              <MessageSquareHeart className="w-3.5 h-3.5 text-[#065F46]" />
+                              <span>{c.feedback_rating || 5}★ Feedback</span>
+                              {c.customer_feedback_proof && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewProofUrl(c.customer_feedback_proof!)}
+                                  className="p-0.5 text-[#065F46] hover:bg-[#E8F4EE] rounded cursor-pointer"
+                                  title="View Customer Feedback Proof"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                            {c.feedback_text && (
+                              <p className="text-[11px] text-[#5E5A52] italic truncate" title={c.feedback_text}>
+                                "{c.feedback_text}"
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {!c.has_google_review && !c.has_video_review && !c.has_customer_feedback && (
+                          <span className="text-[11px] text-[#A1A1AA] italic">No review</span>
+                        )}
+                      </div>
                     </td>
 
                     {/* 6. Notes & Remarks */}
                     <td className="px-4 py-3.5 align-top max-w-[220px]">
-                      <p className="text-xs text-[#5E5A52] line-clamp-2" title={c.notes}>
-                        {c.notes || <span className="text-[#A1A1AA] italic">—</span>}
-                      </p>
+                      <div className="space-y-1">
+                        {c.note_notification_date && (
+                          <div>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF] text-[10px] font-bold">
+                              <Bell className="w-2.5 h-2.5 text-[#2563EB]" />
+                              <span>Reminder: {c.note_notification_date}</span>
+                            </span>
+                          </div>
+                        )}
+                        {c.updated_by_manager && (
+                          <div>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] text-[10px] font-bold">
+                              <Check className="w-2.5 h-2.5" />
+                              <span>Updated by Manager</span>
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-xs text-[#5E5A52] line-clamp-2" title={c.notes}>
+                          {c.notes || <span className="text-[#A1A1AA] italic">—</span>}
+                        </p>
+                      </div>
                     </td>
 
                     {/* 7. Actions */}
@@ -1065,6 +1210,56 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                       placeholder="e.g. Very helpful staff..."
                     />
                   </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                      Google Review Proof Screenshot
+                    </label>
+                    {formData.google_review_screenshot ? (
+                      <div className="flex items-center gap-2 bg-white border border-[#FDE68A] rounded-xl p-2 shadow-2xs">
+                        <img
+                          src={getMediaUrl(formData.google_review_screenshot)}
+                          alt="Review Proof"
+                          className="w-10 h-10 object-cover rounded-lg border border-[#E6E1D6] shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-[#92400E] truncate">Screenshot Attached</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewProofUrl(formData.google_review_screenshot)}
+                          className="p-1.5 text-[#92400E] hover:bg-[#FEF3C7] rounded-lg cursor-pointer"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, google_review_screenshot: '' })}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                          title="Remove"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-dashed border-[#D97706]/40 hover:border-[#D97706] bg-white text-xs font-bold text-[#D97706] cursor-pointer transition-all">
+                        {uploadingProofKey === 'google_review_screenshot' ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Camera className="w-3.5 h-3.5" />
+                        )}
+                        <span>{uploadingProofKey === 'google_review_screenshot' ? 'Uploading...' : '+ Upload Review Screenshot'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) handleUploadProof('google_review_screenshot', e.target.files[0]);
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1108,19 +1303,201 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                       placeholder="e.g. Explained scheme clearly..."
                     />
                   </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                      Feedback Video / Proof
+                    </label>
+                    {formData.customer_feedback_proof ? (
+                      <div className="flex items-center gap-2 bg-white border border-[#DCFCE7] rounded-xl p-2 shadow-2xs">
+                        <div className="w-10 h-10 rounded-lg bg-[#E8F4EE] border border-[#A7F3D0] flex items-center justify-center shrink-0 text-[#065F46] font-bold text-xs">
+                          {formData.customer_feedback_proof.match(/\.(mp4|webm|mov|avi)$/i) ? '🎬' : '🖼️'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-[#065F46] truncate">Feedback Proof Attached</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewProofUrl(formData.customer_feedback_proof)}
+                          className="p-1.5 text-[#065F46] hover:bg-[#E8F4EE] rounded-lg cursor-pointer"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, customer_feedback_proof: '' })}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                          title="Remove"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-dashed border-[#065F46]/40 hover:border-[#065F46] bg-white text-xs font-bold text-[#065F46] cursor-pointer transition-all">
+                        {uploadingProofKey === 'customer_feedback_proof' ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Camera className="w-3.5 h-3.5" />
+                        )}
+                        <span>{uploadingProofKey === 'customer_feedback_proof' ? 'Uploading...' : '+ Upload Feedback Proof (Photo/Video)'}</span>
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) handleUploadProof('customer_feedback_proof', e.target.files[0]);
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          <Input
-            label="Inquiries & Follow-up Remarks"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            placeholder="e.g. Promised showroom visit on Sunday for bridal set inquiry"
-          />
+          {/* Customer Video Review Box */}
+          <div className="p-3.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] space-y-2.5">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={formData.has_video_review}
+                onChange={(e) => setFormData({ ...formData, has_video_review: e.target.checked })}
+                className="w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB]"
+              />
+              <span className="text-xs font-bold text-[#1D1D1B] flex items-center gap-1">
+                <Video className="w-3.5 h-3.5 text-[#2563EB]" />
+                <span className="text-[#1E40AF]">Customer Video Review Recorded</span>
+              </span>
+            </label>
+
+            {formData.has_video_review && (
+              <div className="space-y-2.5 pt-1 border-t border-[#DBEAFE]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    label="Video Review Title / Description"
+                    value={formData.video_review_title}
+                    onChange={(e) => setFormData({ ...formData, video_review_title: e.target.value })}
+                    placeholder="e.g. Bridal Jewellery Customer Experience"
+                  />
+                  <Input
+                    label="Video Link / Reel URL (Optional)"
+                    value={formData.video_review_url}
+                    onChange={(e) => setFormData({ ...formData, video_review_url: e.target.value })}
+                    placeholder="e.g. https://youtu.be/... or Instagram reel"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                    Video Proof (Photo / Video Clip)
+                  </label>
+                  {formData.video_review_proof ? (
+                    <div className="flex items-center gap-2 bg-white border border-[#BFDBFE] rounded-xl p-2 shadow-2xs">
+                      <div className="w-10 h-10 rounded-lg bg-[#DBEAFE] border border-[#93C5FD] flex items-center justify-center shrink-0 text-[#1E40AF] font-bold text-xs">
+                        {formData.video_review_proof.match(/\.(mp4|webm|mov|avi)$/i) ? '🎬' : '🖼️'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-[#1E40AF] truncate">Video Proof Attached</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewProofUrl(formData.video_review_proof)}
+                        className="p-1.5 text-[#1E40AF] hover:bg-[#EFF6FF] rounded-lg cursor-pointer"
+                        title="View"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, video_review_proof: '' })}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                        title="Remove"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-dashed border-[#2563EB]/40 hover:border-[#2563EB] bg-white text-xs font-bold text-[#2563EB] cursor-pointer transition-all">
+                      {uploadingProofKey === 'video_review_proof' ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Video className="w-3.5 h-3.5" />
+                      )}
+                      <span>{uploadingProofKey === 'video_review_proof' ? 'Uploading...' : '+ Upload Video Review Proof'}</span>
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleUploadProof('video_review_proof', e.target.files[0]);
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Inquiries & Follow-up Remarks / Notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="e.g. Promised showroom visit on Sunday for bridal set"
+            />
+            <div>
+              <Input
+                label="Note Reminder / Notification Date"
+                type="date"
+                value={formData.note_notification_date}
+                onChange={(e) => setFormData({ ...formData, note_notification_date: e.target.value })}
+              />
+              <p className="text-[10px] text-[#8A8479] mt-1 flex items-center gap-1">
+                <Bell className="w-3 h-3 text-[#2563EB]" />
+                <span>Will trigger manager header notification on this date</span>
+              </p>
+            </div>
+          </div>
         </form>
       </Modal>
+
+      {/* Proof Preview Modal */}
+      {previewProofUrl && (
+        <Modal
+          isOpen={!!previewProofUrl}
+          onClose={() => setPreviewProofUrl(null)}
+          title="Review & Feedback Proof"
+          subtitle="Field marketing customer review verification asset"
+          footer={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewProofUrl(null)}
+            >
+              Close
+            </Button>
+          }
+        >
+          <div className="flex items-center justify-center max-h-[70vh] overflow-hidden rounded-xl bg-black/90 p-2">
+            {previewProofUrl.match(/\.(mp4|webm|mov|avi)$/i) ? (
+              <video
+                src={getMediaUrl(previewProofUrl)}
+                controls
+                autoPlay
+                className="max-h-[65vh] max-w-full rounded-lg"
+              />
+            ) : (
+              <img
+                src={getMediaUrl(previewProofUrl)}
+                alt="Proof Preview"
+                className="max-h-[65vh] max-w-full object-contain rounded-lg"
+              />
+            )}
+          </div>
+        </Modal>
+      )}
 
       {/* Delete Confirmation */}
       <ConfirmDialog

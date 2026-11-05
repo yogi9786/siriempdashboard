@@ -49,6 +49,17 @@ ALLOWED_PHOTO_MIME_TYPES = {
     "image/jpg": ".jpg",
 }
 
+ALLOWED_PROOF_MIME_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/jpg": ".jpg",
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/quicktime": ".mov",
+    "video/x-msvideo": ".avi",
+}
+
 
 # ----------------------------------------------------
 # 1. Overview Statistics
@@ -194,6 +205,43 @@ async def upload_activity_photo(
     return {"photo_url": photo_url, "filename": filename, "file_size": file_size}
 
 
+@router.post("/customers/upload-proof", status_code=status.HTTP_201_CREATED, summary="Upload outdoor customer review or feedback proof")
+async def upload_outdoor_proof(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_manager),
+):
+    content_type = file.content_type.lower() if file.content_type else ""
+    if content_type not in ALLOWED_PROOF_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file format. Please upload an image (JPEG, PNG, WebP) or video (MP4, WebM, MOV)."
+        )
+
+    os.makedirs(settings.MEDIA_DIR, exist_ok=True)
+    contents = await file.read()
+    file_size = len(contents)
+    max_bytes = 50 * 1024 * 1024  # 50 MB
+    if file_size > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File size exceeds 50 MB limit."
+        )
+    if file_size == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty."
+        )
+
+    ext = ALLOWED_PROOF_MIME_TYPES.get(content_type, ".jpg")
+    filename = f"proof_{uuid.uuid4().hex[:16]}{ext}"
+    file_path = os.path.join(settings.MEDIA_DIR, filename)
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    rel_url = f"/media/{filename}"
+    return {"url": rel_url, "proof_url": rel_url, "filename": filename, "file_size": file_size}
+
+
 # ----------------------------------------------------
 # 1.2 Outdoor Duties (Daily Rotation & Entry per Employee)
 # ----------------------------------------------------
@@ -221,12 +269,20 @@ def format_duty_response(d: OutdoorMarketingDuty) -> OutdoorDutyResponse:
                 has_google_review=c.has_google_review or False,
                 google_review_rating=c.google_review_rating or 5,
                 google_review_text=c.google_review_text,
+                google_review_screenshot=getattr(c, "google_review_screenshot", None),
+                has_video_review=getattr(c, "has_video_review", False) or False,
+                video_review_title=getattr(c, "video_review_title", None),
+                video_review_url=getattr(c, "video_review_url", None),
+                video_review_proof=getattr(c, "video_review_proof", None),
                 has_customer_feedback=getattr(c, "has_customer_feedback", False) or False,
                 feedback_rating=getattr(c, "feedback_rating", 5) or 5,
                 feedback_text=getattr(c, "feedback_text", None),
+                customer_feedback_proof=getattr(c, "customer_feedback_proof", None),
                 status=c.status,
                 interested_in=getattr(c, "interested_in", None),
                 notes=c.notes,
+                note_notification_date=getattr(c, "note_notification_date", None),
+                updated_by_manager=getattr(c, "updated_by_manager", False) or False,
                 created_at=c.created_at,
                 updated_at=c.updated_at,
             )
@@ -692,12 +748,20 @@ def list_outdoor_customers(
             has_google_review=r.has_google_review,
             google_review_rating=r.google_review_rating,
             google_review_text=r.google_review_text,
+            google_review_screenshot=getattr(r, "google_review_screenshot", None),
+            has_video_review=getattr(r, "has_video_review", False) or False,
+            video_review_title=getattr(r, "video_review_title", None),
+            video_review_url=getattr(r, "video_review_url", None),
+            video_review_proof=getattr(r, "video_review_proof", None),
             has_customer_feedback=getattr(r, "has_customer_feedback", False) or False,
             feedback_rating=getattr(r, "feedback_rating", None),
             feedback_text=getattr(r, "feedback_text", None),
+            customer_feedback_proof=getattr(r, "customer_feedback_proof", None),
             status=r.status,
             interested_in=r.interested_in,
             notes=r.notes,
+            note_notification_date=getattr(r, "note_notification_date", None),
+            updated_by_manager=getattr(r, "updated_by_manager", False) or False,
             created_at=r.created_at,
             updated_at=r.updated_at,
         )
@@ -736,12 +800,20 @@ def create_outdoor_customer(
         has_google_review=customer_data.has_google_review,
         google_review_rating=customer_data.google_review_rating or 5,
         google_review_text=customer_data.google_review_text,
+        google_review_screenshot=customer_data.google_review_screenshot,
+        has_video_review=customer_data.has_video_review,
+        video_review_title=customer_data.video_review_title,
+        video_review_url=customer_data.video_review_url,
+        video_review_proof=customer_data.video_review_proof,
         has_customer_feedback=customer_data.has_customer_feedback,
         feedback_rating=customer_data.feedback_rating or 5,
         feedback_text=customer_data.feedback_text,
+        customer_feedback_proof=customer_data.customer_feedback_proof,
         status=customer_data.status or "Lead",
         interested_in=customer_data.interested_in,
         notes=customer_data.notes,
+        note_notification_date=customer_data.note_notification_date,
+        updated_by_manager=True,
     )
     try:
         db.add(record)
@@ -769,12 +841,20 @@ def create_outdoor_customer(
         has_google_review=record.has_google_review,
         google_review_rating=record.google_review_rating,
         google_review_text=record.google_review_text,
+        google_review_screenshot=record.google_review_screenshot,
+        has_video_review=record.has_video_review,
+        video_review_title=record.video_review_title,
+        video_review_url=record.video_review_url,
+        video_review_proof=record.video_review_proof,
         has_customer_feedback=record.has_customer_feedback,
         feedback_rating=record.feedback_rating,
         feedback_text=record.feedback_text,
+        customer_feedback_proof=record.customer_feedback_proof,
         status=record.status,
         interested_in=record.interested_in,
         notes=record.notes,
+        note_notification_date=record.note_notification_date,
+        updated_by_manager=record.updated_by_manager,
         created_at=record.created_at,
         updated_at=record.updated_at,
     )
@@ -820,18 +900,33 @@ def update_outdoor_customer(
         record.google_review_rating = update_data.google_review_rating
     if update_data.google_review_text is not None:
         record.google_review_text = update_data.google_review_text
+    if update_data.google_review_screenshot is not None:
+        record.google_review_screenshot = update_data.google_review_screenshot
+    if update_data.has_video_review is not None:
+        record.has_video_review = update_data.has_video_review
+    if update_data.video_review_title is not None:
+        record.video_review_title = update_data.video_review_title
+    if update_data.video_review_url is not None:
+        record.video_review_url = update_data.video_review_url
+    if update_data.video_review_proof is not None:
+        record.video_review_proof = update_data.video_review_proof
     if update_data.has_customer_feedback is not None:
         record.has_customer_feedback = update_data.has_customer_feedback
     if update_data.feedback_rating is not None:
         record.feedback_rating = update_data.feedback_rating
     if update_data.feedback_text is not None:
         record.feedback_text = update_data.feedback_text
+    if update_data.customer_feedback_proof is not None:
+        record.customer_feedback_proof = update_data.customer_feedback_proof
     if update_data.status is not None:
         record.status = update_data.status
     if update_data.interested_in is not None:
         record.interested_in = update_data.interested_in
     if update_data.notes is not None:
         record.notes = update_data.notes
+    if update_data.note_notification_date is not None:
+        record.note_notification_date = update_data.note_notification_date
+    record.updated_by_manager = True
 
     try:
         db.commit()
@@ -859,12 +954,20 @@ def update_outdoor_customer(
         has_google_review=record.has_google_review,
         google_review_rating=record.google_review_rating,
         google_review_text=record.google_review_text,
+        google_review_screenshot=record.google_review_screenshot,
+        has_video_review=record.has_video_review,
+        video_review_title=record.video_review_title,
+        video_review_url=record.video_review_url,
+        video_review_proof=record.video_review_proof,
         has_customer_feedback=record.has_customer_feedback,
         feedback_rating=record.feedback_rating,
         feedback_text=record.feedback_text,
+        customer_feedback_proof=record.customer_feedback_proof,
         status=record.status,
         interested_in=record.interested_in,
         notes=record.notes,
+        note_notification_date=record.note_notification_date,
+        updated_by_manager=record.updated_by_manager,
         created_at=record.created_at,
         updated_at=record.updated_at,
     )

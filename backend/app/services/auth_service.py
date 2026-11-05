@@ -2,7 +2,7 @@ import hmac
 import logging
 
 logger = logging.getLogger("auth_service")
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from typing import Optional, List, Dict
 import os
 from sqlalchemy.orm import Session

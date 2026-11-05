@@ -23,6 +23,7 @@ import {
   Star,
   Award,
   MessageSquareHeart,
+  ChevronLeft,
   ChevronRight,
   Shield,
   RefreshCw,
@@ -612,6 +613,26 @@ export const EmployeePortalPage: React.FC = () => {
           photos = [duty.photo_url];
         }
 
+        if (custs.length === 0) {
+          custs.push({
+            name: '',
+            phone: '',
+            dob: '',
+            anniversary_date: '',
+            has_google_review: false,
+            google_review_rating: 5,
+            google_review_text: '',
+            has_customer_feedback: false,
+            feedback_rating: 5,
+            feedback_text: '',
+            interested_gold: false,
+            interested_diamond: false,
+            interested_silver: false,
+            is_converted: false,
+            notes: '',
+          });
+        }
+
         setOutdoorForm({
           area: duty.area || '',
           notes: duty.notes || '',
@@ -623,7 +644,25 @@ export const EmployeePortalPage: React.FC = () => {
           area: '',
           notes: '',
           photo_urls: [],
-          customers: [],
+          customers: [
+            {
+              name: '',
+              phone: '',
+              dob: '',
+              anniversary_date: '',
+              has_google_review: false,
+              google_review_rating: 5,
+              google_review_text: '',
+              has_customer_feedback: false,
+              feedback_rating: 5,
+              feedback_text: '',
+              interested_gold: false,
+              interested_diamond: false,
+              interested_silver: false,
+              is_converted: false,
+              notes: '',
+            },
+          ],
         });
       }
     } catch (err) {
@@ -972,12 +1011,12 @@ export const EmployeePortalPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 5 Distinct Solid Colored Metric Blocks (Exact Manager Dashboard Palette) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mt-6 pt-6 border-t border-[#EBE6DC]">
+          {/* 6 Distinct Solid Colored Metric Blocks (Exact Manager Dashboard Palette) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-6 pt-6 border-t border-[#EBE6DC]">
             {/* Block 1: Total Points Earned (Warm Terracotta #FAF1EC & #B97855 - matching Manager Rating card) */}
             <div
               onClick={() => setActiveTab('REVIEWS')}
-              className="bg-[#FAF1EC] border border-[#ECCFC0] hover:border-[#B97855] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between col-span-2 sm:col-span-1"
+              className="bg-[#FAF1EC] border border-[#ECCFC0] hover:border-[#B97855] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-start justify-between">
@@ -1025,13 +1064,70 @@ export const EmployeePortalPage: React.FC = () => {
                 </div>
 
                 <div className="mt-3.5 pt-2.5 border-t border-[#D8B4FE] flex items-center justify-between text-[10px] font-bold text-[#7E22CE]">
-                  <span>Showroom Interactions</span>
+                  <span>Showroom Logs</span>
                   <span className="font-mono">Active</span>
                 </div>
               </div>
             </div>
 
-            {/* Block 3: Pending Verification (Yellow #FEFCE8 & #EAB308 - matching Manager Pending card) */}
+            {/* Block 3: Outdoor Entries (Emerald Green #E8F4EE & #21845F - matching Outdoor Marketing theme) */}
+            <div
+              onClick={() => setActiveTab('OUTDOOR')}
+              className="bg-[#E8F4EE] border border-[#C5E3D5] hover:border-[#21845F] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1">
+                      Outdoor Entry
+                    </span>
+                    <div className="text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
+                      {dashboardSummary?.total_outdoor_customers ?? outdoorDuty?.customers?.length ?? 0}
+                    </div>
+                    <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Field Leads</span>
+                  </div>
+                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Compass className="w-5 h-5 text-[#21845F]" />
+                  </div>
+                </div>
+
+                <div className="mt-3.5 pt-2.5 border-t border-[#C5E3D5] flex items-center justify-between text-[10px] font-bold text-[#21845F]">
+                  <span>Field Interactions</span>
+                  <span className="font-mono">{outdoorDuty?.status || 'Active'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Block 4: Call Activities (Slate Blue #EDF2F8 & #526F91 - matching Manager Footfall card) */}
+            <div
+              onClick={() => setActiveTab('CALLS')}
+              className="bg-[#EDF2F8] border border-[#C6D4E3] hover:border-[#526F91] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold text-[#526F91] uppercase tracking-wider block mb-1">
+                      Call Activities
+                    </span>
+                    <div className="text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
+                      {dashboardSummary?.total_calls ?? callLogs.length}
+                    </div>
+                    <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Client Outreach</span>
+                  </div>
+                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#C6D4E3] text-[#526F91] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <PhoneCall className="w-5 h-5 text-[#526F91]" />
+                  </div>
+                </div>
+
+                <div className="mt-3.5 pt-2.5 border-t border-[#C6D4E3] flex items-center justify-between text-[10px] font-bold text-[#526F91]">
+                  <span>{dashboardSummary?.completed_calls ?? 0} Done</span>
+                  <span>•</span>
+                  <span>{dashboardSummary?.pending_calls ?? 0} Scheduled</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Block 5: Pending Verification (Yellow #FEFCE8 & #EAB308 - matching Manager Pending card) */}
             <div
               onClick={() => {
                 setActiveTab('CUSTOMERS');
@@ -1062,7 +1158,7 @@ export const EmployeePortalPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Block 4: Approved Logs (Sage Green #E8F4EE & #21845F - matching Manager Verified card) */}
+            {/* Block 6: Approved Logs (Sage Green #E8F4EE & #21845F - matching Manager Verified card) */}
             <div
               onClick={() => {
                 setActiveTab('CUSTOMERS');
@@ -1089,35 +1185,6 @@ export const EmployeePortalPage: React.FC = () => {
                 <div className="mt-3.5 pt-2.5 border-t border-[#C5E3D5] flex items-center justify-between text-[10px] font-bold text-[#21845F]">
                   <span>Verified Records</span>
                   <span>Active</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Block 5: Call Activities (Slate Blue #EDF2F8 & #526F91 - matching Manager Footfall card) */}
-            <div
-              onClick={() => setActiveTab('CALLS')}
-              className="bg-[#EDF2F8] border border-[#C6D4E3] hover:border-[#526F91] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-[#526F91] uppercase tracking-wider block mb-1">
-                      Call Activities
-                    </span>
-                    <div className="text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
-                      {dashboardSummary?.total_calls ?? callLogs.length}
-                    </div>
-                    <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Client Outreach</span>
-                  </div>
-                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#C6D4E3] text-[#526F91] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <PhoneCall className="w-5 h-5 text-[#526F91]" />
-                  </div>
-                </div>
-
-                <div className="mt-3.5 pt-2.5 border-t border-[#C6D4E3] flex items-center justify-between text-[10px] font-bold text-[#526F91]">
-                  <span>{dashboardSummary?.completed_calls ?? 0} Done</span>
-                  <span>•</span>
-                  <span>{dashboardSummary?.pending_calls ?? 0} Scheduled</span>
                 </div>
               </div>
             </div>
@@ -2620,6 +2687,599 @@ export const EmployeePortalPage: React.FC = () => {
                 </div>
               );
             })()}
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------------- */}
+        {/* TAB 4: OUTDOOR ENTRY & FIELD CUSTOMER LEADS                         */}
+        {/* ------------------------------------------------------------------- */}
+        {activeTab === 'OUTDOOR' && (
+          <div className="space-y-5">
+            {/* Top Bar: Date Selector, Duty Status Badge, and Primary Action Buttons */}
+            <div className="bg-white border border-[#C5E3D5] rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+              {/* Date Navigation */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-black text-[#1B694C] uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-[#23815F]" />
+                  <span>Duty Date:</span>
+                </span>
+                <div className="flex items-center gap-1 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl p-1 shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => handleOutdoorDateShift(-1)}
+                    className="p-1.5 rounded-lg hover:bg-white text-[#5E5A52] hover:text-[#1D1D1B] transition-all cursor-pointer"
+                    title="Previous Day"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <input
+                    type="date"
+                    value={selectedOutdoorDate}
+                    onChange={(e) => setSelectedOutdoorDate(e.target.value)}
+                    className="bg-transparent border-0 text-xs font-bold text-[#1D1D1B] focus:outline-hidden px-2 py-1 cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleOutdoorDateShift(1)}
+                    className="p-1.5 rounded-lg hover:bg-white text-[#5E5A52] hover:text-[#1D1D1B] transition-all cursor-pointer"
+                    title="Next Day"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedOutdoorDate(new Date().toISOString().split('T')[0])}
+                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-[#E8F4EE] hover:bg-[#D1FAE5] text-[#21845F] border border-[#C5E3D5] transition-all cursor-pointer"
+                >
+                  Today
+                </button>
+              </div>
+
+              {/* Status & Counts */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Status Badge */}
+                {outdoorDuty?.status ? (
+                  <span
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 border shadow-2xs ${
+                      outdoorDuty.status === 'Approved' || outdoorDuty.status === 'Completed' || outdoorDuty.status === 'Verified'
+                        ? 'bg-[#E8F4EE] text-[#21845F] border-[#A7F3D0]'
+                        : outdoorDuty.status === 'Pending Review'
+                        ? 'bg-[#FEFCE8] text-[#854D0E] border-[#FDE047]'
+                        : outdoorDuty.status === 'Rejected'
+                        ? 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA]'
+                        : 'bg-[#FAF8F5] text-[#5E5A52] border-[#E6E1D6]'
+                    }`}
+                  >
+                    {outdoorDuty.status === 'Pending Review' && <Clock className="w-3.5 h-3.5 text-[#B45309]" />}
+                    {(outdoorDuty.status === 'Approved' || outdoorDuty.status === 'Completed' || outdoorDuty.status === 'Verified') && (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#21845F]" />
+                    )}
+                    {outdoorDuty.status === 'Rejected' && <XCircle className="w-3.5 h-3.5 text-[#C24141]" />}
+                    <span>{outdoorDuty.status}</span>
+                  </span>
+                ) : (
+                  <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#FAF8F5] text-[#8A8479] border border-[#E6E1D6]">
+                    📝 New Field Entry
+                  </span>
+                )}
+
+                {/* Counter Pills */}
+                <span className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]">
+                  👥 {outdoorForm.customers.length} Attended
+                </span>
+                <span className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[#FAF5FF] text-[#7E22CE] border border-[#D8B4FE]">
+                  ⭐ {outdoorForm.customers.filter((c) => c.has_google_review).length} Reviews
+                </span>
+
+                {/* Primary Save Button */}
+                <Button
+                  onClick={handleSaveOutdoorDuty}
+                  disabled={isSavingOutdoor}
+                  className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-xs cursor-pointer"
+                >
+                  {isSavingOutdoor ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
+                  <span>{isSavingOutdoor ? 'Saving...' : 'Save & Submit'}</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Area & Location + Proof Photos Container */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Area & Campaign Details Card */}
+              <div className="lg:col-span-2 bg-white border border-[#E6E1D6] rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+                <div>
+                  <label className="block text-xs font-black text-[#1D1D1B] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#23815F]" />
+                    <span>Target Area / Field Location <span className="text-red-500">*</span></span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Yelahanka Satellite Town, Major Road Campaign, Market Booth, Community Hub..."
+                    value={outdoorForm.area}
+                    onChange={(e) => setOutdoorForm((prev) => ({ ...prev, area: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#5E5A52] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Edit2 className="w-3.5 h-3.5 text-[#7E22CE]" />
+                    <span>Duty Field Notes / Team Observations</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Key highlights, market feedback, competitor activity, campaign response summary..."
+                    value={outdoorForm.notes}
+                    onChange={(e) => setOutdoorForm((prev) => ({ ...prev, notes: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 font-medium resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Field Proof Photos Card */}
+              <div className="bg-white border border-[#E6E1D6] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-black text-[#1D1D1B] uppercase tracking-wider flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5 text-[#23815F]" />
+                      <span>Field Photos ({outdoorForm.photo_urls.length})</span>
+                    </label>
+                    <label className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#E8F4EE] hover:bg-[#D1FAE5] text-[#21845F] text-[11px] font-extrabold rounded-lg border border-[#C5E3D5] cursor-pointer transition-all">
+                      {isUploadingOutdoorPhoto ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Plus className="w-3 h-3" />
+                      )}
+                      <span>{isUploadingOutdoorPhoto ? 'Uploading...' : '+ Add Photo'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleUploadOutdoorPhoto}
+                        disabled={isUploadingOutdoorPhoto}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-[#8A8479] leading-tight">
+                    Attach photo proof of booth, flyers, banner setup, or customer interactions.
+                  </p>
+                </div>
+
+                {/* Photos Preview Grid */}
+                {outdoorForm.photo_urls.length > 0 ? (
+                  <div className="flex items-center gap-2 overflow-x-auto py-1">
+                    {outdoorForm.photo_urls.map((pUrl, pIdx) => (
+                      <div
+                        key={pIdx}
+                        onClick={() => setViewProofUrl(getMediaUrl(pUrl))}
+                        className="relative group shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-[#C5E3D5] bg-black/5 cursor-pointer shadow-2xs hover:shadow-md transition-all"
+                      >
+                        <img
+                          src={getMediaUrl(pUrl)}
+                          alt={`Proof #${pIdx + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                          <span className="p-1 bg-white/90 text-[#1D1D1B] rounded-md shadow-xs">
+                            <Eye className="w-3 h-3" />
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveOutdoorPhoto(pIdx);
+                            }}
+                            className="p-1 bg-red-600 text-white rounded-md hover:bg-red-700 shadow-xs cursor-pointer"
+                            title="Delete Photo"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl border border-dashed border-[#CBD5E1] bg-[#FAF8F5] text-center text-[11px] text-[#8A8479]">
+                    No proof photos attached yet.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Outdoor Customer Leads & Interactions List */}
+            <div className="bg-white border border-[#C5E3D5] rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#EBE6DC] pb-3">
+                <div>
+                  <h3 className="text-sm sm:text-base font-extrabold text-[#1D1D1B] flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#23815F]" />
+                    <span>Outdoor Attended Customers & Leads ({outdoorForm.customers.length})</span>
+                  </h3>
+                  <p className="text-xs text-[#5E5A52] mt-0.5">
+                    Log name, mobile number, jewelry preferences, reviews, and conversion details.
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleAddOutdoorCustomer}
+                  className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center gap-1.5 px-3.5 py-2 rounded-xl shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-white" />
+                  <span>+ Add Customer</span>
+                </Button>
+              </div>
+
+              {isLoadingOutdoor ? (
+                <div className="py-12 flex flex-col items-center justify-center text-[#5E5A52]">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#23815F] mb-2" />
+                  <p className="text-xs font-bold">Loading outdoor marketing log...</p>
+                </div>
+              ) : outdoorForm.customers.length === 0 ? (
+                <div className="py-10 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#23815F] flex items-center justify-center mx-auto shadow-2xs">
+                    <Users className="w-6 h-6 text-[#23815F]" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-[#1D1D1B]">No Outdoor Customers Logged for this Date</h4>
+                    <p className="text-xs text-[#8A8479] max-w-sm mx-auto mt-1">
+                      Click the button below to start entering customer leads attended during outdoor duty.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleAddOutdoorCustomer}
+                    className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs inline-flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-xs cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-white" />
+                    <span>+ Add First Customer Entry</span>
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {outdoorForm.customers.map((cust, cIdx) => (
+                    <div
+                      key={cIdx}
+                      className="bg-[#FAF8F5] border border-[#E6E1D6] hover:border-[#23815F] rounded-2xl p-4 sm:p-4.5 space-y-3.5 transition-all shadow-2xs"
+                    >
+                      {/* Row Header */}
+                      <div className="flex items-center justify-between border-b border-[#EBE6DC] pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-[#23815F] text-white text-[11px] font-black">
+                            #{cIdx + 1}
+                          </span>
+                          <span className="text-xs font-bold text-[#1D1D1B]">
+                            {cust.name.trim() || `Customer Lead #${cIdx + 1}`}
+                          </span>
+                          {cust.is_converted && (
+                            <span className="px-2 py-0.5 rounded-md bg-[#E8F4EE] text-[#21845F] border border-[#A7F3D0] text-[10px] font-black">
+                              ✓ Converted to Sale
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveOutdoorCustomer(cIdx)}
+                          className="p-1 text-[#8A8479] hover:text-red-600 rounded-lg transition-colors cursor-pointer"
+                          title="Remove this customer row"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Form Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {/* 1. Name */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                            <User className="w-3 h-3 text-[#23815F]" />
+                            <span>Customer Name <span className="text-red-500">*</span></span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Full name"
+                            value={cust.name}
+                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'name', e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium"
+                          />
+                        </div>
+
+                        {/* 2. Phone */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-[#23815F]" />
+                            <span>Mobile Number</span>
+                          </label>
+                          <input
+                            type="tel"
+                            placeholder="10-digit mobile"
+                            value={cust.phone}
+                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'phone', e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-mono"
+                          />
+                        </div>
+
+                        {/* 3. DOB */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-[#7E22CE]" />
+                            <span>Date of Birth</span>
+                          </label>
+                          <input
+                            type="date"
+                            value={cust.dob}
+                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'dob', e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium cursor-pointer"
+                          />
+                        </div>
+
+                        {/* 4. Anniversary Date */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                            <Gift className="w-3 h-3 text-[#D97706]" />
+                            <span>Anniversary Date</span>
+                          </label>
+                          <input
+                            type="date"
+                            value={cust.anniversary_date}
+                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'anniversary_date', e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Jewelry Interest & Conversion Row */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#EBE6DC]/80">
+                        {/* Interest Toggles */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[11px] font-bold text-[#5E5A52] uppercase mr-1">
+                            Interested In:
+                          </span>
+                          {/* Gold Pill */}
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_gold', !cust.interested_gold)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                              cust.interested_gold
+                                ? 'bg-[#FEFCE8] text-[#854D0E] border-[#CA8A04] shadow-2xs font-black'
+                                : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                            }`}
+                          >
+                            <span>🪙 Gold</span>
+                            {cust.interested_gold && <Check className="w-3 h-3 text-[#854D0E]" />}
+                          </button>
+
+                          {/* Diamond Pill */}
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_diamond', !cust.interested_diamond)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                              cust.interested_diamond
+                                ? 'bg-[#EFF6FF] text-[#1E40AF] border-[#3B82F6] shadow-2xs font-black'
+                                : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                            }`}
+                          >
+                            <span>💎 Diamond</span>
+                            {cust.interested_diamond && <Check className="w-3 h-3 text-[#1E40AF]" />}
+                          </button>
+
+                          {/* Silver Pill */}
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_silver', !cust.interested_silver)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                              cust.interested_silver
+                                ? 'bg-[#F1F5F9] text-[#334155] border-[#64748B] shadow-2xs font-black'
+                                : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                            }`}
+                          >
+                            <span>🥈 Silver</span>
+                            {cust.interested_silver && <Check className="w-3 h-3 text-[#334155]" />}
+                          </button>
+                        </div>
+
+                        {/* Conversion Checkbox */}
+                        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#CBD5E1] hover:border-[#23815F] text-xs font-bold text-[#1D1D1B] cursor-pointer shadow-2xs transition-all">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(cust.is_converted)}
+                            onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'is_converted', e.target.checked)}
+                            className="w-4 h-4 text-[#23815F] rounded border-[#CBD5E1] focus:ring-[#23815F]"
+                          />
+                          <span className={cust.is_converted ? 'text-[#21845F] font-black' : 'text-[#5E5A52]'}>
+                            Converted to Sale / Order
+                          </span>
+                        </label>
+                      </div>
+
+                      {/* Reviews & Feedback Row */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-[#EBE6DC]/80">
+                        {/* Google Review Box */}
+                        <div className={`p-3 rounded-xl border transition-all ${
+                          cust.has_google_review ? 'bg-[#FEFCE8] border-[#CA8A04]' : 'bg-white border-[#E6E1D6]'
+                        }`}>
+                          <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
+                            <input
+                              type="checkbox"
+                              checked={cust.has_google_review}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'has_google_review', e.target.checked)}
+                              className="w-4 h-4 text-[#CA8A04] rounded border-[#CBD5E1] focus:ring-[#CA8A04]"
+                            />
+                            <span className="flex items-center gap-1 text-[#854D0E] font-black">
+                              <Star className="w-3.5 h-3.5 fill-[#CA8A04] text-[#CA8A04]" />
+                              <span>Google 5-Star Review Given</span>
+                            </span>
+                          </label>
+
+                          {cust.has_google_review && (
+                            <div className="space-y-2 mt-2 pt-2 border-t border-[#FDE047]">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-bold text-[#854D0E]">Rating:</span>
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => handleUpdateOutdoorCustomer(cIdx, 'google_review_rating', star)}
+                                    className="p-0.5 cursor-pointer"
+                                  >
+                                    <Star
+                                      className={`w-4 h-4 ${
+                                        star <= (cust.google_review_rating || 5)
+                                          ? 'fill-[#F59E0B] text-[#F59E0B]'
+                                          : 'text-gray-300'
+                                      }`}
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                              <input
+                                type="text"
+                                placeholder="Review text or customer praise summary..."
+                                value={cust.google_review_text}
+                                onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'google_review_text', e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#CA8A04] focus:outline-hidden"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Customer Feedback Box */}
+                        <div className={`p-3 rounded-xl border transition-all ${
+                          cust.has_customer_feedback ? 'bg-[#FAF5FF] border-[#A855F7]' : 'bg-white border-[#E6E1D6]'
+                        }`}>
+                          <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
+                            <input
+                              type="checkbox"
+                              checked={cust.has_customer_feedback}
+                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'has_customer_feedback', e.target.checked)}
+                              className="w-4 h-4 text-[#7E22CE] rounded border-[#CBD5E1] focus:ring-[#7E22CE]"
+                            />
+                            <span className="flex items-center gap-1 text-[#7E22CE] font-black">
+                              <MessageSquareHeart className="w-3.5 h-3.5 text-[#7E22CE]" />
+                              <span>Customer Feedback Recorded</span>
+                            </span>
+                          </label>
+
+                          {cust.has_customer_feedback && (
+                            <div className="space-y-2 mt-2 pt-2 border-t border-[#E9D5FF]">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-bold text-[#7E22CE]">Rating:</span>
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => handleUpdateOutdoorCustomer(cIdx, 'feedback_rating', star)}
+                                    className="p-0.5 cursor-pointer"
+                                  >
+                                    <Star
+                                      className={`w-4 h-4 ${
+                                        star <= (cust.feedback_rating || 5)
+                                          ? 'fill-[#7E22CE] text-[#7E22CE]'
+                                          : 'text-gray-300'
+                                      }`}
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                              <input
+                                type="text"
+                                placeholder="Feedback notes, designs inquired, customer impressions..."
+                                value={cust.feedback_text}
+                                onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'feedback_text', e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#7E22CE] focus:outline-hidden"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Notes & Requirements Row */}
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Additional notes / specific customer requirements (e.g. looking for 22kt antique choker, budget ₹1.5L)..."
+                          value={cust.notes}
+                          onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'notes', e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium"
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Add Another Customer Button */}
+                  <button
+                    type="button"
+                    onClick={handleAddOutdoorCustomer}
+                    className="w-full py-3.5 rounded-2xl border-2 border-dashed border-[#C5E3D5] hover:border-[#23815F] bg-[#FAF8F5] hover:bg-[#E8F4EE] text-[#23815F] font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-[1.005]"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Add Another Customer Lead</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Bottom Save & Submission Bar */}
+              <div className="pt-4 border-t border-[#EBE6DC] flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-[11px] text-[#5E5A52] flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-[#23815F] shrink-0" />
+                  <span>
+                    Submits directly to Showroom Manager for review • Status updates to <strong>Pending Review</strong> • Zero WhatsApp messages sent.
+                  </span>
+                </div>
+
+                <Button
+                  onClick={handleSaveOutdoorDuty}
+                  disabled={isSavingOutdoor}
+                  className="w-full sm:w-auto bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center justify-center gap-2 px-6 py-3 rounded-xl shadow-md cursor-pointer hover:scale-102 active:scale-98 transition-all"
+                >
+                  {isSavingOutdoor ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
+                  <span>{isSavingOutdoor ? 'Submitting to Manager...' : 'Save & Submit Outdoor Entries'}</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Past Outdoor Duty History Card */}
+            {outdoorHistory.length > 0 && (
+              <div className="bg-white border border-[#E6E1D6] rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+                <h4 className="text-xs font-black text-[#1D1D1B] uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-[#526F91]" />
+                  <span>Recent Outdoor Duty History</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                  {outdoorHistory.slice(0, 8).map((hist) => (
+                    <div
+                      key={hist.id}
+                      onClick={() => setSelectedOutdoorDate(hist.date)}
+                      className={`p-3 rounded-xl border text-xs cursor-pointer transition-all hover:shadow-sm ${
+                        hist.date === selectedOutdoorDate
+                          ? 'bg-[#E8F4EE] border-[#23815F] ring-1 ring-[#23815F]'
+                          : 'bg-[#FAF8F5] border-[#E6E1D6] hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between font-bold text-[#1D1D1B] mb-1">
+                        <span>{hist.date}</span>
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+                          hist.status === 'Approved' || hist.status === 'Completed' || hist.status === 'Verified'
+                            ? 'bg-[#E8F4EE] text-[#21845F]'
+                            : hist.status === 'Pending Review'
+                            ? 'bg-[#FEFCE8] text-[#854D0E]'
+                            : 'bg-gray-100 text-[#5E5A52]'
+                        }`}>
+                          {hist.status || 'Active'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-[#5E5A52] truncate">
+                        📍 {hist.area || 'Field Area'}
+                      </div>
+                      <div className="text-[11px] text-[#8A8479] mt-1 flex items-center justify-between">
+                        <span>{hist.customers?.length || hist.customers_attended_count || 0} leads</span>
+                        <span className="text-[#23815F] font-bold">Open Date &rarr;</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 </main>

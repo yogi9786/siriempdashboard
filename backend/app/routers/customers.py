@@ -527,11 +527,10 @@ def _apply_activity_update(record: CustomerActivity, update_data: CustomerActivi
     if update_data.notes is not None:
         record.notes = update_data.notes
 
-    # Crucial: Manager update auto-approves the activity and confirms verified points
-    record.approval_status = "APPROVED"
-    if current_user_id:
-        record.reviewed_by_id = current_user_id
-    record.reviewed_at = datetime.now(timezone.utc)
+    # Updating customer log sets status to PENDING so manager reviews and approves the updated record
+    record.approval_status = "PENDING"
+    record.reviewed_by_id = None
+    record.reviewed_at = None
     record.rejection_reason = None
 
 

@@ -905,12 +905,12 @@ export const EmployeePortalPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#F6F3EC] text-[#1D1D1B] flex flex-col font-sans selection:bg-[#7E22CE]/20 selection:text-[#7E22CE]">
-      {/* Top Luxury Navbar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E6E1D6] px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 shadow-xs">
+      {/* Top Navbar - Black Background with Light Content */}
+      <header className="sticky top-0 z-40 bg-[#0B0F17] border-b border-[#1E293B] px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 shadow-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand Logo & Title */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#FAF8F5] border border-[#E6E1D6] p-1 flex items-center justify-center shrink-0 shadow-2xs">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#131B2E] border border-[#2A3756] p-1 flex items-center justify-center shrink-0 shadow-2xs">
               <img
                 src={logoImg}
                 alt="Siri Samruddhi Gold Palace"
@@ -919,15 +919,15 @@ export const EmployeePortalPage: React.FC = () => {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <h1 className="text-xs sm:text-base font-black uppercase tracking-wider text-[#1D1D1B] truncate">
+                <h1 className="text-xs sm:text-base font-black uppercase tracking-wider text-white truncate">
                   Siri Samruddhi
                 </h1>
-                <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] uppercase tracking-wide shrink-0">
-                  Staff Terminal
+                <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1E293B] text-[#93C5FD] border border-[#334155] uppercase tracking-wide shrink-0">
+                  Employee Dashboard
                 </span>
               </div>
-              <p className="text-[10px] sm:text-[11px] font-semibold text-[#8A8479] tracking-wide truncate">
-                Showroom: <span className="text-[#7E22CE] font-bold">{selectedBranch?.name || user?.branch_name || 'Showroom'}</span>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-[#94A3B8] tracking-wide truncate">
+                Showroom: <span className="text-[#FBBF24] font-bold">{selectedBranch?.name || user?.branch_name || 'Showroom'}</span>
               </p>
             </div>
           </div>
@@ -938,23 +938,23 @@ export const EmployeePortalPage: React.FC = () => {
             <button
               type="button"
               onClick={handleOpenNotifications}
-              className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-[#FAF5FF] border border-[#E6E1D6] hover:border-[#D8B4FE] text-[#1D1D1B] transition-all cursor-pointer shadow-2xs group shrink-0"
+              className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#131B2E] hover:bg-[#1E293B] border border-[#2A3756] text-white transition-all cursor-pointer shadow-2xs group shrink-0"
               title="Notifications: Manager attire checks & review approvals"
             >
-              <div className="relative flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-[#FAF5FF] text-[#7E22CE] group-hover:bg-[#F3E8FF] transition-colors shrink-0">
-                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#7E22CE] group-hover:scale-110 transition-transform" />
+              <div className="relative flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-[#1E293B] text-[#A78BFA] group-hover:bg-[#2E1065] transition-colors shrink-0">
+                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#A78BFA] group-hover:scale-110 transition-transform" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#DC2626] rounded-full ring-2 ring-white animate-pulse" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#EF4444] rounded-full ring-2 ring-[#0B0F17] animate-pulse" />
                 )}
               </div>
               <div className="text-left hidden sm:block">
-                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#8A8479] block leading-none">
+                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#94A3B8] block leading-none">
                   Updates
                 </span>
-                <span className="text-xs font-bold text-[#1D1D1B] leading-tight flex items-center gap-1">
+                <span className="text-xs font-bold text-white leading-tight flex items-center gap-1">
                   Alerts
                   {unreadCount > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA]">
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#EF4444] text-white">
                       {unreadCount}
                     </span>
                   )}
@@ -962,35 +962,36 @@ export const EmployeePortalPage: React.FC = () => {
               </div>
             </button>
 
-            {/* Total Points Indicator in Header (Matching Manager Card Style) */}
+            {/* Total Points Indicator in Header */}
             <button
               type="button"
               onClick={() => setActiveTab('REVIEWS')}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-[#FAF1EC] border border-[#ECCFC0] shadow-2xs cursor-pointer transition-all group shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#131B2E] hover:bg-[#1E293B] border border-[#2A3756] shadow-2xs cursor-pointer transition-all group shrink-0"
               title="Click to view Review & Video Points Ledger"
             >
-              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-[#FAF1EC] border border-[#ECCFC0] text-[#B97855] flex items-center justify-center font-black text-xs shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-[#B97855] text-[#B97855]" />
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-[#1E293B] border border-[#334155] text-[#FBBF24] flex items-center justify-center font-black text-xs shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-[#FBBF24] text-[#FBBF24]" />
               </div>
               <div className="text-left">
-                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#8A8479] block leading-none">
+                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#94A3B8] block leading-none">
                   Points
                 </span>
-                <span className="text-xs sm:text-sm font-black text-[#B97855] font-mono leading-tight">
-                  {dashboardSummary?.total_points ?? 0} <span className="text-[9px] sm:text-[10px] font-bold text-[#8A8479]">pts</span>
+                <span className="text-xs sm:text-sm font-black text-[#FBBF24] font-mono leading-tight">
+                  {dashboardSummary?.total_points ?? 0} <span className="text-[9px] sm:text-[10px] font-bold text-[#94A3B8]">pts</span>
                 </span>
               </div>
             </button>
 
-            <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#FAF8F5] border border-[#E6E1D6]">
+            {/* Employee Profile Tag */}
+            <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#131B2E] border border-[#2A3756]">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-[#7E22CE] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
                 {user?.full_name?.charAt(0) || 'E'}
               </div>
               <div className="text-left">
-                <div className="text-xs font-bold text-[#1D1D1B] truncate max-w-[100px] md:max-w-[150px]">
+                <div className="text-xs font-bold text-white truncate max-w-[100px] md:max-w-[150px]">
                   {user?.full_name || 'Showroom Staff'}
                 </div>
-                <div className="text-[10px] text-[#7E22CE] font-mono font-bold">
+                <div className="text-[10px] text-[#A78BFA] font-mono font-bold">
                   {user?.employee_code || 'STAFF'}
                 </div>
               </div>
@@ -1000,7 +1001,7 @@ export const EmployeePortalPage: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => setShowLogoutModal(true)}
-              className="bg-white hover:bg-red-50 text-[#C24141] hover:text-red-700 border-[#F5C2C2] text-xs flex items-center gap-1.5 rounded-xl transition-all cursor-pointer shadow-2xs p-2 sm:px-3 sm:py-1.5"
+              className="bg-[#131B2E] hover:bg-red-950/60 text-red-400 hover:text-red-300 border-[#334155] hover:border-red-500 text-xs flex items-center gap-1.5 rounded-xl transition-all cursor-pointer shadow-2xs p-2 sm:px-3 sm:py-1.5"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Sign Out</span>
@@ -1025,7 +1026,7 @@ export const EmployeePortalPage: React.FC = () => {
 
                 <span className="text-xs font-bold text-[#7E22CE] px-3 py-1.5 rounded-full bg-[#F3E8FF] border border-[#D8B4FE] flex items-center gap-1.5 shadow-2xs">
                   <Sparkles className="w-3.5 h-3.5 text-[#7E22CE]" />
-                  <span>Staff Terminal Command</span>
+                  <span>Employee Dashboard</span>
                 </span>
               </div>
 
@@ -2773,13 +2774,6 @@ export const EmployeePortalPage: React.FC = () => {
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedOutdoorDate(new Date().toISOString().split('T')[0])}
-                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-[#E8F4EE] hover:bg-[#D1FAE5] text-[#21845F] border border-[#C5E3D5] transition-all cursor-pointer"
-                >
-                  Today
-                </button>
               </div>
 
               {/* Status & Counts */}
@@ -3771,11 +3765,11 @@ export const EmployeePortalPage: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-base font-bold text-[#1D1D1B]">Sign Out</h3>
-                <p className="text-xs text-[#8A8479]">End your staff terminal session</p>
+                <p className="text-xs text-[#8A8479]">End your employee portal session</p>
               </div>
             </div>
             <p className="text-xs text-[#6B6559] mb-6 leading-relaxed">
-              Are you sure you want to log out from <strong className="text-[#1D1D1B]">{user?.full_name}</strong>'s terminal? You will be returned to the login screen.
+              Are you sure you want to log out from <strong className="text-[#1D1D1B]">{user?.full_name}</strong>'s portal? You will be returned to the login screen.
             </p>
             <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#EBE6DC]">
               <Button

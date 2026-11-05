@@ -393,10 +393,11 @@ def update_employee_customer_activity(
     if activity_data.breakdown is not None:
         record.breakdown = activity_data.breakdown
 
-    # If it was rejected previously, reset to PENDING so manager can re-review
-    if getattr(record, "approval_status", "") == "REJECTED":
-        record.approval_status = "PENDING"
-        record.rejection_reason = None
+    # Any customer log update resets status to PENDING so manager reviews and approves
+    record.approval_status = "PENDING"
+    record.reviewed_by_id = None
+    record.reviewed_at = None
+    record.rejection_reason = None
 
     try:
         db.commit()
@@ -1006,6 +1007,15 @@ def get_employee_notifications(
 ):
     notifications: List[EmployeeNotificationItem] = []
 
+    # Map manager id to manager full name
+    managers = (
+        db.query(User)
+        .filter(User.role == "MANAGER")
+        .all()
+    )
+    mgr_map = {m.id: m.full_name.strip() for m in managers if m.full_name}
+    branch_mgr = next((m.full_name.strip() for m in managers if m.branch_id == current_emp.branch_id), "Showroom Manager")
+
     # 1. Attire Checks logged by manager for this employee
     attire_records = (
         db.query(AttireRecord)
@@ -1020,13 +1030,14 @@ def get_employee_notifications(
         color = "green" if st_lower == "proper" else ("amber" if "attention" in st_lower else "red")
         notes_str = f" • Manager Remarks: {a.notes}" if a.notes and a.notes.strip() else ""
         date_str = a.check_date.strftime("%d %b %Y") if hasattr(a.check_date, "strftime") else str(a.check_date)
+        mgr_name = branch_mgr
         notifications.append(
             EmployeeNotificationItem(
                 id=f"attire_{a.id}",
                 category="attire",
                 title=f"Attire Check: {st}",
                 status=st,
-                message=f"Showroom manager completed your grooming & attire inspection for {date_str}. Status: {st}{notes_str}",
+                message=f"Grooming & attire inspection completed by Manager {mgr_name} for {date_str}: {st}.{notes_str}",
                 date=date_str,
                 created_at=a.created_at.isoformat() if a.created_at else str(a.check_date),
                 badge_color=color,
@@ -1043,15 +1054,17 @@ def get_employee_notifications(
     )
     for g in google_reviews:
         st_raw = (g.status or "PENDING").upper()
+        mgr_name = mgr_map.get(g.reviewed_by_id) or branch_mgr
         if st_raw in ["APPROVED", "VERIFIED", "PUBLISHED"]:
             st = "APPROVED"
             color = "green"
-            msg = f"Google review for {g.customer_name or 'Customer'} was APPROVED by manager (+1 point credited)."
+            msg = f"Google review for {g.customer_name or 'Customer'} was APPROVED by Manager {mgr_name} (+{g.customers_count or 1} point credited)."
         elif st_raw == "REJECTED":
             st = "REJECTED"
             color = "red"
-            reason = f" (Reason: {g.notes})" if g.notes and g.notes.strip() else ""
-            msg = f"Google review for {g.customer_name or 'Customer'} was REJECTED by manager{reason}."
+            rej = (g.rejection_reason or g.notes or "").strip()
+            reason = f" (Reason: {rej})" if rej else ""
+            msg = f"Google review for {g.customer_name or 'Customer'} was REJECTED by Manager {mgr_name}{reason}."
         else:
             st = "PENDING"
             color = "amber"
@@ -1081,16 +1094,18 @@ def get_employee_notifications(
     )
     for v in video_reviews:
         st_raw = (v.status or "PENDING").upper()
+        mgr_name = mgr_map.get(v.reviewed_by_id) or branch_mgr
         v_pts = (v.videos_count or 1) * 5
         if st_raw in ["APPROVED", "VERIFIED", "PUBLISHED"]:
             st = "APPROVED"
             color = "green"
-            msg = f"Video review for {v.customer_name or 'Customer'} was APPROVED by manager (+{v_pts} points credited)."
+            msg = f"Video review for {v.customer_name or 'Customer'} was APPROVED by Manager {mgr_name} (+{v_pts} points credited)."
         elif st_raw == "REJECTED":
             st = "REJECTED"
             color = "red"
-            reason = f" (Reason: {v.notes})" if v.notes and v.notes.strip() else ""
-            msg = f"Video review for {v.customer_name or 'Customer'} was REJECTED by manager{reason}."
+            rej = (v.rejection_reason or v.notes or "").strip()
+            reason = f" (Reason: {rej})" if rej else ""
+            msg = f"Video review for {v.customer_name or 'Customer'} was REJECTED by Manager {mgr_name}{reason}."
         else:
             st = "PENDING"
             color = "amber"
@@ -1120,15 +1135,23 @@ def get_employee_notifications(
     )
     for act in recent_activities:
         st = (act.approval_status or "PENDING").upper()
+        mgr_name = mgr_map.get(act.reviewed_by_id) or branch_mgr
         color = "green" if st == "APPROVED" else ("red" if st == "REJECTED" else "amber")
-        reason = f" (Reason: {act.rejection_reason})" if act.rejection_reason else ""
+        reason = f" (Reason: {act.rejection_reason})" if act.rejection_reason and act.rejection_reason.strip() else ""
+        if st == "APPROVED":
+            msg = f"Customer log for {act.customer_name or 'Customer'} was APPROVED by Manager {mgr_name}."
+        elif st == "REJECTED":
+            msg = f"Customer log for {act.customer_name or 'Customer'} was REJECTED by Manager {mgr_name}{reason}."
+        else:
+            msg = f"Customer log for {act.customer_name or 'Customer'} is pending manager approval."
+
         notifications.append(
             EmployeeNotificationItem(
                 id=f"activity_{act.id}",
                 category="customer_activity",
                 title=f"Customer Log: {st.title()}",
                 status=st,
-                message=f"Customer interaction for {act.customer_name or 'Customer'} ({act.status}) is {st.title()}{reason}.",
+                message=msg,
                 date=act.activity_date.strftime("%d %b %Y") if act.activity_date and hasattr(act.activity_date, "strftime") else str(act.activity_date),
                 created_at=act.created_at.isoformat() if act.created_at else None,
                 badge_color=color,

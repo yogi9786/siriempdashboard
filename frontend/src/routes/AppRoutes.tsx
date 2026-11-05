@@ -23,6 +23,7 @@ import { AccountSettingsPage } from '../pages/account/AccountSettingsPage';
 import { ShowroomCustomerLogPage } from '../pages/customers/ShowroomCustomerLogPage';
 import { OutdoorCustomerLeadsPage } from '../pages/outdoor/OutdoorCustomerLeadsPage';
 import { PendingCustomerActivityPage } from '../pages/customers/PendingCustomerActivityPage';
+import { WhatsAppTemplatesPage } from '../pages/whatsapp/WhatsAppTemplatesPage';
 
 // Employee Module Pages & Guard
 import { EmployeeProtectedRoute } from './EmployeeProtectedRoute';
@@ -70,6 +71,8 @@ export const AppRoutes: React.FC = () => {
           <Route path="/pending-customer-activity" element={<PendingCustomerActivityPage />} />
           <Route path="/customers" element={<CustomerActivityPage />} />
           <Route path="/customer-activity" element={<Navigate to="/customer-logs" replace />} />
+          <Route path="/whatsapp" element={<WhatsAppTemplatesPage />} />
+          <Route path="/whatsapp-templates" element={<Navigate to="/whatsapp" replace />} />
           <Route path="/employees" element={<EmployeeListPage />} />
           <Route path="/employees/add" element={<EmployeeAddPage />} />
           <Route path="/employees/:id" element={<EmployeeDetailPage />} />
@@ -106,6 +109,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/admin/attire" element={<AdminAttirePage />} />
           <Route path="/admin/gallery" element={<AdminGalleryPage />} />
           <Route path="/admin/reports" element={<AdminReportsPage />} />
+          <Route path="/admin/whatsapp" element={<WhatsAppTemplatesPage />} />
           <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
           <Route path="/admin/settings" element={<AdminSettingsPage />} />
         </Route>

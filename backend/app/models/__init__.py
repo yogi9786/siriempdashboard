@@ -19,6 +19,7 @@ from backend.app.models.outdoor_marketing import (
 from backend.app.models.audit import AuditLog
 from backend.app.models.attendance import EmployeeAttendance
 from backend.app.models.feedback import CustomerFeedback
+from backend.app.models.whatsapp import WhatsAppTemplate, WhatsAppMessageLog
 
 __all__ = [
     "Base",
@@ -40,5 +41,7 @@ __all__ = [
     "AuditLog",
     "EmployeeAttendance",
     "CustomerFeedback",
+    "WhatsAppTemplate",
+    "WhatsAppMessageLog",
 ]
 

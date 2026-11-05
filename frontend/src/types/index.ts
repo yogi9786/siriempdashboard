@@ -928,3 +928,77 @@ export interface EmployeeNotificationResponse {
   unread_count: number;
   notifications: EmployeeNotificationItem[];
 }
+
+// ----------------------------------------------------
+// WhatsApp Campaign & Templates Interfaces
+// ----------------------------------------------------
+export interface WhatsAppTemplate {
+  id: number;
+  name: string;
+  campaign_name: string;
+  template_id: string;
+  category: string;
+  description?: string | null;
+  media_url?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WhatsAppCustomerRecipient {
+  name: string;
+  phone: string;
+}
+
+export interface SendBulkWhatsAppPayload {
+  customers: WhatsAppCustomerRecipient[];
+  campaign_name: string;
+  template_id?: string;
+  template_name?: string;
+  category?: string;
+  media_url?: string;
+  notes?: string;
+}
+
+export interface SendBulkWhatsAppResponse {
+  success: boolean;
+  total_requested: number;
+  sent_count: number;
+  failed_count: number;
+  simulated_count: number;
+  deduplicated_count: number;
+  details: Array<{
+    customer_name: string;
+    phone: string;
+    status: 'SENT' | 'SIMULATED' | 'FAILED' | 'DEDUPLICATED';
+    message?: string;
+    error?: string;
+  }>;
+  message: string;
+}
+
+export interface WhatsAppMessageLog {
+  id: number;
+  branch_id?: number | null;
+  manager_id?: number | null;
+  manager_name?: string | null;
+  customer_name: string;
+  phone_number: string;
+  campaign_name: string;
+  template_id?: string | null;
+  category?: string | null;
+  status: 'SENT' | 'SIMULATED' | 'FAILED' | 'DEDUPLICATED' | string;
+  status_details?: string | null;
+  sent_at: string;
+}
+
+export interface WhatsAppStats {
+  total_sent: number;
+  sent_today: number;
+  sent_this_month: number;
+  total_simulated: number;
+  total_failed: number;
+  by_campaign: Record<string, number>;
+  by_category: Record<string, number>;
+}
+

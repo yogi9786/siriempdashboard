@@ -20,6 +20,7 @@ import {
   Layers,
   Sparkles,
   ArrowUpRight,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useAdminBranch } from '../../../context/AdminBranchContext';
@@ -352,6 +353,34 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile }) => 
                 </div>
                 <span>Executive Reports</span>
                 {isActive && <div className="w-1.5 h-1.5 rounded-full bg-[#60A5FA] ml-auto" />}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/admin/whatsapp"
+            onClick={onCloseMobile}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group ${
+                isActive
+                  ? 'bg-[#064E3B]/80 text-[#D1FAE5] font-bold border-l-[3px] border-l-[#10B981] border border-[#059669]/50 shadow-xs pl-2.5'
+                  : 'text-[#D4D4D8] hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    isActive
+                      ? 'bg-[#065F46] text-[#A7F3D0] border border-[#10B981]/60 shadow-2xs'
+                      : 'bg-[#27272A] text-[#34D399] group-hover:bg-[#3F3F46]'
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                </div>
+                <span>WhatsApp Logs & Outreach</span>
+                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] ml-auto" />}
               </>
             )}
           </NavLink>

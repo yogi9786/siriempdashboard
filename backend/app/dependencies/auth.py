@@ -185,6 +185,48 @@ get_current_admin = get_current_super_admin
 get_current_user = get_current_manager
 
 
+def get_current_manager_or_admin(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    """
+    Authenticates either a Branch Manager (User model) or Super Admin (SuperAdminIdentity).
+    Used for endpoints accessible to both roles (e.g. WhatsApp Templates and Logs).
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials or session has expired.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    if not token:
+        raise credentials_exception
+
+    payload = decode_access_token(token)
+    if payload is None:
+        raise credentials_exception
+
+    user_type = payload.get("user_type")
+    role = str(payload.get("role", "")).upper()
+
+    if user_type == "env_admin" or role in ["SUPER_ADMIN", "ADMIN"]:
+        email = payload.get("email") or settings.ADMIN_EMAIL
+        full_name = payload.get("full_name") or settings.ADMIN_NAME
+        username = payload.get("username") or "superadmin"
+        return SuperAdminIdentity(
+            id=0,
+            username=username,
+            email=email,
+            full_name=full_name,
+            role="SUPER_ADMIN",
+            user_type="env_admin",
+            branch_id=None,
+            is_active=True,
+        )
+
+    return get_current_manager(token, db)
+
+
+
 def get_current_employee(
     token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),

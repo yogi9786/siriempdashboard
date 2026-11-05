@@ -25,13 +25,16 @@ import {
   Award,
   Star,
   MessageSquareHeart,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
-import { CustomerActivity, Employee } from '../../types';
+import { CustomerActivity, Employee, WhatsAppCustomerRecipient } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { CustomerActivityModal } from '../../components/customers/CustomerActivityModal';
+import { SendWhatsAppModal } from '../../components/whatsapp/SendWhatsAppModal';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -61,6 +64,11 @@ export const CustomerActivityPage: React.FC = () => {
   const [editingActivity, setEditingActivity] = useState<CustomerActivity | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomerActivity | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  // WhatsApp Campaign & Customer Bulk Selection
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState<boolean>(false);
+  const [whatsAppRecipients, setWhatsAppRecipients] = useState<WhatsAppCustomerRecipient[]>([]);
 
 
   const fetchData = async () => {
@@ -216,6 +224,62 @@ export const CustomerActivityPage: React.FC = () => {
     );
   }, 0);
   const totalProductValue = activities.reduce((sum, a) => sum + (a.product_value || 0), 0);
+
+  // Customer Selection & WhatsApp Campaign Helpers
+  const eligibleActivities = filteredActivities.filter(
+    (a) => a.phone_number && a.phone_number.trim().length >= 10
+  );
+  const isAllSelected =
+    eligibleActivities.length > 0 &&
+    eligibleActivities.every((a) => selectedIds.has(a.id));
+  const isSomeSelected =
+    eligibleActivities.some((a) => selectedIds.has(a.id)) && !isAllSelected;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(eligibleActivities.map((a) => a.id)));
+    }
+  };
+
+  const handleToggleSelectOne = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleOpenBulkWhatsApp = () => {
+    const selectedCustomers = activities
+      .filter((a) => selectedIds.has(a.id))
+      .map((a) => ({
+        name: a.customer_name || 'Customer',
+        phone: a.phone_number || '',
+      }));
+    if (selectedCustomers.length === 0) {
+      toastError('Please select at least one customer to send WhatsApp messages.');
+      return;
+    }
+    setWhatsAppRecipients(selectedCustomers);
+    setIsWhatsAppModalOpen(true);
+  };
+
+  const handleOpenSingleWhatsApp = (act: CustomerActivity) => {
+    if (!act.phone_number || act.phone_number.trim().length < 10) {
+      toastError(`Customer ${act.customer_name || 'Walk-in'} does not have a valid 10-digit phone number.`);
+      return;
+    }
+    setWhatsAppRecipients([
+      {
+        name: act.customer_name || 'Customer',
+        phone: act.phone_number.trim(),
+      },
+    ]);
+    setIsWhatsAppModalOpen(true);
+  };
 
   // Handle Delete
   const handleDelete = async () => {
@@ -446,7 +510,83 @@ export const CustomerActivityPage: React.FC = () => {
             );
           })}
         </div>
+
+        {/* WhatsApp Selection & Send Action Controls */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleToggleSelectAll}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold border border-[#C5D5E6] bg-white text-[#536B8A] hover:bg-[#EDF2F7] transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            title={isAllSelected ? 'Deselect all' : 'Select all eligible customers with phone numbers'}
+          >
+            <input
+              type="checkbox"
+              checked={isAllSelected}
+              ref={(el) => {
+                if (el) el.indeterminate = isSomeSelected;
+              }}
+              onChange={() => {}}
+              className="w-3.5 h-3.5 rounded text-[#16A34A] focus:ring-[#16A34A] cursor-pointer"
+            />
+            <span>{isAllSelected ? 'Deselect All' : `Select All (${eligibleActivities.length})`}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenBulkWhatsApp}
+            disabled={selectedIds.size === 0}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+              selectedIds.size > 0
+                ? 'bg-linear-to-r from-[#16A34A] to-[#15803D] text-white hover:from-[#15803D] hover:to-[#166534] shadow-[#16A34A]/25'
+                : 'bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed opacity-70'
+            }`}
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Send WhatsApp {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
+          </button>
+        </div>
       </div>
+
+      {/* 2b. Floating Selection Banner when items are selected */}
+      {selectedIds.size > 0 && (
+        <div className="bg-linear-to-r from-[#18181B] via-[#222226] to-[#27272A] border border-[#3F3F46] rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 text-white animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#16A34A]/20 border border-[#16A34A]/40 text-[#4ADE80] flex items-center justify-center shrink-0">
+              <MessageSquare className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-extrabold text-white flex items-center gap-2">
+                <span>{selectedIds.size} Customer{selectedIds.size > 1 ? 's' : ''} Selected</span>
+                <span className="px-2 py-0.5 rounded-full bg-[#16A34A] text-white text-[10px] font-bold uppercase tracking-wider">
+                  Bulk Outreach Ready
+                </span>
+              </div>
+              <p className="text-[11px] text-[#A1A1AA]">
+                Dispatch promotional offers, exchange invites, or follow-ups to selected customers
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-[#D4D4D8] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              Clear Selection
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenBulkWhatsApp}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-linear-to-r from-[#16A34A] to-[#15803D] hover:from-[#15803D] hover:to-[#166534] shadow-md shadow-[#16A34A]/30 transition-all cursor-pointer"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Send WhatsApp ({selectedIds.size})</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 3. Toolbar: Search & Filters (Responsive Layout) */}
       <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-4 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
@@ -585,34 +725,61 @@ export const CustomerActivityPage: React.FC = () => {
               );
 
               return (
-                <div key={act.id} className="py-4 space-y-3">
+                <div
+                  key={act.id}
+                  className={`py-4 space-y-3 rounded-2xl p-3 transition-colors ${
+                    selectedIds.has(act.id) ? 'bg-[#F0FDF4]/70 border border-[#BBF7D0]' : ''
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-sm text-[#1D1D1B]">
-                          {act.customer_name || 'Walk-in Customer'}
-                        </span>
-                        {(act.customers_count || 1) > 1 && (
-                          <span className="px-2 py-0.5 rounded-full bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] text-[10px] font-bold">
-                            {act.customers_count} Customers
+                    <div className="flex items-start gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(act.id)}
+                        onChange={() => handleToggleSelectOne(act.id)}
+                        disabled={!act.phone_number || act.phone_number.trim().length < 10}
+                        title={
+                          act.phone_number && act.phone_number.trim().length >= 10
+                            ? `Select ${act.customer_name || 'Customer'}`
+                            : 'No valid phone number for WhatsApp'
+                        }
+                        className="mt-1 w-4 h-4 rounded text-[#16A34A] border-[#C5D5E6] focus:ring-[#16A34A] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      />
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-sm text-[#1D1D1B]">
+                            {act.customer_name || 'Walk-in Customer'}
                           </span>
+                          {(act.customers_count || 1) > 1 && (
+                            <span className="px-2 py-0.5 rounded-full bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] text-[10px] font-bold">
+                              {act.customers_count} Customers
+                            </span>
+                          )}
+                        </div>
+                        {act.phone_number ? (
+                          <a
+                            href={`tel:${act.phone_number}`}
+                            className="text-xs text-[#536B8A] font-mono flex items-center gap-1 mt-0.5 hover:underline"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            <span>{act.phone_number}</span>
+                          </a>
+                        ) : (
+                          <p className="text-[11px] text-[#8A8479] mt-0.5">No phone provided</p>
                         )}
                       </div>
-                      {act.phone_number ? (
-                        <a
-                          href={`tel:${act.phone_number}`}
-                          className="text-xs text-[#536B8A] font-mono flex items-center gap-1 mt-0.5 hover:underline"
-                        >
-                          <Phone className="w-3.5 h-3.5" />
-                          <span>{act.phone_number}</span>
-                        </a>
-                      ) : (
-                        <p className="text-[11px] text-[#8A8479] mt-0.5">No phone provided</p>
-                      )}
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0">
                       {getStatusBadge(act.status)}
+                      <button
+                        onClick={() => handleOpenSingleWhatsApp(act)}
+                        disabled={!act.phone_number || act.phone_number.trim().length < 10}
+                        className="p-1.5 rounded-lg text-[#16A34A] hover:text-[#15803D] hover:bg-[#DCFCE7] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="Send WhatsApp Message"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         onClick={() => {
                           setEditingActivity(act);
@@ -736,6 +903,18 @@ export const CustomerActivityPage: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-[#FAF8F3] border-b border-[#E4DFD4] text-[#8A8479] uppercase font-bold text-[11px] tracking-wider">
                 <tr>
+                  <th className="px-4 py-3.5 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = isSomeSelected;
+                      }}
+                      onChange={handleToggleSelectAll}
+                      title="Select / Deselect all eligible customers"
+                      className="w-4 h-4 rounded text-[#16A34A] border-[#C5D5E6] focus:ring-[#16A34A] cursor-pointer"
+                    />
+                  </th>
                   <th className="px-5 py-3.5">Date</th>
                   <th className="px-5 py-3.5">Customer Info</th>
                   <th className="px-5 py-3.5">Attended By (Staff)</th>
@@ -760,7 +939,28 @@ export const CustomerActivityPage: React.FC = () => {
                   );
 
                   return (
-                    <tr key={act.id} className="hover:bg-[#F0F4F8] transition-colors">
+                    <tr
+                      key={act.id}
+                      className={`hover:bg-[#F0F4F8] transition-colors ${
+                        selectedIds.has(act.id) ? 'bg-[#F0FDF4]/60' : ''
+                      }`}
+                    >
+                      {/* Checkbox Selection */}
+                      <td className="px-4 py-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(act.id)}
+                          onChange={() => handleToggleSelectOne(act.id)}
+                          disabled={!act.phone_number || act.phone_number.trim().length < 10}
+                          title={
+                            act.phone_number && act.phone_number.trim().length >= 10
+                              ? `Select ${act.customer_name || 'Customer'}`
+                              : 'No valid phone number for WhatsApp'
+                          }
+                          className="w-4 h-4 rounded text-[#16A34A] border-[#C5D5E6] focus:ring-[#16A34A] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        />
+                      </td>
+
                       {/* Date */}
                       <td className="px-5 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 font-bold text-[#1D1D1B]">
@@ -931,6 +1131,18 @@ export const CustomerActivityPage: React.FC = () => {
                       {/* Action Buttons */}
                       <td className="px-5 py-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenSingleWhatsApp(act)}
+                            disabled={!act.phone_number || act.phone_number.trim().length < 10}
+                            className="p-2 rounded-xl text-[#16A34A] hover:text-[#15803D] hover:bg-[#DCFCE7] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={
+                              act.phone_number && act.phone_number.trim().length >= 10
+                                ? `Send WhatsApp Message to ${act.customer_name || 'Customer'}`
+                                : 'No phone number provided'
+                            }
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
 
                           <button
                             onClick={() => {
@@ -987,6 +1199,16 @@ export const CustomerActivityPage: React.FC = () => {
           confirmText="Delete Activity"
           variant="danger"
           isLoading={isDeleting}
+        />
+      )}
+
+      {/* Send WhatsApp Modal */}
+      {isWhatsAppModalOpen && (
+        <SendWhatsAppModal
+          isOpen={isWhatsAppModalOpen}
+          onClose={() => setIsWhatsAppModalOpen(false)}
+          recipients={whatsAppRecipients}
+          onSuccess={() => setSelectedIds(new Set())}
         />
       )}
     </div>

@@ -639,7 +639,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
           ? `Log walk-ins, sales closures, and customer profiles for ${employeeName}`
           : 'Log showroom customer walk-ins, sales closures, and customer profiles'
       }
-      size="xl"
+      size="2xl"
       footer={
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 w-full">
           <Button
@@ -778,7 +778,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
               </div>
             </div>
 
-            <div className={`grid gap-4 ${customerItems.length > 1 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+            <div className="grid grid-cols-1 gap-5">
               {customerItems.map((item, idx) => (
                 <div
                   key={item.id || idx}

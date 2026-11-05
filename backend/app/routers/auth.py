@@ -47,7 +47,7 @@ def get_env_branches_and_managers(db: Optional[Session] = None) -> List[BranchPu
                 (settings.MANAGER_3_NAME, settings.MANAGER_3_USERNAME),
                 (settings.MANAGER_4_NAME, settings.MANAGER_4_USERNAME),
                 (settings.MANAGER_5_NAME, settings.MANAGER_5_USERNAME),
-
+                (settings.MANAGER_6_NAME, settings.MANAGER_6_USERNAME),
             ],
         },
         {

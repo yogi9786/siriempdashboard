@@ -57,6 +57,11 @@ BRANCHES_DATA = [
                 "username": settings.MANAGER_5_USERNAME,
                 "password": settings.MANAGER_5_PASSWORD,
             },
+            {
+                "name": settings.MANAGER_6_NAME,
+                "username": settings.MANAGER_6_USERNAME,
+                "password": settings.MANAGER_6_PASSWORD,
+            },
         ],
         "code_prefix": "EMP-YEL-",
         "employees": [

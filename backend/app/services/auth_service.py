@@ -46,6 +46,7 @@ def get_env_manager_by_username(username: str) -> Optional[dict]:
         {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_3_USERNAME, "password": settings.MANAGER_3_PASSWORD, "full_name": settings.MANAGER_3_NAME},
         {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_4_USERNAME, "password": settings.MANAGER_4_PASSWORD, "full_name": settings.MANAGER_4_NAME},
         {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_5_USERNAME, "password": settings.MANAGER_5_PASSWORD, "full_name": settings.MANAGER_5_NAME},
+        {"branch_code": "YELAHANKA", "branch_name": "Yelahanka", "username": settings.MANAGER_6_USERNAME, "password": settings.MANAGER_6_PASSWORD, "full_name": settings.MANAGER_6_NAME},
 
         # Kolar
         {"branch_code": "KOLAR", "branch_name": "Kolar", "username": settings.KOLAR_MANAGER_1_USERNAME, "password": settings.KOLAR_MANAGER_1_PASSWORD, "full_name": settings.KOLAR_MANAGER_1_NAME},
@@ -209,6 +210,7 @@ def sync_managers_from_env(db: Session):
                 (settings.MANAGER_3_NAME, settings.MANAGER_3_USERNAME, settings.MANAGER_3_PASSWORD),
                 (settings.MANAGER_4_NAME, settings.MANAGER_4_USERNAME, settings.MANAGER_4_PASSWORD),
                 (settings.MANAGER_5_NAME, settings.MANAGER_5_USERNAME, settings.MANAGER_5_PASSWORD),
+                (settings.MANAGER_6_NAME, settings.MANAGER_6_USERNAME, settings.MANAGER_6_PASSWORD),
             ],
         },
         {

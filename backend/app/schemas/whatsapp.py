@@ -86,3 +86,4 @@ class WhatsAppStatsResponse(BaseModel):
     total_failed: int
     by_campaign: Dict[str, int] = {}
     by_category: Dict[str, int] = {}
+

@@ -45,3 +45,4 @@ class WhatsAppMessageLog(Base):
     status = Column(String(50), default="SENT", nullable=False)  # SENT, SIMULATED, FAILED, DEDUPLICATED
     status_details = Column(Text, nullable=True)  # AiSensy response or failure reason
     sent_at = Column(DateTime, default=utcnow, nullable=False, index=True)
+

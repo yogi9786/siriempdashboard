@@ -98,26 +98,50 @@ export const DashboardPage: React.FC = () => {
 
   const getClosedCount = (act: CustomerActivity): number => {
     if (act.breakdown) {
-      const parts = act.breakdown.split('|');
-      const closedInBreakdown = parts.filter(
-        (p) => p.toLowerCase().includes(': closed') || p.trim().toLowerCase() === 'closed'
-      ).length;
-      if (closedInBreakdown > 0) return closedInBreakdown;
+      try {
+        const parsed = JSON.parse(act.breakdown);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const closedInBd = parsed.filter((i: any) => {
+            const st = (i?.status || '').toLowerCase();
+            return st.includes('sold') || st.includes('closed') || st.includes('billing');
+          }).length;
+          if (closedInBd > 0) return closedInBd;
+        }
+      } catch {
+        const parts = act.breakdown.split('|');
+        const closedInBreakdown = parts.filter(
+          (p) => p.toLowerCase().includes(': closed') || p.trim().toLowerCase() === 'closed'
+        ).length;
+        if (closedInBreakdown > 0) return closedInBreakdown;
+      }
     }
-    return act.status === 'Closed' ? (act.customers_count || 1) : 0;
+    const st = (act.status || '').toLowerCase();
+    return st.includes('sold') || st.includes('closed') || st.includes('billing') ? (act.customers_count || 1) : 0;
   };
 
   const totalCustomersAttended = customerActivities.reduce((sum, c) => sum + (c.customers_count || 1), 0);
   const totalCustomersClosed = customerActivities.reduce((sum, c) => sum + getClosedCount(c), 0);
   const totalFollowUps = customerActivities.reduce((sum, c) => {
     if (c.breakdown) {
-      const parts = c.breakdown.split('|');
-      const fuCount = parts.filter(
-        (p) => p.toLowerCase().includes('follow up') || p.toLowerCase().includes('follow-up')
-      ).length;
-      if (fuCount > 0) return sum + fuCount;
+      try {
+        const parsed = JSON.parse(c.breakdown);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const fuInBd = parsed.filter((i: any) => {
+            const st = (i?.status || '').toLowerCase();
+            return st.includes('follow') || st.includes('hold');
+          }).length;
+          if (fuInBd > 0) return sum + fuInBd;
+        }
+      } catch {
+        const parts = c.breakdown.split('|');
+        const fuCount = parts.filter(
+          (p) => p.toLowerCase().includes('follow up') || p.toLowerCase().includes('follow-up')
+        ).length;
+        if (fuCount > 0) return sum + fuCount;
+      }
     }
-    return sum + (c.status === 'Follow-up' || c.status === 'Follow Up Needed' ? (c.customers_count || 1) : 0);
+    const st = (c.status || '').toLowerCase();
+    return sum + (st.includes('follow') || st.includes('hold') ? (c.customers_count || 1) : 0);
   }, 0);
   const totalSchemesClosed = schemes.reduce((sum, s) => sum + (s.customers_count || 1), 0);
   const totalSchemesAmount = schemes.reduce((sum, s) => sum + (s.amount || 0), 0);
@@ -775,6 +799,47 @@ export const DashboardPage: React.FC = () => {
 
             <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#D8B4FE]">
               {(() => {
+                const formatActivityFeedSubtitle = (act: CustomerActivity): string => {
+                  let customerNames: string[] = [];
+                  let statuses: string[] = [];
+                  let phoneStr = act.phone_number || '';
+                  let productVal = act.product_value || 0;
+
+                  if (act.breakdown) {
+                    try {
+                      const parsed = JSON.parse(act.breakdown);
+                      if (Array.isArray(parsed) && parsed.length > 0) {
+                        parsed.forEach((item) => {
+                          if (item?.name && item.name.trim()) customerNames.push(item.name.trim());
+                          if (item?.status && item.status.trim()) statuses.push(item.status.trim());
+                          if (!phoneStr && item?.phone) phoneStr = item.phone.trim();
+                          if (!productVal && item?.product_value) productVal = Number(item.product_value) || 0;
+                        });
+                      }
+                    } catch {
+                      // ignore
+                    }
+                  }
+
+                  if (customerNames.length === 0 && act.customer_name && act.customer_name !== 'Customer Interaction') {
+                    customerNames.push(act.customer_name);
+                  }
+
+                  const primaryName = customerNames.length > 0
+                    ? customerNames.slice(0, 2).join(', ') + (customerNames.length > 2 ? ` (+${customerNames.length - 2} more)` : '')
+                    : 'Customer Attended';
+
+                  const primaryStatus = statuses.length > 0 ? statuses[0] : (act.status || 'Walkin');
+
+                  const parts: string[] = [primaryName];
+                  if (primaryStatus) parts.push(primaryStatus);
+                  if (phoneStr) parts.push(phoneStr);
+                  if (productVal > 0) parts.push(`₹${productVal.toLocaleString('en-IN')}`);
+                  if (act.employee_name) parts.push(`Staff: ${act.employee_name}`);
+
+                  return parts.join(' • ');
+                };
+
                 const feedItems = [
                   ...customerActivities.map((act) => {
                     const count = act.customers_count || 1;
@@ -782,7 +847,7 @@ export const DashboardPage: React.FC = () => {
                     return {
                       id: `act-${act.id}`,
                       title: `Customer Activity (${count} Cust)`,
-                      subtitle: act.breakdown || `${count} Customer${count > 1 ? 's' : ''} attended (${act.status})`,
+                      subtitle: formatActivityFeedSubtitle(act),
                       date: act.activity_date,
                       timestamp: t,
                       color: '#7E22CE',

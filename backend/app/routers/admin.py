@@ -714,7 +714,7 @@ def get_admin_branch_detail(
                 id=f"b-cust-{c.id}",
                 event_type="customer",
                 title=f"Customer Activity: {c_count} Customer{'s' if c_count > 1 else ''} Attended",
-                description=f"{c.breakdown or c.status}" + (f" by {emp_name}" if emp_name else ""),
+                description=f"{_format_clean_breakdown(c.breakdown, c.status)}" + (f" by {emp_name}" if emp_name else ""),
                 branch_id=b.id,
                 branch_name=b.name,
                 employee_name=emp_name,

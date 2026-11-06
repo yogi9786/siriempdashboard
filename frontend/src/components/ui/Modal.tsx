@@ -80,7 +80,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Footer */}
         {footer && (
-          <div className="px-3.5 sm:px-6 py-3 sm:py-3.5 border-t border-[#F0EFEA] bg-[#FAF9F6] flex items-center justify-end gap-2 shrink-0">
+          <div className="px-3.5 sm:px-6 py-3 sm:py-3.5 border-t border-[#F0EFEA] bg-[#FAF9F6] flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 shrink-0">
             {footer}
           </div>
         )}

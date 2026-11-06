@@ -506,26 +506,26 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+        {/* Action Buttons (Stacked & Full-Width on Mobile, Inline on Desktop) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto shrink-0">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCSV}
-            leftIcon={<Download className="w-4 h-4 text-[#10B981] shrink-0" />}
-            className="flex-1 sm:flex-initial justify-center cursor-pointer shadow-2xs border-[#E4DFD4] text-[#1D1D1B] hover:bg-[#FAF8F3] whitespace-nowrap"
+            variant="primary"
+            size="md"
+            onClick={openAddModal}
+            leftIcon={<Plus className="w-4 h-4 text-white shrink-0" />}
+            className="w-full sm:w-auto justify-center cursor-pointer shadow-xs bg-[#065F46] hover:bg-[#047857] text-white font-extrabold text-xs py-2.5 order-1 sm:order-2"
           >
-            Export Leads CSV ({filteredCustomers.length})
+            + Add Customer Lead
           </Button>
 
           <Button
-            variant="primary"
-            size="sm"
-            onClick={openAddModal}
-            leftIcon={<Plus className="w-4 h-4 text-white shrink-0" />}
-            className="flex-1 sm:flex-initial justify-center cursor-pointer shadow-xs bg-[#065F46] hover:bg-[#047857] text-white whitespace-nowrap"
+            variant="outline"
+            size="md"
+            onClick={handleExportCSV}
+            leftIcon={<Download className="w-4 h-4 text-[#10B981] shrink-0" />}
+            className="w-full sm:w-auto justify-center cursor-pointer shadow-2xs border-[#E4DFD4] text-[#1D1D1B] hover:bg-[#FAF8F3] font-bold text-xs py-2.5 order-2 sm:order-1"
           >
-            Add Customer Lead
+            Export Leads CSV ({filteredCustomers.length})
           </Button>
         </div>
       </div>
@@ -604,8 +604,8 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
             />
           </div>
 
-          {/* Assisting Field Marketer Filter */}
-          <div className="flex items-center gap-1.5 w-full lg:w-auto">
+          {/* Dropdown Filters (Structured Grid on Mobile, Flex on Desktop) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full lg:w-auto">
             <select
               value={selectedEmpFilter}
               onChange={(e) => setSelectedEmpFilter(e.target.value)}
@@ -618,10 +618,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                 </option>
               ))}
             </select>
-          </div>
 
-          {/* Campaign Area Filter */}
-          <div className="flex items-center gap-1.5 w-full lg:w-auto">
             <select
               value={selectedAreaFilter}
               onChange={(e) => setSelectedAreaFilter(e.target.value)}
@@ -634,12 +631,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                 </option>
               ))}
             </select>
-          </div>
 
-
-
-          {/* Lead Status Filter */}
-          <div className="flex items-center gap-1.5 w-full lg:w-auto">
             <select
               value={selectedStatusFilter}
               onChange={(e) => setSelectedStatusFilter(e.target.value)}
@@ -657,9 +649,9 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
         </div>
 
         {/* Date Filter & Clear row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#F2EEE9]">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-bold text-[#8A8479]">Date Period:</span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2.5 border-t border-[#F2EEE9]">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto py-1 shrink-0">
+            <span className="text-[11px] font-bold text-[#8A8479] shrink-0">Period:</span>
             {['all', 'today', 'yesterday', 'this_week', 'this_month'].map((df) => (
               <button
                 key={df}
@@ -668,7 +660,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                   setFromDate('');
                   setToDate('');
                 }}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   dateFilter === df && !fromDate
                     ? 'bg-[#065F46] border-[#065F46] text-white shadow-2xs'
                     : 'bg-[#FAF8F3] border-[#E4DFD4] text-[#5E5A52] hover:bg-white'
@@ -687,7 +679,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
             ))}
 
             {/* Custom Range */}
-            <div className="flex items-center gap-1 ml-2">
+            <div className="flex items-center gap-1 shrink-0 ml-1">
               <input
                 type="date"
                 value={fromDate}
@@ -712,14 +704,14 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between w-full sm:w-auto gap-2">
             <span className="text-xs text-[#8A8479] font-medium">
-              Showing <b className="text-[#1D1D1B]">{filteredCustomers.length}</b> outdoor leads
+              Showing <b className="text-[#1D1D1B]">{filteredCustomers.length}</b> leads
             </span>
             {(searchTerm || selectedEmpFilter !== 'all' || selectedAreaFilter !== 'all' || selectedStatusFilter !== 'all' || reviewFilter !== 'all' || dateFilter !== 'all' || fromDate) && (
               <button
                 onClick={handleResetFilters}
-                className="text-xs font-bold text-[#C24141] hover:underline flex items-center gap-1 cursor-pointer ml-2"
+                className="text-xs font-bold text-[#C24141] hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset</span>
@@ -729,7 +721,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Customer Rows Table */}
+      {/* 4. Customer Rows (Desktop Table + Mobile Responsive Cards) */}
       <div className="bg-white border border-[#E4DFD4] rounded-3xl shadow-[0_4px_18px_rgba(40,35,25,0.045)] overflow-hidden">
         {isLoading ? (
           <div className="p-12">
@@ -745,8 +737,206 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <>
+            {/* Mobile Card List View (< md) */}
+            <div className="md:hidden divide-y divide-[#EBE6DC]">
+              {filteredCustomers.map((c, idx) => (
+                <div key={c.id} className="p-4 space-y-3 hover:bg-[#FAF9F6] transition-colors">
+                  {/* Top: #, Customer Name, Status Badge */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-6 h-6 rounded-full bg-[#D1FAE5] text-[#065F46] font-bold text-xs flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <h4 className="font-extrabold text-sm text-[#1D1D1B] truncate">
+                        {c.customer_name}
+                      </h4>
+                    </div>
+
+                    <span
+                      className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border shrink-0 ${
+                        c.is_converted || (c.status || '').toLowerCase().includes('converted')
+                          ? 'bg-[#E8F4EE] border-[#C5E3D5] text-[#21845F]'
+                          : (c.status || '').toLowerCase().includes('interested')
+                          ? 'bg-[#E0F2FE] border-[#BAE6FD] text-[#0284C7]'
+                          : 'bg-[#FEF3C7] border-[#FDE68A] text-[#92400E]'
+                      }`}
+                    >
+                      {c.is_converted ? '✨ Converted' : c.status}
+                    </span>
+                  </div>
+
+                  {/* Phone with Direct Actions */}
+                  {c.phone ? (
+                    <div className="flex items-center gap-2 flex-wrap text-xs">
+                      <a
+                        href={`tel:${c.phone}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-[#065F46] font-bold"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-[#10B981]" />
+                        <span>{c.phone}</span>
+                      </a>
+                      <a
+                        href={`https://wa.me/91${c.phone.replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#DCFCE7] border border-[#86EFAC] text-[#166534] font-bold"
+                      >
+                        <span>💬 WhatsApp</span>
+                      </a>
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-[#A1A1AA] italic">No phone provided</span>
+                  )}
+
+                  {/* Birthday & Anniversary */}
+                  {(c.dob || c.anniversary_date) && (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {c.dob && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FAF1EC] border border-[#ECCFC0] text-[#B97855] text-[10px] font-bold">
+                          <Cake className="w-3 h-3" />
+                          <span>DOB: {c.dob}</span>
+                        </span>
+                      )}
+                      {c.anniversary_date && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FCE7F3] border border-[#FBCFE8] text-[#BE185D] text-[10px] font-bold">
+                          <Heart className="w-3 h-3 fill-current" />
+                          <span>Anniv: {c.anniversary_date}</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Marketer & Area */}
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-[#FAF8F5] p-2.5 rounded-xl border border-[#E8E6E1]">
+                    <div>
+                      <span className="text-[10px] text-[#8A8479] font-bold block uppercase">Marketer</span>
+                      <span className="font-bold text-[#1D1D1B] truncate block">
+                        {c.marketing_employee_name || 'Outdoor Staff'}
+                      </span>
+                      <span className="text-[10px] text-[#8A8479]">Date: {c.date}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#8A8479] font-bold block uppercase">Location</span>
+                      <span className="font-bold text-[#1D1D1B] truncate block">
+                        {c.area_name || 'Showroom Vicinity'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Interested In */}
+                  {c.interested_in && (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {c.interested_in.toLowerCase().includes('gold') && (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
+                          🟡 Gold
+                        </span>
+                      )}
+                      {c.interested_in.toLowerCase().includes('diamond') && (
+                        <span className="px-2 py-0.5 rounded-md bg-cyan-50 border border-cyan-200 text-cyan-800 text-[10px] font-bold">
+                          💎 Diamond
+                        </span>
+                      )}
+                      {c.interested_in.toLowerCase().includes('silver') && (
+                        <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-bold">
+                          ⚪ Silver
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Review Proofs / Feedback Badges */}
+                  {(c.has_google_review || c.has_video_review || c.has_customer_feedback) && (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {c.has_google_review && (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-[10px] font-bold">
+                          <Star className="w-3 h-3 fill-current text-amber-500" />
+                          <span>{c.google_review_rating || 5}★ Review</span>
+                          {c.google_review_screenshot && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewProofUrl(c.google_review_screenshot!)}
+                              className="ml-1 text-[#92400E] underline font-bold"
+                            >
+                              Proof
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {c.has_video_review && (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF] text-[10px] font-bold">
+                          <Video className="w-3 h-3 text-[#2563EB]" />
+                          <span>Video</span>
+                          {c.video_review_proof && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewProofUrl(c.video_review_proof!)}
+                              className="ml-1 text-[#1E40AF] underline font-bold"
+                            >
+                              Proof
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {c.has_customer_feedback && (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F0FDF4] border border-[#DCFCE7] text-[#065F46] text-[10px] font-bold">
+                          <MessageSquareHeart className="w-3 h-3 text-[#065F46]" />
+                          <span>Feedback</span>
+                          {c.customer_feedback_proof && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewProofUrl(c.customer_feedback_proof!)}
+                              className="ml-1 text-[#065F46] underline font-bold"
+                            >
+                              Proof
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Notes & Reminder Date */}
+                  {(c.notes || c.note_notification_date) && (
+                    <div className="text-xs text-[#5E5A52] bg-white p-2.5 rounded-xl border border-[#EBE6DC] space-y-1">
+                      {c.note_notification_date && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF] text-[10px] font-bold">
+                          <Bell className="w-2.5 h-2.5 text-[#2563EB]" />
+                          <span>Reminder: {c.note_notification_date}</span>
+                        </span>
+                      )}
+                      {c.notes && <p className="line-clamp-2">{c.notes}</p>}
+                    </div>
+                  )}
+
+                  {/* Actions Row */}
+                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#F0EFEA]">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditModal(c)}
+                      leftIcon={<Edit2 className="w-3.5 h-3.5 text-[#065F46]" />}
+                      className="font-bold text-xs border-[#E4DFD4] text-[#1D1D1B]"
+                    >
+                      Edit Lead
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDeleteTarget(c)}
+                      leftIcon={<Trash2 className="w-3.5 h-3.5 text-red-600" />}
+                      className="font-bold text-xs border-red-200 text-red-600 hover:bg-red-50"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-[#FAF8F3] border-b border-[#E4DFD4] text-[#5E5A52] uppercase font-bold text-[10px] tracking-wider">
                 <tr>
                   <th className="px-4 py-3.5">Customer Contact & Celebrations</th>
@@ -1028,6 +1218,7 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </>
         )}
       </div>
 
@@ -1041,21 +1232,28 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
         title={editingCustomer ? 'Edit Outdoor Customer Lead' : 'Add Outdoor Customer Lead'}
         subtitle={`Log field prospect details acquired for ${selectedBranch?.name || 'Showroom'}`}
         footer={
-          <>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 w-full">
             <Button
               variant="outline"
-              size="sm"
+              size="md"
               onClick={() => {
                 setShowAddModal(false);
                 setEditingCustomer(null);
               }}
+              className="w-full sm:w-auto justify-center py-2.5 font-semibold text-xs border-[#E4DFD4] text-[#5E5A52] hover:bg-[#FAF8F5]"
             >
               Cancel
             </Button>
-            <Button variant="primary" size="sm" onClick={handleSubmitForm} isLoading={isSubmitting}>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleSubmitForm}
+              isLoading={isSubmitting}
+              className="w-full sm:w-auto justify-center py-2.5 font-extrabold text-xs bg-[#065F46] hover:bg-[#047857] text-white shadow-xs"
+            >
               {editingCustomer ? 'Update Lead' : 'Save Customer Lead'}
             </Button>
-          </>
+          </div>
         }
       >
         <form onSubmit={handleSubmitForm} className="space-y-4">
@@ -1111,40 +1309,67 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
             />
           </div>
 
-
-
-          {/* Jewelry Interest Checkboxes */}
+          {/* Jewelry Interest Selection Cards (Responsive Grid for Mobile & Desktop) */}
           <div>
-            <label className="block text-xs font-semibold text-[#1D1D1B] mb-1.5">
+            <label className="block text-xs font-bold text-[#1D1D1B] mb-2">
               Customer Interested In
             </label>
-            <div className="flex items-center gap-4 text-xs font-bold text-[#1D1D1B]">
-              <label className="flex items-center gap-1.5 cursor-pointer">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
+              <label
+                className={`flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all ${
+                  formData.interested_gold
+                    ? 'bg-[#FEF3C7] border-[#F59E0B] text-[#92400E] shadow-2xs font-extrabold'
+                    : 'bg-[#FAF8F5] border-[#E8E6E1] text-[#5E5A52] hover:bg-[#F3EFE6] font-semibold'
+                }`}
+              >
                 <input
                   type="checkbox"
                   checked={formData.interested_gold}
                   onChange={(e) => setFormData({ ...formData, interested_gold: e.target.checked })}
-                  className="rounded text-amber-600 focus:ring-amber-500"
+                  className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 shrink-0"
                 />
-                <span>🟡 Gold Jewellery</span>
+                <span className="text-xs flex items-center gap-1.5">
+                  <span>🟡</span>
+                  <span>Gold Jewellery</span>
+                </span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
+
+              <label
+                className={`flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all ${
+                  formData.interested_diamond
+                    ? 'bg-[#E0F2FE] border-[#0284C7] text-[#0369A1] shadow-2xs font-extrabold'
+                    : 'bg-[#FAF8F5] border-[#E8E6E1] text-[#5E5A52] hover:bg-[#F3EFE6] font-semibold'
+                }`}
+              >
                 <input
                   type="checkbox"
                   checked={formData.interested_diamond}
                   onChange={(e) => setFormData({ ...formData, interested_diamond: e.target.checked })}
-                  className="rounded text-cyan-600 focus:ring-cyan-500"
+                  className="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500 shrink-0"
                 />
-                <span>💎 Diamond Collection</span>
+                <span className="text-xs flex items-center gap-1.5">
+                  <span>💎</span>
+                  <span>Diamond Collection</span>
+                </span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
+
+              <label
+                className={`flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all ${
+                  formData.interested_silver
+                    ? 'bg-[#F1F5F9] border-[#64748B] text-[#334155] shadow-2xs font-extrabold'
+                    : 'bg-[#FAF8F5] border-[#E8E6E1] text-[#5E5A52] hover:bg-[#F3EFE6] font-semibold'
+                }`}
+              >
                 <input
                   type="checkbox"
                   checked={formData.interested_silver}
                   onChange={(e) => setFormData({ ...formData, interested_silver: e.target.checked })}
-                  className="rounded text-slate-600 focus:ring-slate-500"
+                  className="w-4 h-4 rounded text-slate-600 focus:ring-slate-500 shrink-0"
                 />
-                <span>⚪ Silver Articles</span>
+                <span className="text-xs flex items-center gap-1.5">
+                  <span>⚪</span>
+                  <span>Silver Articles</span>
+                </span>
               </label>
             </div>
           </div>

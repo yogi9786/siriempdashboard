@@ -1465,7 +1465,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => addAttendedCustomer(duty.id)}
-                          className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl shadow-xs cursor-pointer self-start sm:self-auto"
+                          className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl shadow-xs cursor-pointer w-full sm:w-auto"
                         >
                           <Plus className="w-3.5 h-3.5 text-white" />
                           <span>+ Add Customer Lead</span>
@@ -1478,7 +1478,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => addAttendedCustomer(duty.id)}
-                            className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs inline-flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-xs cursor-pointer"
+                            className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl shadow-xs cursor-pointer w-full sm:w-auto"
                           >
                             <Plus className="w-4 h-4 text-white" />
                             <span>+ Add First Customer Lead</span>

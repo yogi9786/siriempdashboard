@@ -275,11 +275,11 @@ def create_customer_activity(
         activity_date=activity_data.activity_date or date.today(),
         status=activity_data.status or "Walkin",
         notes=activity_data.notes,
-        approval_status="APPROVED",
+        approval_status="PENDING",
         created_by_role="MANAGER",
         created_by_id=current_user.id,
-        reviewed_by_id=current_user.id,
-        reviewed_at=datetime.now(timezone.utc),
+        reviewed_by_id=None,
+        reviewed_at=None,
     )
     try:
         db.add(record)
@@ -293,32 +293,7 @@ def create_customer_activity(
             detail=f"Failed to record customer activity: {str(e)}",
         )
 
-    # WhatsApp is only sent via explicit button click (/send-whatsapp endpoint).
-
-    b_name = record.branch.name if record.branch else None
-    b_code = record.branch.code if record.branch else None
-
-    return CustomerActivityResponse(
-        id=record.id,
-        branch_id=record.branch_id,
-        branch_code=b_code,
-        branch_name=b_name,
-        employee_id=record.employee_id,
-        employee_name=employee.full_name,
-        employee_code=employee.employee_code,
-        customers_count=record.customers_count,
-        breakdown=record.breakdown,
-        customer_name=record.customer_name,
-        phone_number=record.phone_number,
-        dob=record.dob,
-        anniversary=record.anniversary,
-        product_value=record.product_value or 0.0,
-        activity_date=record.activity_date,
-        status=record.status,
-        notes=record.notes,
-        created_at=record.created_at,
-        updated_at=record.updated_at,
-    )
+    return _build_activity_response(record)
 
 
 def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
@@ -382,8 +357,8 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
                 except Exception:
                     act_date = date.today()
 
-            # 1. Schemes Closed
-            if item.get("has_scheme") or item.get("scheme_name"):
+            # 1. Schemes Closed (only created when activity is approved)
+            if is_act_approved and (item.get("has_scheme") or item.get("scheme_name")):
                 s_name = (item.get("scheme_name") or "SIRISAMRUDDHI GOLDEN DREAMS").strip()
                 try:
                     s_amt = float(item.get("scheme_amount") or 0.0)
@@ -414,7 +389,7 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
                 is_act_approved = (record.approval_status or "").upper() == "APPROVED"
                 is_act_rejected = (record.approval_status or "").upper() == "REJECTED"
 
-                if is_act_approved or existing_gr_statuses.get(c_name) in ["APPROVED", "VERIFIED", "PUBLISHED"]:
+                if is_act_approved:
                     gr_status = "APPROVED"
                 elif is_act_rejected:
                     gr_status = "REJECTED"
@@ -456,7 +431,7 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
                     category="Customer Service",
                     feedback_text=fb_text,
                     notes=f"Customer direct feedback from interaction. Linked to {tag}",
-                    status="Verified",
+                    status="Verified" if is_act_approved else "Pending",
                 )
                 db.add(cf)
 
@@ -473,7 +448,7 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
                 is_act_approved = (record.approval_status or "").upper() == "APPROVED"
                 is_act_rejected = (record.approval_status or "").upper() == "REJECTED"
 
-                if is_act_approved or existing_vr_statuses.get(c_name) in ["APPROVED", "VERIFIED", "PUBLISHED"]:
+                if is_act_approved:
                     vr_status = "APPROVED"
                 elif is_act_rejected:
                     vr_status = "REJECTED"
@@ -586,7 +561,7 @@ def _build_activity_response(record: CustomerActivity, mgr_map: Optional[dict] =
         product_value=getattr(record, 'product_value', 0.0) or 0.0,
         activity_date=record.activity_date,
         status=record.status,
-        approval_status=getattr(record, 'approval_status', 'APPROVED') or 'APPROVED',
+        approval_status=getattr(record, 'approval_status', 'PENDING') or 'PENDING',
         created_by_role=getattr(record, 'created_by_role', 'MANAGER') or 'MANAGER',
         created_by_id=getattr(record, 'created_by_id', None),
         rejection_reason=getattr(record, 'rejection_reason', None),

@@ -199,7 +199,7 @@ class CustomerActivityResponse(BaseModel):
     product_value: Optional[float] = 0.0
     activity_date: date
     status: str
-    approval_status: Optional[str] = "APPROVED"
+    approval_status: Optional[str] = "PENDING"
     created_by_role: Optional[str] = "MANAGER"
     created_by_id: Optional[int] = None
     rejection_reason: Optional[str] = None

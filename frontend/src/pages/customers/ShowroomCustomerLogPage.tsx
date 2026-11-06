@@ -11,6 +11,7 @@ import {
   Cake,
   IndianRupee,
   CheckCircle2,
+  XCircle,
   Clock,
   Sparkles,
   Award,
@@ -720,10 +721,20 @@ export const ShowroomCustomerLogPage: React.FC = () => {
                             <span>•</span>
                             <span className="truncate max-w-[120px]">{row.branchName}</span>
                           </div>
-                          {row.reviewedByName && (
+                          {row.parentActivity?.approval_status === 'PENDING' ? (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#D97706] bg-[#FEF3C7] border border-[#FDE68A] px-1.5 py-0.5 rounded-md mt-1 block w-fit">
+                              <Clock className="w-2.5 h-2.5 text-[#D97706]" />
+                              Pending Approval
+                            </span>
+                          ) : row.parentActivity?.approval_status === 'REJECTED' ? (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#DC2626] bg-[#FEE2E2] border border-[#FECACA] px-1.5 py-0.5 rounded-md mt-1 block w-fit">
+                              <XCircle className="w-2.5 h-2.5 text-[#DC2626]" />
+                              Rejected
+                            </span>
+                          ) : (
                             <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#166534] bg-[#F0FDF4] border border-[#BBF7D0] px-1.5 py-0.5 rounded-md mt-1 block w-fit">
                               <CheckCircle2 className="w-2.5 h-2.5 text-[#16A34A]" />
-                              Approved by {row.reviewedByName}
+                              Approved {row.reviewedByName ? `by ${row.reviewedByName}` : ''}
                             </span>
                           )}
                         </div>

@@ -772,6 +772,12 @@ export const CustomerActivityPage: React.FC = () => {
 
                     <div className="flex items-center gap-1 shrink-0 ml-auto">
                       {getStatusBadge(act.status)}
+                      {act.approval_status === 'PENDING' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
+                          <Clock className="w-2 h-2 text-[#D97706]" />
+                          <span>Pending</span>
+                        </span>
+                      )}
                       <button
                         onClick={() => handleOpenSingleWhatsApp(act)}
                         disabled={!act.phone_number || act.phone_number.trim().length < 10}
@@ -1077,7 +1083,25 @@ export const CustomerActivityPage: React.FC = () => {
                       {/* Outcome Status & Multi-Customer Badges */}
                       <td className="px-5 py-4">
                         <div className="space-y-1">
-                          <div>{getStatusBadge(act.status)}</div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {getStatusBadge(act.status)}
+                            {act.approval_status === 'PENDING' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
+                                <Clock className="w-2.5 h-2.5 text-[#D97706]" />
+                                <span>Pending Approval</span>
+                              </span>
+                            ) : act.approval_status === 'REJECTED' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA]">
+                                <XCircle className="w-2.5 h-2.5 text-[#DC2626]" />
+                                <span>Rejected</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]">
+                                <CheckCircle2 className="w-2.5 h-2.5 text-[#16A34A]" />
+                                <span>Approved</span>
+                              </span>
+                            )}
+                          </div>
                           {customerItems.length > 1 && (
                             <div className="flex items-center gap-1 flex-wrap pt-0.5 max-w-xs">
                               {customerItems.map((item, i) => (

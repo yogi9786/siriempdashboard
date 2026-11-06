@@ -301,9 +301,9 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
       return;
     }
 
-    if (isEmployeePortal && (!initialData?.id || initialData.approval_status !== 'APPROVED')) {
+    if (!initialData?.id || initialData.approval_status !== 'APPROVED') {
       toastError(
-        'WhatsApp message will be sent automatically once your Showroom Manager approves this customer activity. Click "Save & Send WhatsApp" below to queue it.'
+        'WhatsApp message will be sent automatically once this customer activity is approved in the Pending queue. Click "Save & Send WhatsApp" below to queue it.'
       );
       return;
     }
@@ -447,62 +447,32 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
         }, 0);
       }
 
-      if (isEmployeePortal) {
-        // Employee saving: WhatsApp will NOT be sent now, but queued for dispatch when Showroom Manager approves!
-        const queuedItems = customerItems.map((item) => ({
-          ...item,
-          send_whatsapp_on_approval: Boolean(item.phone && item.phone.trim().replace(/\D/g, '').length >= 10),
-          queued_whatsapp: true,
-        }));
+      // WhatsApp will NOT be sent now, but queued for dispatch when Showroom Manager approves!
+      const queuedItems = customerItems.map((item) => ({
+        ...item,
+        send_whatsapp_on_approval: Boolean(item.phone && item.phone.trim().replace(/\D/g, '').length >= 10),
+        queued_whatsapp: true,
+      }));
 
-        let queuedNotes = overallNotes.replace(/\[WhatsApp Dispatch Queued on Manager Approval\]/g, '').trim();
-        queuedNotes = (queuedNotes ? `${queuedNotes}\n` : '') + '[WhatsApp Dispatch Queued on Manager Approval]';
+      let queuedNotes = overallNotes.replace(/\[WhatsApp Dispatch Queued on Manager Approval\]/g, '').trim();
+      queuedNotes = (queuedNotes ? `${queuedNotes}\n` : '') + '[WhatsApp Dispatch Queued on Manager Approval]';
 
-        const payload = buildPayload(empIdToUse, primaryStatus, totalProductVal, queuedItems, queuedNotes);
+      const payload = buildPayload(empIdToUse, primaryStatus, totalProductVal, queuedItems, queuedNotes);
 
-        if (initialData) {
-          await api.put(`${apiBaseUrl}/${initialData.id}`, payload);
-        } else {
-          await api.post(apiBaseUrl, payload);
-        }
-
+      if (initialData) {
+        await api.put(`${apiBaseUrl}/${initialData.id}`, payload);
         success(
-          'Customer interaction submitted! WhatsApp message is queued and will be sent automatically once your Showroom Manager approves.'
+          isEmployeePortal
+            ? 'Customer interaction submitted! WhatsApp message is queued and will be sent automatically once your Showroom Manager approves.'
+            : 'Customer activity updated and moved to Pending list for review & approval. WhatsApp message is queued for approval.'
         );
       } else {
-        // Manager saving: auto-approved, so dispatch WhatsApp immediately!
-        const payload = buildPayload(empIdToUse, primaryStatus, totalProductVal, customerItems, overallNotes);
-
-        let savedRecordId: number | undefined;
-        if (initialData) {
-          const putRes = await api.put(`${apiBaseUrl}/${initialData.id}`, payload);
-          savedRecordId = putRes.data?.id || initialData.id;
-        } else {
-          const postRes = await api.post(apiBaseUrl, payload);
-          savedRecordId = postRes.data?.id;
-        }
-
-        if (savedRecordId) {
-          try {
-            const waRes = await api.post(`${apiBaseUrl}/${savedRecordId}/send-whatsapp`, {});
-            const sentCount = waRes.data?.total_sent || 0;
-            if (sentCount > 0) {
-              success(`Activity saved & WhatsApp dispatched successfully to ${sentCount} customer${sentCount > 1 ? 's' : ''}!`);
-            } else {
-              success('Customer activity saved successfully.');
-            }
-          } catch (waErr: any) {
-            console.warn('WhatsApp auto-send response:', waErr);
-            if (waErr.response?.status === 404) {
-              toastError('Customer activity saved. Note: production backend service needs to be updated & restarted to enable WhatsApp dispatch.');
-            } else {
-              const waDetail = waErr.response?.data?.detail;
-              toastError(waDetail ? `Saved, but WhatsApp failed: ${waDetail}` : 'Customer activity saved successfully.');
-            }
-          }
-        } else {
-          success('Customer activity saved successfully.');
-        }
+        await api.post(apiBaseUrl, payload);
+        success(
+          isEmployeePortal
+            ? 'Customer interaction submitted! WhatsApp message is queued and will be sent automatically once your Showroom Manager approves.'
+            : 'Customer activity logged and submitted to Pending list for review & approval. WhatsApp message is queued for approval.'
+        );
       }
 
       onSaved();
@@ -590,17 +560,26 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
         }, 0);
       }
 
-      const payload = buildPayload(empIdToUse, primaryStatus, totalProductVal);
+      const queuedItems = customerItems.map((item) => ({
+        ...item,
+        send_whatsapp_on_approval: Boolean(item.phone && item.phone.trim().replace(/\D/g, '').length >= 10),
+        queued_whatsapp: true,
+      }));
+
+      let queuedNotes = overallNotes.replace(/\[WhatsApp Dispatch Queued on Manager Approval\]/g, '').trim();
+      queuedNotes = (queuedNotes ? `${queuedNotes}\n` : '') + '[WhatsApp Dispatch Queued on Manager Approval]';
+
+      const payload = buildPayload(empIdToUse, primaryStatus, totalProductVal, queuedItems, queuedNotes);
 
       if (initialData) {
         await api.put(`${apiBaseUrl}/${initialData.id}`, payload);
-        success('Customer activity updated successfully.');
+        success('Customer activity updated and moved to Pending list for review & approval.');
       } else {
         await api.post(apiBaseUrl, payload);
         success(
           `Recorded activity for ${customerCount} customer${
             customerCount !== 1 ? 's' : ''
-          }.`
+          } (Submitted to Pending list for review & approval).`
         );
       }
 

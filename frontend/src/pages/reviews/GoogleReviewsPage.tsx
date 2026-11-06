@@ -438,16 +438,16 @@ export const GoogleReviewsPage: React.FC = () => {
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
             <button
               onClick={() => {
                 setGSelectedEmployeeId(employees[0]?.id?.toString() || '');
                 setShowAddGoogleModal(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-linear-to-r from-[#D97706] to-[#B45309] hover:from-[#B45309] hover:to-[#92400E] shadow-md shadow-[#D97706]/20 transition-all cursor-pointer"
+              className="flex-1 sm:flex-initial justify-center inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-linear-to-r from-[#D97706] to-[#B45309] hover:from-[#B45309] hover:to-[#92400E] shadow-md shadow-[#D97706]/20 transition-all cursor-pointer"
             >
-              <Star className="w-3.5 h-3.5 fill-white text-white" />
-              <span>+ Log Google Review</span>
+              <Star className="w-3.5 h-3.5 fill-white text-white shrink-0" />
+              <span className="truncate">+ Log Google Review</span>
             </button>
 
             <button
@@ -455,10 +455,10 @@ export const GoogleReviewsPage: React.FC = () => {
                 setVSelectedEmployeeId(employees[0]?.id?.toString() || '');
                 setShowAddVideoModal(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-linear-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] shadow-md shadow-[#2563EB]/20 transition-all cursor-pointer"
+              className="flex-1 sm:flex-initial justify-center inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-linear-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] shadow-md shadow-[#2563EB]/20 transition-all cursor-pointer"
             >
-              <Video className="w-3.5 h-3.5" />
-              <span>+ Log Video Review</span>
+              <Video className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">+ Log Video Review</span>
             </button>
           </div>
         </div>

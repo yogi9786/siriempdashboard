@@ -207,40 +207,42 @@ export const AdminAttendancePage: React.FC = () => {
         </div>
 
         {/* 1-Hour Live Sync Indicator & Actions */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
           {/* Sync Badge */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] text-xs shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
-            <div className="text-[11px] font-bold text-[#166534]">
-              <span>Sync on Refresh</span>
-              {lastSyncedTime && (
-                <span className="text-[#15803D] font-normal ml-1">
-                  (Last: {lastSyncedTime})
-                </span>
-              )}
+          <div className="flex items-center justify-between sm:justify-start gap-2 px-3.5 py-2 sm:py-1.5 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] text-xs shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
+              <span className="text-[11px] font-bold text-[#166534]">Sync on Refresh</span>
             </div>
+            {lastSyncedTime && (
+              <span className="text-[#15803D] font-normal text-[11px] ml-1">
+                ({lastSyncedTime})
+              </span>
+            )}
           </div>
 
-          <Button
-            onClick={() => fetchAttendance(true)}
-            isLoading={isRefreshing}
-            variant="outline"
-            size="sm"
-            className="rounded-xl border-[#C5E3D5] text-[#23815F] hover:bg-[#E8F4EE] text-xs font-bold flex items-center gap-1.5"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>Sync Now</span>
-          </Button>
+          <div className="grid grid-cols-2 sm:flex items-center gap-2">
+            <Button
+              onClick={() => fetchAttendance(true)}
+              isLoading={isRefreshing}
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto justify-center rounded-xl border-[#C5E3D5] text-[#23815F] hover:bg-[#E8F4EE] text-xs font-bold flex items-center gap-1.5 py-2 sm:py-1.5 cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Sync Now</span>
+            </Button>
 
-          <Button
-            onClick={handleExportCSV}
-            variant="outline"
-            size="sm"
-            className="rounded-xl border-[#C5E3D5] text-[#23815F] hover:bg-[#E8F4EE] text-xs font-bold flex items-center gap-1.5"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export CSV</span>
-          </Button>
+            <Button
+              onClick={handleExportCSV}
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto justify-center rounded-xl border-[#C5E3D5] text-[#23815F] hover:bg-[#E8F4EE] text-xs font-bold flex items-center gap-1.5 py-2 sm:py-1.5 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export CSV</span>
+            </Button>
+          </div>
         </div>
       </div>
 

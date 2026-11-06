@@ -374,14 +374,14 @@ export const CustomerActivityPage: React.FC = () => {
           </div>
 
           {/* Quick Actions Header Buttons */}
-          <div className="flex items-center gap-2.5 flex-wrap self-start md:self-auto shrink-0">
+          <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0">
             {/* Export CSV Button */}
             <button
               onClick={() => exportCustomerActivitiesToCSV(filteredActivities)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#C5E3D5] hover:border-[#21845F] text-[#21845F] hover:bg-[#E8F4EE] text-xs font-bold shadow-2xs transition-all cursor-pointer hover:scale-[1.02]"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#C5E3D5] hover:border-[#21845F] text-[#21845F] hover:bg-[#E8F4EE] text-xs font-bold shadow-2xs transition-all cursor-pointer hover:scale-[1.02]"
               title="Export filtered records to CSV"
             >
-              <Download className="w-4 h-4 text-[#21845F]" />
+              <Download className="w-4 h-4 text-[#21845F] shrink-0" />
               <span>Export CSV</span>
             </button>
 
@@ -391,10 +391,10 @@ export const CustomerActivityPage: React.FC = () => {
                 setEditingActivity(null);
                 setShowAddModal(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#536B8A] hover:bg-[#40546D] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02]"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#536B8A] hover:bg-[#40546D] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02]"
             >
-              <Plus className="w-4 h-4 text-white" />
-              <span>+ Log Customer Activity</span>
+              <Plus className="w-4 h-4 text-white shrink-0" />
+              <span className="truncate">+ Log Customer Activity</span>
             </button>
           </div>
         </div>
@@ -512,11 +512,11 @@ export const CustomerActivityPage: React.FC = () => {
         </div>
 
         {/* WhatsApp Selection & Send Action Controls */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
           <button
             type="button"
             onClick={handleToggleSelectAll}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold border border-[#C5D5E6] bg-white text-[#536B8A] hover:bg-[#EDF2F7] transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            className="flex-1 sm:flex-initial justify-center px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold border border-[#C5D5E6] bg-white text-[#536B8A] hover:bg-[#EDF2F7] transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
             title={isAllSelected ? 'Deselect all' : 'Select all eligible customers with phone numbers'}
           >
             <input
@@ -526,23 +526,23 @@ export const CustomerActivityPage: React.FC = () => {
                 if (el) el.indeterminate = isSomeSelected;
               }}
               onChange={() => {}}
-              className="w-3.5 h-3.5 rounded text-[#16A34A] focus:ring-[#16A34A] cursor-pointer"
+              className="w-3.5 h-3.5 rounded text-[#16A34A] focus:ring-[#16A34A] cursor-pointer shrink-0"
             />
-            <span>{isAllSelected ? 'Deselect All' : `Select All (${eligibleActivities.length})`}</span>
+            <span className="truncate">{isAllSelected ? 'Deselect All' : `Select All (${eligibleActivities.length})`}</span>
           </button>
 
           <button
             type="button"
             onClick={handleOpenBulkWhatsApp}
             disabled={selectedIds.size === 0}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+            className={`flex-1 sm:flex-initial justify-center px-3.5 py-2 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
               selectedIds.size > 0
                 ? 'bg-linear-to-r from-[#16A34A] to-[#15803D] text-white hover:from-[#15803D] hover:to-[#166534] shadow-[#16A34A]/25'
                 : 'bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed opacity-70'
             }`}
           >
-            <Send className="w-3.5 h-3.5" />
-            <span>Send WhatsApp {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
+            <Send className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Send WhatsApp {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
           </button>
         </div>
       </div>

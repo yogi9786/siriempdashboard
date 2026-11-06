@@ -374,15 +374,15 @@ export const PendingCustomerActivityPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={fetchActivities}
-              className="bg-white hover:bg-[#FAF8F3] text-[#1D1D1B] border-[#D5CFC4] text-xs font-semibold shadow-2xs flex items-center gap-1.5 px-3.5 py-2 rounded-xl"
+              className="w-full sm:w-auto justify-center bg-white hover:bg-[#FAF8F3] text-[#1D1D1B] border-[#D5CFC4] text-xs font-semibold shadow-2xs flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-[#9A782F]' : 'text-[#6B6559]'}`} />
-              Refresh
+              <span>Refresh Activities</span>
             </Button>
           </div>
         </div>

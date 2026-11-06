@@ -371,7 +371,7 @@ export const AdminOutdoorMarketingPage: React.FC = () => {
           3. TAB NAVIGATION
       ---------------------------------------------------- */}
       <div className="p-3 bg-white border border-[#E4DFD4] rounded-2xl shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto">
           <button
             onClick={() => setActiveTab('duties')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${

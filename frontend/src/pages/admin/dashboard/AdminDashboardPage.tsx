@@ -149,8 +149,8 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center gap-3 self-start md:self-auto shrink-0 flex-wrap">
+          {/* Quick Actions (Mobile Responsive Grid & Desktop Flex) */}
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3 w-full md:w-auto shrink-0">
             <button
               onClick={() => {
                 fetchOverview();
@@ -158,7 +158,7 @@ export const AdminDashboardPage: React.FC = () => {
                 success('Admin dashboard synced with live showroom records.');
               }}
               disabled={isLoading}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF8F5] text-[#1D1D1B] text-xs font-bold border border-[#E4DFD4] shadow-2xs transition-all cursor-pointer group"
+              className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF8F5] text-[#1D1D1B] text-xs font-bold border border-[#E4DFD4] shadow-2xs transition-all cursor-pointer group"
               title="Sync admin records"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-[#7E22CE] transition-transform ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 duration-500'}`} />
@@ -167,17 +167,17 @@ export const AdminDashboardPage: React.FC = () => {
 
             <button
               onClick={() => navigate('/admin/branches')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"
             >
-              <Building2 className="w-4 h-4 text-[#7E22CE]" />
+              <Building2 className="w-4 h-4 text-[#7E22CE] shrink-0" />
               <span>Showrooms (3)</span>
             </button>
 
             <button
               onClick={() => navigate('/admin/reports')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02]"
+              className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02]"
             >
-              <FileSpreadsheet className="w-4 h-4 text-white" />
+              <FileSpreadsheet className="w-4 h-4 text-white shrink-0" />
               <span>Executive Reports</span>
             </button>
           </div>

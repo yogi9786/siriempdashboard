@@ -196,12 +196,12 @@ export const AdminGoogleReviewsPage: React.FC = () => {
         </div>
 
         {/* Branch Filter */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-[#5E5A52]">Showroom:</span>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-xs font-bold text-[#5E5A52] shrink-0">Showroom:</span>
           <select
             value={branchFilter}
             onChange={(e) => handleBranchChange(e.target.value)}
-            className="select-luxury-slate rounded-xl px-3 py-1.5 text-xs font-bold cursor-pointer"
+            className="select-luxury-slate rounded-xl px-3 py-1.5 text-xs font-bold cursor-pointer w-full sm:w-auto"
           >
             <option value="all">All Branches ({branches.length})</option>
             {branches.map((b) => (
@@ -214,10 +214,10 @@ export const AdminGoogleReviewsPage: React.FC = () => {
       </div>
 
       {/* Main Tab Switcher */}
-      <div className="flex items-center gap-3 border-b border-[#E8E6E1] pb-2">
+      <div className="flex items-center gap-2.5 sm:gap-3 border-b border-[#E8E6E1] pb-2 overflow-x-auto no-scrollbar py-0.5">
         <button
           onClick={() => setActiveTab('google_reviews')}
-          className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 shrink-0 whitespace-nowrap ${
             activeTab === 'google_reviews'
               ? 'bg-[#B97855] text-white shadow-xs'
               : 'bg-white text-[#5E5A52] hover:bg-[#FAF8F3] border border-[#E8E6E1]'
@@ -229,7 +229,7 @@ export const AdminGoogleReviewsPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('video_reviews')}
-          className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 shrink-0 whitespace-nowrap ${
             activeTab === 'video_reviews'
               ? 'bg-[#7E22CE] text-white shadow-xs'
               : 'bg-white text-[#5E5A52] hover:bg-[#FAF8F3] border border-[#E8E6E1]'
@@ -246,7 +246,7 @@ export const AdminGoogleReviewsPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('direct_feedback')}
-          className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 shrink-0 whitespace-nowrap ${
             activeTab === 'direct_feedback'
               ? 'bg-[#23815F] text-white shadow-xs'
               : 'bg-white text-[#5E5A52] hover:bg-[#FAF8F3] border border-[#E8E6E1]'

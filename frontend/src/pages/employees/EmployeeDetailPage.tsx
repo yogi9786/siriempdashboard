@@ -3008,7 +3008,7 @@ export const EmployeeDetailPage: React.FC = () => {
             <div className="hidden md:block space-y-6">
               {/* Desktop Sub-Navigation Tab Bar */}
               <div className="border-b border-[#E8E6E1] flex items-center justify-between gap-3">
-                <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1">
                   {activeSections.map((sec) => (
                     <button
                       key={sec.key}

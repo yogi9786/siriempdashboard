@@ -201,12 +201,12 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <Button
             variant="outline"
             onClick={() => exportCustomerActivitiesToCSV(activities, 'Siri_Samruddhi_Admin_Customers')}
             icon={<Download className="w-4 h-4 text-[#21845F]" />}
-            className="border-[#C5E3D5] text-[#21845F] hover:bg-[#E8F4EE] cursor-pointer"
+            className="w-full sm:w-auto justify-center border-[#C5E3D5] text-[#21845F] hover:bg-[#E8F4EE] cursor-pointer"
           >
             Export CSV
           </Button>

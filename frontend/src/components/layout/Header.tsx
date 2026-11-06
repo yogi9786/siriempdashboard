@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenMobileMenu }
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-[#10B981]" />
             </span>
-            <span className="text-[11px] sm:text-sm font-extrabold text-white tracking-tight truncate max-w-27.5 xs:max-w-[160px] sm:max-w-none">
+            <span className="text-[11px] sm:text-sm font-extrabold text-white tracking-tight truncate max-w-[120px] sm:max-w-none">
               {branchDisplayName}
             </span>
             <span className="hidden sm:inline-flex text-[9px] sm:text-[10px] font-mono font-bold uppercase px-1.5 sm:px-2 py-0.5 rounded-md bg-[#3B0764] border border-[#7E22CE]/50 text-[#D8B4FE] shrink-0">
@@ -110,11 +110,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenMobileMenu }
           {/* Review Points Ledger Shortcut */}
           <Link
             to="/google-reviews"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#222226] hover:bg-[#2C2C32] border border-[#3E3E44] text-[#FBBF24] shadow-xs transition-all cursor-pointer group"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#222226] hover:bg-[#2C2C32] border border-[#3E3E44] text-[#FBBF24] shadow-xs transition-all cursor-pointer group shrink-0"
             title="Showroom Reviews & Points Ledger"
           >
-            <Star className="w-3.5 h-3.5 fill-[#F59E0B] text-[#F59E0B] group-hover:scale-110 transition-transform" />
-            <span className="text-[11px] sm:text-xs font-black text-[#FEF3C7] tracking-tight hidden xs:inline">
+            <Star className="w-3.5 h-3.5 fill-[#F59E0B] text-[#F59E0B] group-hover:scale-110 transition-transform shrink-0" />
+            <span className="text-[11px] sm:text-xs font-black text-[#FEF3C7] tracking-tight hidden sm:inline">
               Reviews & Points
             </span>
           </Link>

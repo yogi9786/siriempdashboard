@@ -94,7 +94,7 @@ export const AdminEmployeeListPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4] text-[#5E5A52] text-xs font-bold shadow-2xs">
+        <div className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4] text-[#5E5A52] text-xs font-bold shadow-2xs">
           <ShieldCheck className="w-4 h-4 text-[#7E22CE]" />
           <span>System Verified Roster</span>
         </div>

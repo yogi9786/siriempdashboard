@@ -507,13 +507,13 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportCSV}
-            leftIcon={<Download className="w-4 h-4 text-[#10B981]" />}
-            className="cursor-pointer shadow-2xs border-[#E4DFD4] text-[#1D1D1B] hover:bg-[#FAF8F3] whitespace-nowrap shrink-0"
+            leftIcon={<Download className="w-4 h-4 text-[#10B981] shrink-0" />}
+            className="flex-1 sm:flex-initial justify-center cursor-pointer shadow-2xs border-[#E4DFD4] text-[#1D1D1B] hover:bg-[#FAF8F3] whitespace-nowrap"
           >
             Export Leads CSV ({filteredCustomers.length})
           </Button>
@@ -522,10 +522,10 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
             variant="primary"
             size="sm"
             onClick={openAddModal}
-            leftIcon={<Plus className="w-4 h-4 text-white" />}
-            className="cursor-pointer shadow-xs bg-[#065F46] hover:bg-[#047857] text-white whitespace-nowrap shrink-0"
+            leftIcon={<Plus className="w-4 h-4 text-white shrink-0" />}
+            className="flex-1 sm:flex-initial justify-center cursor-pointer shadow-xs bg-[#065F46] hover:bg-[#047857] text-white whitespace-nowrap"
           >
-            Add Field Customer Lead
+            Add Customer Lead
           </Button>
         </div>
       </div>

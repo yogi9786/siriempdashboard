@@ -212,9 +212,12 @@ export const AttendancePage: React.FC = () => {
         </div>
 
         {/* Date Selector & Save Action */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-2xl px-3.5 py-1.5 shadow-2xs">
-            <Calendar className="w-4 h-4 text-[#23815F]" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
+          <div className="flex items-center justify-between sm:justify-start gap-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-2xl px-3.5 py-2 sm:py-1.5 shadow-2xs w-full sm:w-auto">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-[#23815F]" />
+              <span className="text-[11px] font-bold text-[#5E5A52] sm:hidden">Date:</span>
+            </div>
             <input
               type="date"
               value={selectedDate}
@@ -226,7 +229,7 @@ export const AttendancePage: React.FC = () => {
           <Button
             onClick={handleSaveAttendance}
             isLoading={isSaving}
-            className="bg-gradient-to-r from-[#23815F] to-[#1B694C] hover:from-[#1B694C] hover:to-[#14533C] text-white text-xs font-extrabold px-5 py-2.5 rounded-2xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto justify-center bg-gradient-to-r from-[#23815F] to-[#1B694C] hover:from-[#1B694C] hover:to-[#14533C] text-white text-xs font-extrabold px-5 py-2.5 rounded-2xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>Save Attendance ({selectedDate})</span>
@@ -268,23 +271,23 @@ export const AttendancePage: React.FC = () => {
       </div>
 
       {/* Filter & Bulk Quick Actions Bar */}
-      <div className="bg-white border border-[#C5E3D5] rounded-3xl p-4 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-3 w-full md:w-auto flex-1">
-          <div className="relative flex-1 max-w-sm">
+      <div className="bg-white border border-[#C5E3D5] rounded-3xl p-4 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto flex-1">
+          <div className="relative flex-1 max-w-none sm:max-w-sm">
             <Search className="w-4 h-4 text-[#8A8479] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search staff name, code, designation..."
-              className="w-full pl-9 pr-3 py-1.5 input-luxury-beige rounded-xl text-xs"
+              className="w-full pl-9 pr-3 py-2 sm:py-1.5 input-luxury-beige rounded-xl text-xs"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="select-luxury-slate rounded-xl px-3 py-1.5 text-xs font-bold cursor-pointer"
+            className="select-luxury-slate rounded-xl px-3 py-2 sm:py-1.5 text-xs font-bold cursor-pointer"
           >
             <option value="all">All Statuses</option>
             <option value="Present">Present Only</option>
@@ -295,18 +298,18 @@ export const AttendancePage: React.FC = () => {
           </select>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="grid grid-cols-2 sm:flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => handleMarkAll('Present')}
-            className="px-3 py-1.5 rounded-xl bg-[#E8F4EE] hover:bg-[#D4EBDD] text-[#23815F] text-xs font-bold border border-[#C5E3D5] transition-colors cursor-pointer"
+            className="px-3 py-2 sm:py-1.5 rounded-xl bg-[#E8F4EE] hover:bg-[#D4EBDD] text-[#23815F] text-xs font-bold border border-[#C5E3D5] transition-colors cursor-pointer text-center"
           >
             ✓ Mark All Present
           </button>
           <button
             type="button"
             onClick={() => handleMarkAll('Absent')}
-            className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold border border-red-200 transition-colors cursor-pointer"
+            className="px-3 py-2 sm:py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold border border-red-200 transition-colors cursor-pointer text-center"
           >
             ✗ Mark All Absent
           </button>
@@ -436,14 +439,14 @@ export const AttendancePage: React.FC = () => {
           </div>
 
           {/* Footer with Save Action */}
-          <div className="p-4 bg-[#FAF8F3] border-t border-[#C5E3D5] flex items-center justify-between">
-            <span className="text-xs text-[#5E5A52] font-semibold">
+          <div className="p-4 bg-[#FAF8F3] border-t border-[#C5E3D5] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-xs text-[#5E5A52] font-semibold text-center sm:text-left">
               Showing {filteredRows.length} showroom employees for {selectedDate}.
             </span>
             <Button
               onClick={handleSaveAttendance}
               isLoading={isSaving}
-              className="bg-gradient-to-r from-[#23815F] to-[#1B694C] hover:from-[#1B694C] hover:to-[#14533C] text-white text-xs font-extrabold px-6 py-2 rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
+              className="w-full sm:w-auto justify-center bg-gradient-to-r from-[#23815F] to-[#1B694C] hover:from-[#1B694C] hover:to-[#14533C] text-white text-xs font-extrabold px-6 py-2.5 rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
               <span>Confirm & Save Attendance</span>

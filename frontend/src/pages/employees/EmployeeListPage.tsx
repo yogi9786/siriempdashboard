@@ -50,7 +50,22 @@ export const EmployeeListPage: React.FC = () => {
     setIsLoading(true);
     try {
       const res = await api.get<Employee[]>('/api/v1/employees');
-      setEmployees(res.data);
+      const raw = res.data || [];
+      const nonManagers = raw.filter((emp) => {
+        const desig = (emp.designation || '').toLowerCase();
+        if (desig.includes('manager')) return false;
+        const name = (emp.full_name || '').trim().toUpperCase();
+        const knownManagers = [
+          'GAGAN', 'ADARSHA', 'DILEEP H E', 'BASAVARAJ BARADDI', 'MANJUNATH P S',
+          'VIJAY SARATHY', 'PRADEEP KUMAR B N', 'ASLAM PASHA A', 'SIVA R',
+          'SANDEEPA', 'PRITHVIRAJ', 'PRITHVIRAJU B V', 'SHIVAKUMAR M K', 'SHIVAKUMAR'
+        ];
+        if (knownManagers.some((m) => name === m || name.startsWith(m) || name.includes(m))) return false;
+        const code = (emp.employee_code || '').toUpperCase();
+        if (code.includes('MGR') || code.includes('MANAGER')) return false;
+        return true;
+      });
+      setEmployees(nonManagers);
     } catch (err) {
       console.error('Failed to load employees:', err);
       toastError('Failed to fetch showroom employees.');

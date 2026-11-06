@@ -22,6 +22,34 @@ from backend.app.dependencies.auth import get_current_manager
 router = APIRouter(prefix="/api/v1/employees", tags=["Employees"])
 
 
+def get_manager_exclusions(db: Session):
+    """Returns manager names, usernames, and codes to strictly exclude managers from employee rosters."""
+    manager_users = db.query(User).filter(User.role == "MANAGER").all()
+    manager_names = {u.full_name.strip().lower() for u in manager_users if u.full_name}
+    manager_usernames = {u.username.strip().lower() for u in manager_users if u.username}
+    manager_codes = {getattr(u, "manager_code", "").strip().lower() for u in manager_users if getattr(u, "manager_code", None)}
+    known_manager_names = {
+        "adarsha", "dileep h e", "basavaraj baraddi", "manjunath p s",
+        "vijay sarathy", "gagan", "pradeep kumar b n", "aslam pasha a",
+        "siva r", "sandeepa", "prithviraj", "prithviraju b v", "shivakumar m k", "shivakumar"
+    }
+    manager_names.update(known_manager_names)
+    return manager_names, manager_usernames, manager_codes
+
+
+def is_manager_staff(emp: Employee, manager_names: set, manager_usernames: set, manager_codes: set) -> bool:
+    desig = (emp.designation or "").lower()
+    if "manager" in desig:
+        return True
+    name = (emp.full_name or "").strip().lower()
+    if name in manager_names:
+        return True
+    code = (emp.employee_code or "").strip().lower()
+    if code in manager_codes or code in manager_usernames:
+        return True
+    return False
+
+
 @router.get("", response_model=List[EmployeeResponse], summary="List all employees for current manager's branch")
 def list_employees(
     search: Optional[str] = Query(None, description="Search by name, ID, phone, designation"),
@@ -54,13 +82,21 @@ def list_employees(
         )
 
     employees = query.order_by(Employee.id.asc()).all()
-    for emp in employees:
+
+    # Strictly exclude managers - managers are not employees and do not receive employee points
+    mgr_names, mgr_usernames, mgr_codes = get_manager_exclusions(db)
+    filtered_employees = [
+        e for e in employees
+        if not is_manager_staff(e, mgr_names, mgr_usernames, mgr_codes)
+    ]
+
+    for emp in filtered_employees:
         g_pts = sum(max(1, r.customers_count or 1) for r in (emp.google_reviews or []) if (r.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
         v_pts = sum(max(1, v.videos_count or 1) * 5 for v in (emp.video_reviews or []) if (v.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
         emp.google_review_points = g_pts
         emp.video_review_points = v_pts
         emp.total_points = g_pts + v_pts
-    return employees
+    return filtered_employees
 
 
 @router.post("", response_model=EmployeeResponse, status_code=status.HTTP_201_CREATED, summary="Create a new employee in current manager's branch")
@@ -133,6 +169,8 @@ def get_showroom_employee_points_ranking(
     db: Session = Depends(get_db),
 ):
     """Returns staff in manager's showroom ranked point-wise by review and video points."""
+    mgr_names, mgr_usernames, mgr_codes = get_manager_exclusions(db)
+
     employees = db.query(Employee).filter(
         Employee.branch_id == current_user.branch_id,
         Employee.status == "active",
@@ -140,6 +178,9 @@ def get_showroom_employee_points_ranking(
 
     results = []
     for emp in employees:
+        # Strictly exclude managers
+        if is_manager_staff(emp, mgr_names, mgr_usernames, mgr_codes):
+            continue
         branch = emp.branch
         g_pts = emp.google_review_points
         v_pts = emp.video_review_points

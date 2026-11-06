@@ -91,6 +91,24 @@ export const GoogleReviewsPage: React.FC = () => {
   const [viewImageModalUrl, setViewImageModalUrl] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
+  // Helper: Strictly Exclude Managers (Managers are not employees & don't have points)
+  // -------------------------------------------------------------------------
+  const isManagerEmployee = (emp: Employee) => {
+    const desig = (emp.designation || '').toLowerCase();
+    if (desig.includes('manager')) return true;
+    const name = (emp.full_name || '').trim().toUpperCase();
+    const knownManagers = [
+      'GAGAN', 'ADARSHA', 'DILEEP H E', 'BASAVARAJ BARADDI', 'MANJUNATH P S',
+      'VIJAY SARATHY', 'PRADEEP KUMAR B N', 'ASLAM PASHA A', 'SIVA R',
+      'SANDEEPA', 'PRITHVIRAJ', 'PRITHVIRAJU B V', 'SHIVAKUMAR M K', 'SHIVAKUMAR'
+    ];
+    if (knownManagers.some((m) => name === m || name.startsWith(m) || name.includes(m))) return true;
+    const code = (emp.employee_code || '').toUpperCase();
+    if (code.includes('MGR') || code.includes('MANAGER')) return true;
+    return false;
+  };
+
+  // -------------------------------------------------------------------------
   // Data Fetching
   // -------------------------------------------------------------------------
   const fetchData = async () => {
@@ -101,9 +119,18 @@ export const GoogleReviewsPage: React.FC = () => {
         api.get<GoogleReview[]>('/api/v1/google-reviews'),
         api.get<VideoReview[]>('/api/v1/video-reviews'),
       ]);
-      setEmployees(empRes.data || []);
-      setReviews(revRes.data || []);
-      setVideoReviews(vidRes.data || []);
+
+      // Managers are strictly excluded from employee points and rosters
+      const validEmployees = (empRes.data || []).filter((e) => !isManagerEmployee(e));
+      setEmployees(validEmployees);
+
+      // Only include reviews associated with valid showroom employees
+      const validEmpIds = new Set(validEmployees.map((e) => e.id));
+      const validReviews = (revRes.data || []).filter((r) => r.employee_id && validEmpIds.has(r.employee_id));
+      const validVideoReviews = (vidRes.data || []).filter((v) => v.employee_id && validEmpIds.has(v.employee_id));
+
+      setReviews(validReviews);
+      setVideoReviews(validVideoReviews);
     } catch (err) {
       console.error('Failed to load reviews and employee points data:', err);
       toastError('Failed to fetch employee points and review records.');
@@ -147,6 +174,7 @@ export const GoogleReviewsPage: React.FC = () => {
   };
 
   const getEmployeeTotalPoints = (emp: Employee) => {
+    if (isManagerEmployee(emp)) return 0;
     const gPts = getEmployeeGooglePoints(emp.id);
     const vPts = getEmployeeVideoPoints(emp.id);
     const computed = gPts + vPts;
@@ -160,13 +188,15 @@ export const GoogleReviewsPage: React.FC = () => {
     return gPending + vPending;
   };
 
-  // Rank all employees descending by total points (highest on top!)
-  const rankedEmployees = [...employees].sort((a, b) => {
-    const ptsA = getEmployeeTotalPoints(a);
-    const ptsB = getEmployeeTotalPoints(b);
-    if (ptsB !== ptsA) return ptsB - ptsA;
-    return a.full_name.localeCompare(b.full_name);
-  });
+  // Rank all non-manager employees descending by total points (highest on top!)
+  const rankedEmployees = [...employees]
+    .filter((e) => !isManagerEmployee(e))
+    .sort((a, b) => {
+      const ptsA = getEmployeeTotalPoints(a);
+      const ptsB = getEmployeeTotalPoints(b);
+      if (ptsB !== ptsA) return ptsB - ptsA;
+      return a.full_name.localeCompare(b.full_name);
+    });
 
   // Filtered employees for display
   const filteredEmployees = rankedEmployees.filter((emp) => {
@@ -405,7 +435,7 @@ export const GoogleReviewsPage: React.FC = () => {
       );
     }
     return (
-      <div className="min-w-6 sm:min-w-7 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-[#FAF8F5] text-[#6B6559] border border-[#E6E1D6] font-mono font-extrabold text-[11px] sm:text-xs text-center shrink-0">
+      <div className="min-w-6 sm:min-w-7 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-[#FAF8F5] text-[#6B6559] border border-[#E6E1D6] tabular-nums font-extrabold text-[11px] sm:text-xs text-center shrink-0">
         #{rank}
       </div>
     );
@@ -445,31 +475,6 @@ export const GoogleReviewsPage: React.FC = () => {
               </p>
             </div>
           </div>
-
-          {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
-            <button
-              onClick={() => {
-                setGSelectedEmployeeId(employees[0]?.id?.toString() || '');
-                setShowAddGoogleModal(true);
-              }}
-              className="flex-1 sm:flex-initial justify-center inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-linear-to-r from-[#D97706] to-[#B45309] hover:from-[#B45309] hover:to-[#92400E] shadow-md shadow-[#D97706]/20 transition-all cursor-pointer"
-            >
-              <Star className="w-3.5 h-3.5 fill-white text-white shrink-0" />
-              <span className="truncate">+ Log Google Review</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setVSelectedEmployeeId(employees[0]?.id?.toString() || '');
-                setShowAddVideoModal(true);
-              }}
-              className="flex-1 sm:flex-initial justify-center inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-linear-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] shadow-md shadow-[#2563EB]/20 transition-all cursor-pointer"
-            >
-              <Video className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">+ Log Video Review</span>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -483,7 +488,7 @@ export const GoogleReviewsPage: React.FC = () => {
             </span>
             <Trophy className="w-4 h-4 text-[#D97706]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-[#D97706] font-mono mt-1">
+          <div className="text-2xl sm:text-3xl font-black text-[#D97706] tabular-nums mt-1">
             {totalShowroomPoints} <span className="text-xs font-bold text-[#92400E]">Pts</span>
           </div>
           <span className="text-[10px] text-[#8A8479]">Showroom lifetime points</span>
@@ -497,7 +502,7 @@ export const GoogleReviewsPage: React.FC = () => {
             </span>
             <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-[#7E22CE] font-mono mt-1">
+          <div className="text-2xl sm:text-3xl font-black text-[#7E22CE] tabular-nums mt-1">
             {totalApprovedGooglePoints} <span className="text-xs font-bold text-[#7E22CE]">Pts</span>
           </div>
           <span className="text-[10px] text-[#8A8479]">1 verified review = 1 point</span>
@@ -511,7 +516,7 @@ export const GoogleReviewsPage: React.FC = () => {
             </span>
             <Video className="w-4 h-4 text-[#2563EB]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-[#1E40AF] font-mono mt-1">
+          <div className="text-2xl sm:text-3xl font-black text-[#1E40AF] tabular-nums mt-1">
             {totalApprovedVideoPoints} <span className="text-xs font-bold text-[#1E40AF]">Pts</span>
           </div>
           <span className="text-[10px] text-[#8A8479]">1 video review = 5 points</span>
@@ -529,7 +534,7 @@ export const GoogleReviewsPage: React.FC = () => {
             {topPerformer ? topPerformer.full_name : 'No points yet'}
           </div>
           <span className="text-[10px] font-bold text-[#D97706]">
-            {topPerformer ? `${getEmployeeTotalPoints(topPerformer)} Points Earned` : 'Log reviews to award points'}
+            {topPerformer ? `${getEmployeeTotalPoints(topPerformer)} Points Earned` : 'Showroom staff points'}
           </span>
         </div>
       </div>
@@ -656,7 +661,7 @@ export const GoogleReviewsPage: React.FC = () => {
                       <h3 className="font-extrabold text-sm sm:text-base text-[#1D1D1B] group-hover:text-[#D97706] transition-colors truncate max-w-full">
                         {emp.full_name}
                       </h3>
-                      <span className="font-mono text-[10px] font-bold text-[#536B8A] px-1.5 sm:px-2 py-0.5 rounded-md bg-[#EDF2F7] border border-[#C5D5E6] shrink-0 whitespace-nowrap">
+                      <span className="text-[10px] font-bold text-[#536B8A] px-1.5 sm:px-2 py-0.5 rounded-md bg-[#EDF2F7] border border-[#C5D5E6] shrink-0 whitespace-nowrap">
                         {emp.employee_code || `#${emp.id}`}
                       </span>
                       {emp.is_outdoor_marketing_employee && (
@@ -695,7 +700,7 @@ export const GoogleReviewsPage: React.FC = () => {
 
                   {/* Total Points Large Badge */}
                   <div className="text-right shrink-0">
-                    <div className="text-lg sm:text-2xl font-black text-[#D97706] font-mono tracking-tight whitespace-nowrap">
+                    <div className="text-lg sm:text-2xl font-black text-[#D97706] tabular-nums tracking-tight whitespace-nowrap">
                       {totalPoints} <span className="text-xs font-extrabold text-[#92400E]">Pts</span>
                     </div>
                     <div className="text-[10px] font-bold text-[#8A8479] flex items-center gap-0.5 justify-end group-hover:text-[#D97706] transition-colors whitespace-nowrap">
@@ -736,7 +741,7 @@ export const GoogleReviewsPage: React.FC = () => {
                     <h2 className="text-sm sm:text-lg font-black text-white truncate max-w-full">
                       {selectedEmployee.full_name}
                     </h2>
-                    <span className="font-mono text-[10px] font-bold text-[#E5C378] px-1.5 sm:px-2 py-0.5 rounded-md bg-white/10 border border-white/15 shrink-0 whitespace-nowrap">
+                    <span className="text-[10px] font-bold text-[#E5C378] px-1.5 sm:px-2 py-0.5 rounded-md bg-white/10 border border-white/15 shrink-0 whitespace-nowrap">
                       {selectedEmployee.employee_code || `#${selectedEmployee.id}`}
                     </span>
                   </div>
@@ -750,7 +755,7 @@ export const GoogleReviewsPage: React.FC = () => {
               <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-1 sm:ml-2">
                 <div className="text-right">
                   <span className="text-[9px] sm:text-[10px] text-[#A1A1AA] uppercase font-bold block">Total Points</span>
-                  <span className="text-lg sm:text-2xl font-black text-[#F59E0B] font-mono">
+                  <span className="text-lg sm:text-2xl font-black text-[#F59E0B] tabular-nums">
                     {getEmployeeTotalPoints(selectedEmployee)} Pts
                   </span>
                 </div>
@@ -770,7 +775,7 @@ export const GoogleReviewsPage: React.FC = () => {
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <div className="bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl p-2.5 sm:p-3 text-center">
                   <span className="text-[9px] sm:text-[10px] font-bold text-[#7E22CE] uppercase block truncate">Google Reviews</span>
-                  <span className="text-base sm:text-xl font-black text-[#7E22CE] font-mono mt-0.5 block">
+                  <span className="text-base sm:text-xl font-black text-[#7E22CE] tabular-nums mt-0.5 block">
                     {getEmployeeGooglePoints(selectedEmployee.id)} <span className="text-xs font-bold">Pts</span>
                   </span>
                   <span className="text-[9px] sm:text-[10px] text-[#8A8479] block truncate">
@@ -780,7 +785,7 @@ export const GoogleReviewsPage: React.FC = () => {
 
                 <div className="bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl p-2.5 sm:p-3 text-center">
                   <span className="text-[9px] sm:text-[10px] font-bold text-[#1E40AF] uppercase block truncate">Video Reviews</span>
-                  <span className="text-base sm:text-xl font-black text-[#1E40AF] font-mono mt-0.5 block">
+                  <span className="text-base sm:text-xl font-black text-[#1E40AF] tabular-nums mt-0.5 block">
                     {getEmployeeVideoPoints(selectedEmployee.id)} <span className="text-xs font-bold">Pts</span>
                   </span>
                   <span className="text-[9px] sm:text-[10px] text-[#8A8479] block truncate">
@@ -790,7 +795,7 @@ export const GoogleReviewsPage: React.FC = () => {
 
                 <div className="bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl p-2.5 sm:p-3 text-center">
                   <span className="text-[9px] sm:text-[10px] font-bold text-[#D97706] uppercase block truncate">Pending</span>
-                  <span className="text-base sm:text-xl font-black text-[#D97706] font-mono mt-0.5 block">
+                  <span className="text-base sm:text-xl font-black text-[#D97706] tabular-nums mt-0.5 block">
                     {getEmployeePendingCount(selectedEmployee.id)} <span className="text-xs font-bold">Items</span>
                   </span>
                   <span className="text-[9px] sm:text-[10px] text-[#8A8479] block truncate">Awaiting approval</span>
@@ -869,7 +874,7 @@ export const GoogleReviewsPage: React.FC = () => {
                               <div className="text-xs font-bold text-[#1D1D1B] mt-1">
                                 Customer: {rev.customer_name || 'Google Reviewer'}
                               </div>
-                              <span className="text-[11px] text-[#8A8479] font-mono">
+                              <span className="text-[11px] text-[#8A8479] font-medium tabular-nums">
                                 Date: {rev.review_date}
                               </span>
                             </div>
@@ -994,7 +999,7 @@ export const GoogleReviewsPage: React.FC = () => {
                               <div className="text-xs font-bold text-[#525252] mt-0.5">
                                 Customer: {v.customer_name || 'Customer'}
                               </div>
-                              <span className="text-[11px] text-[#8A8479] font-mono">
+                              <span className="text-[11px] text-[#8A8479] font-medium tabular-nums">
                                 Date: {v.review_date}
                               </span>
                             </div>
@@ -1356,7 +1361,7 @@ export const GoogleReviewsPage: React.FC = () => {
                   value={vVideoUrl}
                   onChange={(e) => setVVideoUrl(e.target.value)}
                   placeholder="https://instagram.com/reel/... or Google Drive link"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#C5D5E6] text-xs font-mono text-[#1D1D1B] focus:ring-2 focus:ring-[#2563EB] outline-hidden"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#C5D5E6] text-xs font-normal text-[#1D1D1B] focus:ring-2 focus:ring-[#2563EB] outline-hidden"
                 />
               </div>
 

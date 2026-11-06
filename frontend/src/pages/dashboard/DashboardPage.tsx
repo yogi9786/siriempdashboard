@@ -60,7 +60,21 @@ export const DashboardPage: React.FC = () => {
       ]);
 
       if (overviewRes.data) setOverview(overviewRes.data);
-      if (employeesRes.data) setEmployees(employeesRes.data);
+      if (employeesRes.data) {
+        const nonManagers = employeesRes.data.filter((emp) => {
+          const desig = (emp.designation || '').toLowerCase();
+          if (desig.includes('manager')) return false;
+          const name = (emp.full_name || '').trim().toUpperCase();
+          const knownManagers = [
+            'GAGAN', 'ADARSHA', 'DILEEP H E', 'BASAVARAJ BARADDI', 'MANJUNATH P S',
+            'VIJAY SARATHY', 'PRADEEP KUMAR B N', 'ASLAM PASHA A', 'SIVA R',
+            'SANDEEPA', 'PRITHVIRAJ', 'PRITHVIRAJU B V', 'SHIVAKUMAR M K', 'SHIVAKUMAR'
+          ];
+          if (knownManagers.some((m) => name === m || name.startsWith(m) || name.includes(m))) return false;
+          return true;
+        });
+        setEmployees(nonManagers);
+      }
       if (customersRes.data) setCustomerActivities(customersRes.data);
       if (schemesRes.data) setSchemes(schemesRes.data);
       if (reviewsRes.data) setGoogleReviews(reviewsRes.data);

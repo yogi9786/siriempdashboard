@@ -45,6 +45,8 @@ class Employee(Base):
         cached = getattr(self, "_google_review_points", None)
         if cached is not None:
             return cached
+        if "manager" in (self.designation or "").lower():
+            return 0
         if not self.google_reviews:
             return 0
         return sum(
@@ -61,6 +63,8 @@ class Employee(Base):
         cached = getattr(self, "_video_review_points", None)
         if cached is not None:
             return cached
+        if "manager" in (self.designation or "").lower():
+            return 0
         if not self.video_reviews:
             return 0
         return sum(

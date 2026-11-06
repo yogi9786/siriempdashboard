@@ -65,10 +65,6 @@ BRANCHES_DATA = [
         ],
         "code_prefix": "EMP-YEL-",
         "employees": [
-            {"id": 48, "name": "DILEEP H E", "designation": "Showroom Manager", "department": "Showroom Operations"},
-            {"id": 109, "name": "ADARSHA", "designation": "Showroom Manager", "department": "Showroom Operations"},
-            {"id": 129, "name": "BASAVARAJ BARADDI", "designation": "Showroom Manager", "department": "Showroom Operations"},
-            {"id": 134, "name": "MANJUNATH P S", "designation": "Showroom Manager", "department": "Showroom Operations"},
             {"id": 8, "name": "SHYLAJA B N", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 22, "name": "SATISH ARKSALI", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 25, "name": "SANNIRAMMA", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
@@ -91,7 +87,6 @@ BRANCHES_DATA = [
             {"id": 204, "name": "NAGINDRAPPA", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 211, "name": "MADHU", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 213, "name": "MAHESWHARI", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
-            {"id": 214, "name": "GAGAN", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
         ],
     },
     {
@@ -122,9 +117,6 @@ BRANCHES_DATA = [
         ],
         "code_prefix": "EMP-KOL-",
         "employees": [
-            {"id": 77, "name": "PRADEEP KUMAR B N", "designation": "Showroom Manager", "department": "Showroom Operations"},
-            {"id": 78, "name": "SIVA R", "designation": "Showroom Manager", "department": "Showroom Operations"},
-            {"id": 80, "name": "SHIVAKUMAR M K", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 82, "name": "DIVAKARA N", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 84, "name": "MANJUNATHA M M", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 85, "name": "KIRAN KUMAR S", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
@@ -161,8 +153,6 @@ BRANCHES_DATA = [
         ],
         "code_prefix": "EMP-UDU-",
         "employees": [
-            {"id": 37, "name": "SANDEEPA", "designation": "Showroom Manager", "department": "Showroom Operations"},
-            {"id": 217, "name": "PRITHVIRAJU B V", "designation": "Showroom Manager", "department": "Showroom Operations"},
             {"id": 118, "name": "ASHWINI KUMARI N", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 167, "name": "PRABHAKARA K", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 140, "name": "RAKSHITH AMIN", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},

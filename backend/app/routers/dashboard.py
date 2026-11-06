@@ -21,19 +21,22 @@ def get_dashboard_overview(
     branch_name = branch.name if branch else "Showroom"
     branch_code = branch.code if branch else "SHOWROOM"
 
-    # Query real employee counts strictly isolated to the showroom branch
+    # Query real employee counts strictly isolated to the showroom branch (excluding managers)
     total_employees = db.query(Employee).filter(
         Employee.branch_id == current_user.branch_id,
+        ~Employee.designation.ilike("%manager%"),
     ).count()
 
     active_employees = db.query(Employee).filter(
         Employee.branch_id == current_user.branch_id,
         Employee.status == "active",
+        ~Employee.designation.ilike("%manager%"),
     ).count()
 
     outdoor_employees = db.query(Employee).filter(
         Employee.branch_id == current_user.branch_id,
         Employee.is_outdoor_marketing_employee == True,
+        ~Employee.designation.ilike("%manager%"),
     ).count()
 
     return DashboardOverviewResponse(

@@ -373,30 +373,39 @@ export const GoogleReviewsPage: React.FC = () => {
   const getRankBadge = (rank: number) => {
     if (rank === 1) {
       return (
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-linear-to-r from-[#FEF3C7] to-[#FDE68A] text-[#92400E] border border-[#F59E0B] shadow-xs">
-          <Trophy className="w-3.5 h-3.5 text-[#D97706] fill-[#D97706]" />
-          <span className="font-extrabold text-xs">#1 Top Performer</span>
+        <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full bg-linear-to-r from-[#FEF3C7] to-[#FDE68A] text-[#92400E] border border-[#F59E0B] shadow-xs shrink-0">
+          <Trophy className="w-3.5 h-3.5 text-[#D97706] fill-[#D97706] shrink-0" />
+          <span className="font-extrabold text-[11px] sm:text-xs whitespace-nowrap">
+            <span className="sm:hidden">#1 Top</span>
+            <span className="hidden sm:inline">#1 Top Performer</span>
+          </span>
         </div>
       );
     }
     if (rank === 2) {
       return (
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-linear-to-r from-[#F1F5F9] to-[#E2E8F0] text-[#334155] border border-[#94A3B8] shadow-xs">
-          <Award className="w-3.5 h-3.5 text-[#64748B]" />
-          <span className="font-extrabold text-xs">#2 Runner Up</span>
+        <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full bg-linear-to-r from-[#F1F5F9] to-[#E2E8F0] text-[#334155] border border-[#94A3B8] shadow-xs shrink-0">
+          <Award className="w-3.5 h-3.5 text-[#64748B] shrink-0" />
+          <span className="font-extrabold text-[11px] sm:text-xs whitespace-nowrap">
+            <span className="sm:hidden">#2 Rank</span>
+            <span className="hidden sm:inline">#2 Runner Up</span>
+          </span>
         </div>
       );
     }
     if (rank === 3) {
       return (
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-linear-to-r from-[#FFEDD5] to-[#FED7AA] text-[#9A3412] border border-[#FB923C] shadow-xs">
-          <Award className="w-3.5 h-3.5 text-[#EA580C]" />
-          <span className="font-extrabold text-xs">#3 Rank</span>
+        <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full bg-linear-to-r from-[#FFEDD5] to-[#FED7AA] text-[#9A3412] border border-[#FB923C] shadow-xs shrink-0">
+          <Award className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+          <span className="font-extrabold text-[11px] sm:text-xs whitespace-nowrap">
+            <span className="sm:hidden">#3 Rank</span>
+            <span className="hidden sm:inline">#3 Rank</span>
+          </span>
         </div>
       );
     }
     return (
-      <div className="px-2.5 py-1 rounded-full bg-[#FAF8F5] text-[#6B6559] border border-[#E6E1D6] font-mono font-extrabold text-xs">
+      <div className="min-w-6 sm:min-w-7 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-[#FAF8F5] text-[#6B6559] border border-[#E6E1D6] font-mono font-extrabold text-[11px] sm:text-xs text-center shrink-0">
         #{rank}
       </div>
     );
@@ -540,7 +549,7 @@ export const GoogleReviewsPage: React.FC = () => {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 justify-start sm:justify-end w-full sm:w-auto">
           {[
             { id: 'all', label: `All Staff (${employees.length})` },
             { id: 'with_points', label: 'With Points Only' },
@@ -552,7 +561,7 @@ export const GoogleReviewsPage: React.FC = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => setFilterType(tab.id as any)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   isSelected
                     ? 'bg-[#18181B] text-white border-[#18181B] shadow-xs'
                     : 'bg-[#FAF8F5] text-[#6B6559] border-[#E6E1D6] hover:bg-[#F0EDE6]'
@@ -566,7 +575,7 @@ export const GoogleReviewsPage: React.FC = () => {
           <button
             onClick={fetchData}
             title="Refresh Points Data"
-            className="p-2.5 rounded-xl text-[#536B8A] bg-[#EDF2F7] border border-[#C5D5E6] hover:bg-[#E2E8F0] transition-colors cursor-pointer shrink-0"
+            className="p-2 sm:p-2.5 rounded-xl text-[#536B8A] bg-[#EDF2F7] border border-[#C5D5E6] hover:bg-[#E2E8F0] transition-colors cursor-pointer shrink-0"
           >
             <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -606,7 +615,7 @@ export const GoogleReviewsPage: React.FC = () => {
                   setSelectedEmployee(emp);
                   setEmployeeDetailTab(gReviews.length > 0 || vReviews.length === 0 ? 'google' : 'video');
                 }}
-                className={`bg-white rounded-2xl p-4 sm:p-5 border transition-all duration-200 cursor-pointer shadow-[0_2px_12px_rgba(40,35,25,0.035)] hover:shadow-md hover:scale-[1.008] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group ${
+                className={`bg-white rounded-2xl p-3.5 sm:p-5 border transition-all duration-200 cursor-pointer shadow-[0_2px_12px_rgba(40,35,25,0.035)] hover:shadow-md hover:scale-[1.008] flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 group overflow-hidden ${
                   isTop1
                     ? 'border-[#F59E0B] bg-linear-to-r from-[#FFFDF7] via-white to-[#FEF9E7]'
                     : isTop2
@@ -617,13 +626,13 @@ export const GoogleReviewsPage: React.FC = () => {
                 }`}
               >
                 {/* Left: Rank, Avatar, Name & Code */}
-                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 w-full md:w-auto md:flex-1">
                   {/* Rank Badge */}
                   <div className="shrink-0">{getRankBadge(rank)}</div>
 
                   {/* Profile Avatar */}
                   <div className="relative shrink-0">
-                    <div className="w-11 h-11 rounded-2xl bg-linear-to-br from-[#18181B] to-[#27272A] text-white flex items-center justify-center font-black text-sm border border-[#3F3F46] shadow-xs overflow-hidden">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-linear-to-br from-[#18181B] to-[#27272A] text-white flex items-center justify-center font-black text-sm border border-[#3F3F46] shadow-xs overflow-hidden">
                       {emp.profile_photo_url ? (
                         <img
                           src={emp.profile_photo_url.startsWith('http') ? emp.profile_photo_url : getMediaUrl(emp.profile_photo_url)}
@@ -642,16 +651,16 @@ export const GoogleReviewsPage: React.FC = () => {
                   </div>
 
                   {/* Name, Designation, Code */}
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-extrabold text-sm sm:text-base text-[#1D1D1B] group-hover:text-[#D97706] transition-colors truncate">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                      <h3 className="font-extrabold text-sm sm:text-base text-[#1D1D1B] group-hover:text-[#D97706] transition-colors truncate max-w-full">
                         {emp.full_name}
                       </h3>
-                      <span className="font-mono text-[10px] font-bold text-[#536B8A] px-2 py-0.5 rounded-md bg-[#EDF2F7] border border-[#C5D5E6]">
+                      <span className="font-mono text-[10px] font-bold text-[#536B8A] px-1.5 sm:px-2 py-0.5 rounded-md bg-[#EDF2F7] border border-[#C5D5E6] shrink-0 whitespace-nowrap">
                         {emp.employee_code || `#${emp.id}`}
                       </span>
                       {emp.is_outdoor_marketing_employee && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] shrink-0">
                           Outdoor
                         </span>
                       )}
@@ -663,22 +672,22 @@ export const GoogleReviewsPage: React.FC = () => {
                 </div>
 
                 {/* Right: Point Sources & Action Link */}
-                <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-[#F0EFEA]">
+                <div className="flex items-center gap-2.5 sm:gap-4 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-2.5 md:pt-0 border-[#F0EFEA] shrink-0">
                   {/* Point Breakdown Pills */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF8F5] text-[#7E22CE] border border-[#E6E1D6]">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span>{googlePts} Pts ({gReviews.length} Reviews)</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl text-[11px] sm:text-xs font-bold bg-[#FAF8F5] text-[#7E22CE] border border-[#E6E1D6]">
+                      <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                      <span>{googlePts} Pts ({gReviews.length})</span>
                     </span>
 
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF8F5] text-[#1E40AF] border border-[#E6E1D6]">
-                      <Video className="w-3.5 h-3.5 text-[#2563EB]" />
-                      <span>{videoPts} Pts ({vReviews.length} Videos)</span>
+                    <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl text-[11px] sm:text-xs font-bold bg-[#FAF8F5] text-[#1E40AF] border border-[#E6E1D6]">
+                      <Video className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+                      <span>{videoPts} Pts ({vReviews.length})</span>
                     </span>
 
                     {pendingCount > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-extrabold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] animate-pulse">
-                        <Clock className="w-3 h-3 text-[#D97706]" />
+                      <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] animate-pulse">
+                        <Clock className="w-3 h-3 text-[#D97706] shrink-0" />
                         <span>{pendingCount} Pending</span>
                       </span>
                     )}
@@ -686,11 +695,11 @@ export const GoogleReviewsPage: React.FC = () => {
 
                   {/* Total Points Large Badge */}
                   <div className="text-right shrink-0">
-                    <div className="text-xl sm:text-2xl font-black text-[#D97706] font-mono tracking-tight">
+                    <div className="text-lg sm:text-2xl font-black text-[#D97706] font-mono tracking-tight whitespace-nowrap">
                       {totalPoints} <span className="text-xs font-extrabold text-[#92400E]">Pts</span>
                     </div>
-                    <div className="text-[10px] font-bold text-[#8A8479] flex items-center gap-1 justify-end group-hover:text-[#D97706] transition-colors">
-                      <span>View details</span>
+                    <div className="text-[10px] font-bold text-[#8A8479] flex items-center gap-0.5 justify-end group-hover:text-[#D97706] transition-colors whitespace-nowrap">
+                      <span>View</span>
                       <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
@@ -708,9 +717,9 @@ export const GoogleReviewsPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl border border-[#E4DFD4] overflow-hidden">
             {/* Modal Header with Employee Profile */}
-            <div className="px-5 sm:px-6 py-4 bg-linear-to-r from-[#18181B] via-[#222226] to-[#27272A] text-white flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#3B0764] to-[#7E22CE] text-white flex items-center justify-center font-black text-base border border-[#A855F7]/40 shadow-xs overflow-hidden shrink-0">
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-linear-to-r from-[#18181B] via-[#222226] to-[#27272A] text-white flex items-center justify-between shrink-0 gap-3">
+              <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-linear-to-br from-[#3B0764] to-[#7E22CE] text-white flex items-center justify-center font-black text-sm sm:text-base border border-[#A855F7]/40 shadow-xs overflow-hidden shrink-0">
                   {selectedEmployee.profile_photo_url ? (
                     <img
                       src={selectedEmployee.profile_photo_url.startsWith('http') ? selectedEmployee.profile_photo_url : getMediaUrl(selectedEmployee.profile_photo_url)}
@@ -722,33 +731,33 @@ export const GoogleReviewsPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-base sm:text-lg font-black text-white truncate">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <h2 className="text-sm sm:text-lg font-black text-white truncate max-w-full">
                       {selectedEmployee.full_name}
                     </h2>
-                    <span className="font-mono text-[10px] font-bold text-[#E5C378] px-2 py-0.5 rounded-md bg-white/10 border border-white/15">
+                    <span className="font-mono text-[10px] font-bold text-[#E5C378] px-1.5 sm:px-2 py-0.5 rounded-md bg-white/10 border border-white/15 shrink-0 whitespace-nowrap">
                       {selectedEmployee.employee_code || `#${selectedEmployee.id}`}
                     </span>
                   </div>
-                  <p className="text-xs text-[#A1A1AA] font-medium mt-0.5 truncate">
-                    {selectedEmployee.designation || 'Sales Executive'} • Rank #{rankedEmployees.findIndex((e) => e.id === selectedEmployee.id) + 1} on Leaderboard
+                  <p className="text-[11px] sm:text-xs text-[#A1A1AA] font-medium mt-0.5 truncate">
+                    {selectedEmployee.designation || 'Sales Executive'} • Rank #{rankedEmployees.findIndex((e) => e.id === selectedEmployee.id) + 1}
                   </p>
                 </div>
               </div>
 
               {/* Points badge & Close */}
-              <div className="flex items-center gap-3 shrink-0 ml-2">
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-1 sm:ml-2">
                 <div className="text-right">
-                  <span className="text-[10px] text-[#A1A1AA] uppercase font-bold block">Total Points</span>
-                  <span className="text-xl sm:text-2xl font-black text-[#F59E0B] font-mono">
+                  <span className="text-[9px] sm:text-[10px] text-[#A1A1AA] uppercase font-bold block">Total Points</span>
+                  <span className="text-lg sm:text-2xl font-black text-[#F59E0B] font-mono">
                     {getEmployeeTotalPoints(selectedEmployee)} Pts
                   </span>
                 </div>
 
                 <button
                   onClick={() => setSelectedEmployee(null)}
-                  className="p-2 rounded-xl text-[#A1A1AA] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1.5 sm:p-2 rounded-xl text-[#A1A1AA] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -756,63 +765,63 @@ export const GoogleReviewsPage: React.FC = () => {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
               {/* Point Source KPI Cards */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl p-3 text-center">
-                  <span className="text-[10px] font-bold text-[#7E22CE] uppercase block">Google Reviews</span>
-                  <span className="text-lg sm:text-xl font-black text-[#7E22CE] font-mono mt-0.5 block">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl p-2.5 sm:p-3 text-center">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-[#7E22CE] uppercase block truncate">Google Reviews</span>
+                  <span className="text-base sm:text-xl font-black text-[#7E22CE] font-mono mt-0.5 block">
                     {getEmployeeGooglePoints(selectedEmployee.id)} <span className="text-xs font-bold">Pts</span>
                   </span>
-                  <span className="text-[10px] text-[#8A8479] block">
+                  <span className="text-[9px] sm:text-[10px] text-[#8A8479] block truncate">
                     {getEmployeeGoogleReviews(selectedEmployee.id).length} recorded (1 pt each)
                   </span>
                 </div>
 
-                <div className="bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl p-3 text-center">
-                  <span className="text-[10px] font-bold text-[#1E40AF] uppercase block">Video Reviews</span>
-                  <span className="text-lg sm:text-xl font-black text-[#1E40AF] font-mono mt-0.5 block">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl p-2.5 sm:p-3 text-center">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-[#1E40AF] uppercase block truncate">Video Reviews</span>
+                  <span className="text-base sm:text-xl font-black text-[#1E40AF] font-mono mt-0.5 block">
                     {getEmployeeVideoPoints(selectedEmployee.id)} <span className="text-xs font-bold">Pts</span>
                   </span>
-                  <span className="text-[10px] text-[#8A8479] block">
+                  <span className="text-[9px] sm:text-[10px] text-[#8A8479] block truncate">
                     {getEmployeeVideoReviews(selectedEmployee.id).length} recorded (5 pts each)
                   </span>
                 </div>
 
-                <div className="bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl p-3 text-center">
-                  <span className="text-[10px] font-bold text-[#D97706] uppercase block">Pending Review</span>
-                  <span className="text-lg sm:text-xl font-black text-[#D97706] font-mono mt-0.5 block">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl p-2.5 sm:p-3 text-center">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-[#D97706] uppercase block truncate">Pending</span>
+                  <span className="text-base sm:text-xl font-black text-[#D97706] font-mono mt-0.5 block">
                     {getEmployeePendingCount(selectedEmployee.id)} <span className="text-xs font-bold">Items</span>
                   </span>
-                  <span className="text-[10px] text-[#8A8479] block">Awaiting approval</span>
+                  <span className="text-[9px] sm:text-[10px] text-[#8A8479] block truncate">Awaiting approval</span>
                 </div>
               </div>
 
               {/* Tabs: Google Reviews vs Video Reviews */}
-              <div className="flex items-center gap-2 border-b border-[#E8E6E1] pb-2">
+              <div className="flex items-center gap-2 border-b border-[#E8E6E1] pb-2 overflow-x-auto no-scrollbar py-0.5">
                 <button
                   type="button"
                   onClick={() => setEmployeeDetailTab('google')}
-                  className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer ${
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                     employeeDetailTab === 'google'
                       ? 'bg-[#18181B] text-white shadow-xs'
                       : 'bg-[#FAF8F5] text-[#525252] hover:bg-[#F0EDE6] border border-[#E6E1D6]'
                   }`}
                 >
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
                   <span>Google Reviews ({getEmployeeGoogleReviews(selectedEmployee.id).length})</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setEmployeeDetailTab('video')}
-                  className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer ${
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                     employeeDetailTab === 'video'
                       ? 'bg-[#18181B] text-white shadow-xs'
                       : 'bg-[#FAF8F5] text-[#525252] hover:bg-[#F0EDE6] border border-[#E6E1D6]'
                   }`}
                 >
-                  <Video className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <Video className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
                   <span>Video Reviews ({getEmployeeVideoReviews(selectedEmployee.id).length})</span>
                 </button>
               </div>

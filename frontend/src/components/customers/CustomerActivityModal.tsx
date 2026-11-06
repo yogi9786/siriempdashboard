@@ -1436,19 +1436,6 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
         )}
 
 
-        {/* Overall General Activity Notes */}
-        <div>
-          <label className="block text-xs font-bold text-[#1D1D1B] mb-1.5">
-            General Floor Remarks (Optional)
-          </label>
-          <textarea
-            rows={2}
-            value={overallNotes}
-            onChange={(e) => setOverallNotes(e.target.value)}
-            placeholder="e.g. High footfall evening drive; customer booked auspicious wedding jewellery on hold"
-            className="w-full text-xs input-luxury-beige rounded-xl p-2.5 font-medium"
-          />
-        </div>
       </form>
     </Modal>
 

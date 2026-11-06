@@ -209,30 +209,30 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Hero Actions */}
-          <div className="flex items-center gap-3 self-start md:self-auto shrink-0 flex-wrap">
+          {/* Quick Hero Actions (Mobile Responsive Grid & Desktop Flex) */}
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3 w-full md:w-auto shrink-0">
             <button
               onClick={fetchDashboardData}
               title="Refresh all dashboard statistics and latest metrics"
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"
             >
-              <RotateCcw className={`w-4 h-4 text-[#7E22CE] ${isLoading ? 'animate-spin' : ''}`} />
+              <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#7E22CE] ${isLoading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </button>
 
             <button
               onClick={() => navigate('/employees')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"
             >
-              <Users className="w-4 h-4 text-[#7E22CE]" />
-              <span>Staff Roster ({totalEmployees})</span>
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#7E22CE]" />
+              <span className="truncate">Staff ({totalEmployees})</span>
             </button>
 
             <button
               onClick={() => navigate('/employees/add')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02]"
+              className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 rounded-xl bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02]"
             >
-              <UserPlus className="w-4 h-4 text-white" />
+              <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
               <span>+ Add Employee</span>
             </button>
           </div>
@@ -461,18 +461,18 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {/* Quick Metrics Bar - Compact Height & Clean Margin */}
-          <div className="grid grid-cols-3 gap-2.5 pt-3 mt-3 border-t border-[#EBE6DC]">
-            <div className="py-2 px-3 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-center">
-              <span className="text-[10px] font-bold text-[#8A8479] uppercase block">Follow-ups</span>
-              <span className="text-sm font-bold text-[#1D1D1B]">{totalFollowUps}</span>
+          <div className="grid grid-cols-3 gap-2 sm:gap-2.5 pt-3 mt-3 border-t border-[#EBE6DC]">
+            <div className="py-2 px-1.5 sm:px-3 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-center">
+              <span className="text-[9px] sm:text-[10px] font-bold text-[#8A8479] uppercase block truncate">Follow-ups</span>
+              <span className="text-xs sm:text-sm font-bold text-[#1D1D1B]">{totalFollowUps}</span>
             </div>
-            <div className="py-2 px-3 bg-[#F3E8FF] border border-[#D8B4FE] rounded-xl text-center">
-              <span className="text-[10px] font-bold text-[#7E22CE] uppercase block">Gold Plans</span>
-              <span className="text-sm font-bold text-[#7E22CE]">{totalSchemesClosed}</span>
+            <div className="py-2 px-1.5 sm:px-3 bg-[#F3E8FF] border border-[#D8B4FE] rounded-xl text-center">
+              <span className="text-[9px] sm:text-[10px] font-bold text-[#7E22CE] uppercase block truncate">Gold Plans</span>
+              <span className="text-xs sm:text-sm font-bold text-[#7E22CE]">{totalSchemesClosed}</span>
             </div>
-            <div className="py-2 px-3 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-center">
-              <span className="text-[10px] font-bold text-[#8A8479] uppercase block">Daily Sheets</span>
-              <span className="text-sm font-bold text-[#1D1D1B]">{totalFormMediaCount}</span>
+            <div className="py-2 px-1.5 sm:px-3 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-center">
+              <span className="text-[9px] sm:text-[10px] font-bold text-[#8A8479] uppercase block truncate">Daily Sheets</span>
+              <span className="text-xs sm:text-sm font-bold text-[#1D1D1B]">{totalFormMediaCount}</span>
             </div>
           </div>
         </div>

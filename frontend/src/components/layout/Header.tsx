@@ -141,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenMobileMenu }
 
             {/* Notification Dropdown Popover */}
             {showNotificationsPopover && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-[#1F1F23] border border-[#3F3F46] rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-16 sm:top-full mt-2 w-auto sm:w-96 max-w-[calc(100vw-24px)] bg-[#1F1F23] border border-[#3F3F46] rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                 {/* Popover Header */}
                 <div className="px-4 py-3 bg-[#18181B] border-b border-[#2E2E33] flex items-center justify-between">
                   <div className="flex items-center gap-2">

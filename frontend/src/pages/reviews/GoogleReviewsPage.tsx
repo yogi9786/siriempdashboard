@@ -917,7 +917,7 @@ export const GoogleReviewsPage: React.FC = () => {
 
                           {/* Manager Approval Actions if Pending */}
                           {isPending && (
-                            <div className="pt-2 border-t border-[#F0EFEA] flex items-center justify-end gap-2">
+                            <div className="pt-2.5 border-t border-[#F0EFEA] grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
                               <button
                                 onClick={() =>
                                   setRejectTarget({
@@ -926,13 +926,13 @@ export const GoogleReviewsPage: React.FC = () => {
                                     employeeName: selectedEmployee.full_name,
                                   })
                                 }
-                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#DC2626] bg-[#FEF2F2] hover:bg-[#FEE2E2] border border-[#FECACA] transition-colors cursor-pointer"
+                                className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold text-[#DC2626] bg-[#FEF2F2] hover:bg-[#FEE2E2] active:bg-[#FECACA] border border-[#FECACA] transition-all cursor-pointer text-center justify-center flex items-center"
                               >
                                 Reject
                               </button>
                               <button
                                 onClick={() => handleApproveGoogleReview(rev.id)}
-                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] transition-colors cursor-pointer"
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1.5 rounded-xl text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] active:bg-[#166534] transition-all cursor-pointer shadow-xs"
                               >
                                 <Check className="w-3.5 h-3.5" />
                                 <span>Approve (+1 Pt)</span>
@@ -1056,7 +1056,7 @@ export const GoogleReviewsPage: React.FC = () => {
 
                           {/* Manager Approval Actions if Pending */}
                           {isPending && (
-                            <div className="pt-2 border-t border-[#F0EFEA] flex items-center justify-end gap-2">
+                            <div className="pt-2.5 border-t border-[#F0EFEA] grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
                               <button
                                 onClick={() =>
                                   setRejectTarget({
@@ -1065,13 +1065,13 @@ export const GoogleReviewsPage: React.FC = () => {
                                     employeeName: selectedEmployee.full_name,
                                   })
                                 }
-                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#DC2626] bg-[#FEF2F2] hover:bg-[#FEE2E2] border border-[#FECACA] transition-colors cursor-pointer"
+                                className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold text-[#DC2626] bg-[#FEF2F2] hover:bg-[#FEE2E2] active:bg-[#FECACA] border border-[#FECACA] transition-all cursor-pointer text-center justify-center flex items-center"
                               >
                                 Reject
                               </button>
                               <button
                                 onClick={() => handleApproveVideoReview(v.id)}
-                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] transition-colors cursor-pointer"
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1.5 rounded-xl text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] active:bg-[#166534] transition-all cursor-pointer shadow-xs"
                               >
                                 <Check className="w-3.5 h-3.5" />
                                 <span>Approve (+5 Pts)</span>
@@ -1429,7 +1429,7 @@ export const GoogleReviewsPage: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => {
@@ -1437,7 +1437,7 @@ export const GoogleReviewsPage: React.FC = () => {
                   setRejectionReason('');
                 }}
                 disabled={isSubmittingReject}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-[#6B6559] hover:bg-[#EAE5D9] transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold text-[#6B6559] hover:bg-[#EAE5D9] transition-colors cursor-pointer text-center justify-center flex items-center"
               >
                 Cancel
               </button>
@@ -1445,7 +1445,7 @@ export const GoogleReviewsPage: React.FC = () => {
                 type="button"
                 onClick={handleConfirmReject}
                 disabled={isSubmittingReject || !rejectionReason.trim()}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#DC2626] hover:bg-[#B91C1C] transition-colors cursor-pointer disabled:opacity-50"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold text-white bg-[#DC2626] hover:bg-[#B91C1C] transition-colors cursor-pointer disabled:opacity-50 text-center justify-center flex items-center"
               >
                 {isSubmittingReject ? 'Rejecting...' : 'Confirm Rejection'}
               </button>

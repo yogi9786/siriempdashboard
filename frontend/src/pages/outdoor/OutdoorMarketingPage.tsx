@@ -1429,7 +1429,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                      <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto">
                         <button
                           onClick={() => handleSaveDuty(duty.id)}
                           disabled={form.isSaving}

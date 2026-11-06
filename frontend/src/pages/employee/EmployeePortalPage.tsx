@@ -1113,8 +1113,8 @@ export const EmployeePortalPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Hero Quick Actions */}
-            <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0 flex-wrap">
+            {/* Hero Quick Actions (Mobile Responsive) */}
+            <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
               <button
                 onClick={() => {
                   fetchSummary();
@@ -1122,7 +1122,7 @@ export const EmployeePortalPage: React.FC = () => {
                   else if (activeTab === 'CALLS') fetchCallLogs();
                   else if (activeTab === 'REVIEWS') fetchReviews();
                 }}
-                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer hover:scale-102"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer hover:scale-102"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-[#7E22CE] ${isLoadingCustomers ? 'animate-spin' : ''}`} />
                 <span>Refresh Data</span>
@@ -1447,9 +1447,9 @@ export const EmployeePortalPage: React.FC = () => {
         {activeTab === 'CUSTOMERS' && (
           <div className="space-y-4">
             {/* Customer Status Quick Filter Bar (Requirement 6: Lost, Interested, Sold) */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-[#E4DFD4] p-3 sm:p-3.5 rounded-2xl shadow-xs">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black text-[#3B0764] mr-1 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+            <div className="bg-white border border-[#E4DFD4] p-2.5 sm:p-3.5 rounded-2xl shadow-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <span className="text-xs font-black text-[#3B0764] mr-1 uppercase tracking-wider text-[11px] flex items-center gap-1.5 shrink-0">
                   <Filter className="w-3.5 h-3.5 text-[#7E22CE]" />
                   <span>Customer Status:</span>
                 </span>
@@ -1497,7 +1497,7 @@ export const EmployeePortalPage: React.FC = () => {
                       key={sTab.id}
                       type="button"
                       onClick={() => setCustomerStatusFilter(sTab.id as any)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                         isSelected
                           ? `${sTab.activeCls} font-black scale-[1.02]`
                           : `${sTab.inactiveCls} font-bold`
@@ -1525,8 +1525,8 @@ export const EmployeePortalPage: React.FC = () => {
               </div>
 
               {/* Approval Filter Tabs */}
-              <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
-                <span className="text-xs font-bold text-[#5E5A52] mr-1 hidden sm:inline uppercase text-[10px]">Approval:</span>
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full md:w-auto">
+                <span className="text-xs font-bold text-[#5E5A52] mr-1 hidden sm:inline uppercase text-[10px] shrink-0">Approval:</span>
                 {[
                   { id: 'ALL', label: 'All', active: 'bg-[#7E22CE] text-white shadow-xs', inactive: 'bg-[#FAF8F5] text-[#5E5A52] border border-[#E6E1D6] hover:bg-white' },
                   { id: 'PENDING', label: 'Pending Review', active: 'bg-[#7E22CE] text-white shadow-xs', inactive: 'bg-[#FEFCE8] text-[#854D0E] border border-[#FEF08A] hover:bg-[#FEF08A]' },
@@ -1538,7 +1538,7 @@ export const EmployeePortalPage: React.FC = () => {
                     <button
                       key={tab.id}
                       onClick={() => setCustomerApprovalFilter(tab.id as any)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         isSel ? `${tab.active} font-black` : tab.inactive
                       }`}
                     >
@@ -1678,41 +1678,58 @@ export const EmployeePortalPage: React.FC = () => {
                           </p>
                         )}
 
-                        {/* Footer: Manager Approval & Actions */}
-                        <div className="pt-2 border-t border-[#F0ECE1] flex items-center justify-between gap-2">
-                          <div>
-                            {isPending && (
-                              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FEFCE8] border border-[#FEF08A] text-[#854D0E] text-[10px] font-bold">
-                                <Clock className="w-3 h-3 text-[#EAB308]" />
-                                <span>Pending Approval</span>
-                              </div>
-                            )}
-                            {isApproved && (
-                              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[10px] font-bold">
-                                <CheckCircle2 className="w-3 h-3 text-[#16A34A]" />
-                                <span>Approved{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
-                              </div>
-                            )}
-                            {isRejected && (
-                              <div>
-                                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[10px] font-bold">
-                                  <XCircle className="w-3 h-3 text-[#EF4444]" />
-                                  <span>Rejected{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
+                        {/* Footer: Manager Approval & Actions (Clean 2-tier Mobile Structure) */}
+                        <div className="pt-2.5 border-t border-[#F0ECE1] space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              {isPending && (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FEFCE8] border border-[#FEF08A] text-[#854D0E] text-[10px] font-bold">
+                                  <Clock className="w-3 h-3 text-[#EAB308] shrink-0" />
+                                  <span className="truncate">Pending Approval</span>
                                 </div>
-                                {act.rejection_reason && (
-                                  <p className="text-[10px] text-[#DC2626] mt-0.5 max-w-[150px] truncate" title={act.rejection_reason}>
-                                    Note: {act.rejection_reason}
-                                  </p>
-                                )}
-                              </div>
+                              )}
+                              {isApproved && (
+                                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[10px] font-bold max-w-[200px]">
+                                  <CheckCircle2 className="w-3 h-3 text-[#16A34A] shrink-0" />
+                                  <span className="truncate">Approved{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
+                                </div>
+                              )}
+                              {isRejected && (
+                                <div>
+                                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[10px] font-bold max-w-[200px]">
+                                    <XCircle className="w-3 h-3 text-[#EF4444] shrink-0" />
+                                    <span className="truncate">Rejected{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
+                                  </div>
+                                  {act.rejection_reason && (
+                                    <p className="text-[10px] text-[#DC2626] mt-0.5 truncate max-w-[200px]" title={act.rejection_reason}>
+                                      Note: {act.rejection_reason}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* WhatsApp Button positioned next to status on Tier 1 */}
+                            {act.phone_number && (
+                              <a
+                                href={`https://wa.me/91${act.phone_number.replace(/[^0-9]/g, '').slice(-10)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2.5 py-1 rounded-xl bg-white border border-[#A6E7B9] text-[#1E7E34] hover:bg-[#E8F8EE] shadow-2xs cursor-pointer flex items-center gap-1 text-[11px] font-bold shrink-0"
+                                title="WhatsApp customer"
+                              >
+                                <WhatsAppIcon className="w-3.5 h-3.5" />
+                                <span>WhatsApp</span>
+                              </a>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          {/* Tier 2: Update & Delete Action Buttons in Clean Grid */}
+                          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#F0ECE1]/80">
                             <button
                               type="button"
                               onClick={() => handleOpenEditCustomer(act)}
-                              className="px-3 py-1.5 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#F3E8FF] hover:border-[#D8B4FE] text-[#7E22CE] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                              className="w-full py-2 px-3 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#F3E8FF] hover:border-[#D8B4FE] text-[#7E22CE] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
                               title="Update customer log"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -1722,26 +1739,12 @@ export const EmployeePortalPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleDeleteCustomerActivity(act.id)}
-                              className="px-3 py-1.5 rounded-xl bg-white border border-red-200 hover:bg-red-50 text-[#C24141] hover:text-red-700 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                              className="w-full py-2 px-3 rounded-xl bg-white border border-red-200 hover:bg-red-50 text-[#C24141] hover:text-red-700 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
                               title="Delete customer log"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                               <span>Delete</span>
                             </button>
-
-                            {act.phone_number && (
-                              <a
-                                href={`https://wa.me/91${act.phone_number.replace(/[^0-9]/g, '').slice(-10)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 rounded-xl bg-white border border-[#A6E7B9] text-[#1E7E34] hover:bg-[#E8F8EE] shadow-2xs cursor-pointer"
-                                title="WhatsApp customer"
-                              >
-                                <WhatsAppIcon className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-
-
                           </div>
                         </div>
                       </div>
@@ -2329,14 +2332,14 @@ export const EmployeePortalPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 w-full md:w-auto">
                 {/* Type Filter */}
-                <div className="flex items-center gap-1 p-0.5 bg-[#F4EFE6] rounded-xl border border-[#E5DFD4]">
+                <div className="flex items-center gap-1 p-0.5 bg-[#F4EFE6] rounded-xl border border-[#E5DFD4] shrink-0">
                   {(['ALL', 'GOOGLE', 'VIDEO'] as const).map((t) => (
                     <button
                       key={t}
                       onClick={() => setReviewTypeFilter(t)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         reviewTypeFilter === t
                           ? 'bg-white text-[#1D1D1B] shadow-2xs'
                           : 'text-[#6B6559] hover:text-[#1D1D1B]'
@@ -2348,12 +2351,12 @@ export const EmployeePortalPage: React.FC = () => {
                 </div>
 
                 {/* Status Filter */}
-                <div className="flex items-center gap-1 p-0.5 bg-[#F4EFE6] rounded-xl border border-[#E5DFD4]">
+                <div className="flex items-center gap-1 p-0.5 bg-[#F4EFE6] rounded-xl border border-[#E5DFD4] shrink-0">
                   {(['ALL', 'APPROVED', 'PENDING', 'REJECTED'] as const).map((s) => (
                     <button
                       key={s}
                       onClick={() => setReviewStatusFilter(s)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                         reviewStatusFilter === s
                           ? s === 'APPROVED'
                             ? 'bg-[#E8F4EE] text-[#21845F] shadow-2xs font-extrabold'

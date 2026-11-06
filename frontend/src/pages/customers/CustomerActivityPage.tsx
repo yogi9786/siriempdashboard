@@ -479,9 +479,9 @@ export const CustomerActivityPage: React.FC = () => {
       </div>
 
       {/* Status Filter Pills (Requirement 6: Lost, Interested, Sold across all employees) */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-[#FAF8F5] border border-[#E6E1D6] p-2.5 rounded-2xl shadow-2xs">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs font-bold text-[#6B6559] mr-1 uppercase tracking-wider text-[10px]">Filter Status:</span>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-[#FAF8F5] border border-[#E6E1D6] p-2.5 sm:p-3 rounded-2xl shadow-2xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <span className="text-xs font-bold text-[#6B6559] mr-1 uppercase tracking-wider text-[10px] shrink-0">Filter Status:</span>
           {[
             { id: 'all', label: 'All Customers', count: activities.length, color: 'text-[#1D1D1B] bg-white border-[#CBD5E1]' },
             { id: 'Sold', label: 'Sold', count: totalSold, color: 'text-[#166534] bg-[#F0FDF4] border-[#BBF7D0]' },
@@ -496,7 +496,7 @@ export const CustomerActivityPage: React.FC = () => {
                 key={pill.id}
                 type="button"
                 onClick={() => setSelectedStatusFilter(pill.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                   isSelected
                     ? 'ring-2 ring-[#7E22CE] shadow-xs scale-102 ' + pill.color
                     : 'bg-white text-[#6B6559] border-[#E6E1D6] hover:bg-[#FAF8F5]'
@@ -731,8 +731,8 @@ export const CustomerActivityPage: React.FC = () => {
                     selectedIds.has(act.id) ? 'bg-[#F0FDF4]/70 border border-[#BBF7D0]' : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-2.5">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="flex items-start gap-2.5 min-w-0">
                       <input
                         type="checkbox"
                         checked={selectedIds.has(act.id)}
@@ -743,15 +743,15 @@ export const CustomerActivityPage: React.FC = () => {
                             ? `Select ${act.customer_name || 'Customer'}`
                             : 'No valid phone number for WhatsApp'
                         }
-                        className="mt-1 w-4 h-4 rounded text-[#16A34A] border-[#C5D5E6] focus:ring-[#16A34A] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="mt-1 w-4 h-4 rounded text-[#16A34A] border-[#C5D5E6] focus:ring-[#16A34A] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
                       />
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-sm text-[#1D1D1B]">
+                          <span className="font-bold text-sm text-[#1D1D1B] truncate">
                             {act.customer_name || 'Walk-in Customer'}
                           </span>
                           {(act.customers_count || 1) > 1 && (
-                            <span className="px-2 py-0.5 rounded-full bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded-full bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] text-[10px] font-bold shrink-0">
                               {act.customers_count} Customers
                             </span>
                           )}
@@ -770,7 +770,7 @@ export const CustomerActivityPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0 ml-auto">
                       {getStatusBadge(act.status)}
                       <button
                         onClick={() => handleOpenSingleWhatsApp(act)}

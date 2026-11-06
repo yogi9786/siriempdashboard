@@ -464,9 +464,9 @@ export const PendingCustomerActivityPage: React.FC = () => {
       </div>
 
       {/* Customer Status Quick Filters (Requirement 6: Lost, Interested, Sold, All) */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-[#FAF8F3] border border-[#E4DFD4] p-3 rounded-2xl shadow-2xs">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs font-bold text-[#6B6559] mr-1 uppercase tracking-wider text-[10px]">
+      <div className="bg-[#FAF8F3] border border-[#E4DFD4] p-2.5 sm:p-3 rounded-2xl shadow-2xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <span className="text-xs font-bold text-[#6B6559] mr-1 uppercase tracking-wider text-[10px] shrink-0">
             Customer Status:
           </span>
           {[
@@ -483,7 +483,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
                 key={sTab.id}
                 type="button"
                 onClick={() => setCustomerOutcomeFilter(sTab.id as any)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                   isSelected
                     ? 'ring-2 ring-[#9A782F] shadow-xs font-extrabold scale-102 ' + sTab.color
                     : 'bg-white text-[#6B6559] border-[#E4DFD4] hover:bg-[#FAF8F3]'
@@ -695,79 +695,82 @@ export const PendingCustomerActivityPage: React.FC = () => {
                       </p>
                     )}
 
-                    {/* Status & Actions Footer */}
-                    <div className="pt-2 border-t border-[#F0ECE1] flex items-center justify-between gap-2">
-                      <div>
-                        {isPending && (
-                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FEFCE8] border border-[#FEF08A] text-[#854D0E] text-[10px] font-bold animate-pulse">
-                            <Clock className="w-3 h-3 text-[#CA8A04]" />
-                            <span>Pending</span>
-                          </div>
-                        )}
-                        {isApproved && (
-                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[10px] font-bold">
-                            <CheckCircle2 className="w-3 h-3 text-[#16A34A]" />
-                            <span>Approved{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
-                          </div>
-                        )}
-                        {isRejected && (
-                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[10px] font-bold">
-                            <XCircle className="w-3 h-3 text-[#DC2626]" />
-                            <span>Rejected{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
-                          </div>
-                        )}
+                    {/* Status & Actions Footer (Mobile Optimized with Dedicated Approve/Reject Tier) */}
+                    <div className="pt-2.5 border-t border-[#F0ECE1] space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          {isPending && (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FEFCE8] border border-[#FEF08A] text-[#854D0E] text-[10px] font-bold animate-pulse">
+                              <Clock className="w-3 h-3 text-[#CA8A04] shrink-0" />
+                              <span className="truncate">Pending Approval</span>
+                            </div>
+                          )}
+                          {isApproved && (
+                            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[10px] font-bold max-w-[200px]">
+                              <CheckCircle2 className="w-3 h-3 text-[#16A34A] shrink-0" />
+                              <span className="truncate">Approved{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
+                            </div>
+                          )}
+                          {isRejected && (
+                            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[10px] font-bold max-w-[200px]">
+                              <XCircle className="w-3 h-3 text-[#DC2626] shrink-0" />
+                              <span className="truncate">Rejected{act.reviewed_by_name ? ` by ${act.reviewed_by_name}` : ''}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => setInspectActivity(act)}
+                            className="p-1.5 rounded-xl bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#6B6559] border border-[#E4DFD4] transition-colors cursor-pointer"
+                            title="Inspect Details"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setEditingActivity(act);
+                              setShowEditModal(true);
+                            }}
+                            className="p-1.5 rounded-xl bg-white hover:bg-[#F3E8FF] text-[#7E22CE] border border-[#E4DFD4] transition-colors cursor-pointer shadow-2xs"
+                            title="Edit Customer Log"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteActivity(act.id)}
+                            className="p-1.5 rounded-xl bg-white hover:bg-red-50 text-[#C24141] border border-[#E4DFD4] transition-colors cursor-pointer shadow-2xs"
+                            title="Delete Customer Log"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => setInspectActivity(act)}
-                          className="p-1.5 rounded-xl bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#6B6559] border border-[#E4DFD4] transition-colors cursor-pointer"
-                          title="Inspect Details"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
+                      {/* Prominent, Dedicated Two-Column Approve & Reject Buttons on Mobile */}
+                      {isPending && (
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#F0ECE1]/80">
+                          <button
+                            onClick={() => handleOpenReview(act, 'REJECT')}
+                            className="w-full py-2.5 px-3 rounded-xl bg-[#FEF2F2] hover:bg-[#FEE2E2] active:bg-[#FECACA] text-[#991B1B] border border-[#FECACA] text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
+                            title="Reject Customer Activity"
+                          >
+                            <XCircle className="w-3.5 h-3.5 text-[#DC2626]" />
+                            <span>Reject</span>
+                          </button>
 
-                        <button
-                          onClick={() => {
-                            setEditingActivity(act);
-                            setShowEditModal(true);
-                          }}
-                          className="p-1.5 rounded-xl bg-white hover:bg-[#F3E8FF] text-[#7E22CE] border border-[#E4DFD4] transition-colors cursor-pointer shadow-2xs"
-                          title="Edit Customer Log"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => handleDeleteActivity(act.id)}
-                          className="p-1.5 rounded-xl bg-white hover:bg-red-50 text-[#C24141] border border-[#E4DFD4] transition-colors cursor-pointer shadow-2xs"
-                          title="Delete Customer Log"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-
-                        {isPending && (
-                          <>
-                            <button
-                              onClick={() => handleOpenReview(act, 'APPROVE')}
-                              className="px-3 py-1.5 rounded-xl bg-[#23815F] hover:bg-[#1C694D] text-white text-xs font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer"
-                              title="Approve Customer Activity"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Approve</span>
-                            </button>
-
-                            <button
-                              onClick={() => handleOpenReview(act, 'REJECT')}
-                              className="px-2.5 py-1.5 rounded-xl bg-[#C24141] hover:bg-[#A33434] text-white text-xs font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer"
-                              title="Reject Customer Activity"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                              <span>Reject</span>
-                            </button>
-                          </>
-                        )}
-                      </div>
+                          <button
+                            onClick={() => handleOpenReview(act, 'APPROVE')}
+                            className="w-full py-2.5 px-3 rounded-xl bg-[#23815F] hover:bg-[#1C694D] active:bg-[#16563F] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer shadow-xs"
+                            title="Approve Customer Activity"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Approve</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -1121,7 +1124,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E4DFD4]">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-3 border-t border-[#E4DFD4]">
               <Button
                 variant="outline"
                 size="sm"
@@ -1130,7 +1133,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
                   setReviewAction(null);
                 }}
                 disabled={isSubmittingReview}
-                className="bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#6B6559] border-[#D5CFC4] text-xs font-semibold px-4 py-2 rounded-xl"
+                className="w-full sm:w-auto bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#6B6559] border-[#D5CFC4] text-xs font-semibold px-4 py-2.5 sm:py-2 rounded-xl justify-center cursor-pointer"
               >
                 Cancel
               </Button>
@@ -1139,14 +1142,14 @@ export const PendingCustomerActivityPage: React.FC = () => {
                 size="sm"
                 onClick={handleExecuteReview}
                 disabled={isSubmittingReview || (reviewAction === 'REJECT' && !rejectionReason.trim())}
-                className={`text-xs font-bold px-4 py-2 rounded-xl ${
+                className={`w-full sm:w-auto text-xs font-bold px-4 py-2.5 sm:py-2 rounded-xl justify-center cursor-pointer ${
                   reviewAction === 'APPROVE'
                     ? 'bg-[#23815F] hover:bg-[#1C694D] text-white shadow-xs'
                     : 'bg-[#C24141] hover:bg-[#A33434] text-white shadow-xs'
                 }`}
               >
                 {isSubmittingReview ? (
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center justify-center gap-1.5">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     Processing...
                   </span>

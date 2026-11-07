@@ -3,7 +3,7 @@ import uuid
 from typing import List, Optional
 from datetime import date, datetime, timezone
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status, Body
 from sqlalchemy.orm import Session
 import json
 from sqlalchemy import or_, func, case
@@ -1448,7 +1448,273 @@ def get_employee_outdoor_history(
         db.query(OutdoorMarketingDuty)
         .filter(OutdoorMarketingDuty.employee_id == current_emp.id)
         .order_by(OutdoorMarketingDuty.date.desc())
-        .limit(30)
+        .limit(100)
         .all()
     )
     return [format_duty_response(d) for d in duties]
+
+
+@router.get("/outdoor/customers", summary="Get all outdoor customers logged by employee with approval status")
+def get_employee_outdoor_customers(
+    status: Optional[str] = Query(None),
+    approval_status: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    query = (
+        db.query(OutdoorMarketingCustomer)
+        .filter(OutdoorMarketingCustomer.marketing_employee_id == current_emp.id)
+    )
+
+    if status and status != "ALL":
+        if status.lower() == "converted":
+            query = query.filter(OutdoorMarketingCustomer.is_converted == True)
+        else:
+            query = query.filter(OutdoorMarketingCustomer.status == status)
+
+    if search and search.strip():
+        q = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                OutdoorMarketingCustomer.customer_name.ilike(q),
+                OutdoorMarketingCustomer.phone.ilike(q),
+                OutdoorMarketingCustomer.area_name.ilike(q),
+                OutdoorMarketingCustomer.scheme_name.ilike(q),
+                OutdoorMarketingCustomer.notes.ilike(q),
+            )
+        )
+
+    customers = query.order_by(OutdoorMarketingCustomer.date.desc(), OutdoorMarketingCustomer.id.desc()).all()
+
+    results = []
+    for c in customers:
+        tag = f"[Outdoor Customer #{c.id}]"
+        act = (
+            db.query(CustomerActivity)
+            .filter(
+                CustomerActivity.branch_id == current_emp.branch_id,
+                CustomerActivity.notes.like(f"%{tag}%")
+            )
+            .first()
+        )
+
+        app_status = act.approval_status if act else ("APPROVED" if c.status in ("Approved", "Converted") else "PENDING")
+        reviewed_by = act.reviewed_by_name if act else None
+        rej_reason = act.rejection_reason if act else None
+
+        if approval_status and approval_status != "ALL":
+            if approval_status == "PENDING" and app_status != "PENDING":
+                continue
+            if approval_status == "APPROVED" and app_status != "APPROVED":
+                continue
+            if approval_status == "REJECTED" and app_status != "REJECTED":
+                continue
+
+        results.append({
+            "id": c.id,
+            "duty_id": c.duty_id,
+            "customer_name": c.customer_name,
+            "phone": c.phone,
+            "dob": str(c.dob) if c.dob else None,
+            "anniversary_date": str(c.anniversary_date) if c.anniversary_date else None,
+            "follow_up_date": str(c.follow_up_date) if c.follow_up_date else None,
+            "area_name": c.area_name or (c.duty.area if c.duty else "Field Marketing"),
+            "scheme_name": c.scheme_name,
+            "date": str(c.date) if c.date else None,
+            "is_converted": c.is_converted,
+            "has_google_review": c.has_google_review,
+            "google_review_rating": c.google_review_rating or 5,
+            "google_review_text": c.google_review_text,
+            "google_review_screenshot": c.google_review_screenshot,
+            "has_video_review": c.has_video_review,
+            "video_review_title": c.video_review_title,
+            "video_review_url": c.video_review_url,
+            "video_review_proof": c.video_review_proof,
+            "has_customer_feedback": c.has_customer_feedback,
+            "feedback_rating": c.feedback_rating or 5,
+            "feedback_text": c.feedback_text,
+            "customer_feedback_proof": c.customer_feedback_proof,
+            "photo_url": c.photo_url,
+            "status": c.status or ("Converted" if c.is_converted else "Lead"),
+            "interested_in": c.interested_in or "",
+            "notes": c.notes or "",
+            "approval_status": app_status,
+            "reviewed_by_name": reviewed_by,
+            "rejection_reason": rej_reason,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        })
+
+    return results
+
+
+@router.post("/outdoor/customer", summary="Create or update an individual outdoor customer lead")
+def save_individual_outdoor_customer(
+    payload: dict = Body(...),
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    cust_id = payload.get("id")
+    target_date_str = payload.get("date")
+    target_date = date.fromisoformat(target_date_str) if target_date_str else date.today()
+    area_name = (payload.get("area_name") or "").strip() or "Field Marketing"
+
+    # Find or create duty for this date
+    duty = (
+        db.query(OutdoorMarketingDuty)
+        .filter(
+            OutdoorMarketingDuty.employee_id == current_emp.id,
+            OutdoorMarketingDuty.date == target_date,
+        )
+        .first()
+    )
+    if not duty:
+        duty = OutdoorMarketingDuty(
+            branch_id=current_emp.branch_id,
+            employee_id=current_emp.id,
+            date=target_date,
+            area=area_name,
+            status="Pending Review",
+        )
+        db.add(duty)
+        db.flush()
+    else:
+        duty.status = "Pending Review"
+
+    customer = None
+    if cust_id:
+        customer = (
+            db.query(OutdoorMarketingCustomer)
+            .filter(
+                OutdoorMarketingCustomer.id == cust_id,
+                OutdoorMarketingCustomer.marketing_employee_id == current_emp.id,
+            )
+            .first()
+        )
+
+    dob_val = date.fromisoformat(payload["dob"]) if payload.get("dob") else None
+    anniv_val = date.fromisoformat(payload["anniversary_date"]) if payload.get("anniversary_date") else None
+    follow_val = date.fromisoformat(payload["follow_up_date"]) if payload.get("follow_up_date") else None
+
+    if not customer:
+        customer = OutdoorMarketingCustomer(
+            branch_id=current_emp.branch_id,
+            marketing_employee_id=current_emp.id,
+            duty_id=duty.id,
+            customer_name=(payload.get("customer_name") or "").strip(),
+            phone=(payload.get("phone") or "").strip() or None,
+            dob=dob_val,
+            anniversary_date=anniv_val,
+            follow_up_date=follow_val,
+            photo_url=payload.get("photo_url") or None,
+            area_name=area_name,
+            scheme_name=payload.get("scheme_name") or None,
+            date=target_date,
+            is_converted=bool(payload.get("is_converted", False)),
+            has_google_review=bool(payload.get("has_google_review", False)),
+            google_review_rating=int(payload.get("google_review_rating", 5) or 5),
+            google_review_text=payload.get("google_review_text") or None,
+            google_review_screenshot=payload.get("google_review_screenshot") or None,
+            has_video_review=bool(payload.get("has_video_review", False)),
+            video_review_title=payload.get("video_review_title") or None,
+            video_review_url=payload.get("video_review_url") or None,
+            video_review_proof=payload.get("video_review_proof") or None,
+            has_customer_feedback=bool(payload.get("has_customer_feedback", False)),
+            feedback_rating=int(payload.get("feedback_rating", 5) or 5),
+            feedback_text=payload.get("feedback_text") or None,
+            customer_feedback_proof=payload.get("customer_feedback_proof") or None,
+            status=payload.get("status") or ("Converted" if payload.get("is_converted") else "Lead"),
+            interested_in=payload.get("interested_in") or "",
+            notes=payload.get("notes") or None,
+        )
+        db.add(customer)
+        db.flush()
+    else:
+        customer.customer_name = (payload.get("customer_name") or "").strip()
+        customer.phone = (payload.get("phone") or "").strip() or None
+        customer.dob = dob_val
+        customer.anniversary_date = anniv_val
+        customer.follow_up_date = follow_val
+        customer.area_name = area_name
+        customer.scheme_name = payload.get("scheme_name") or None
+        customer.date = target_date
+        customer.duty_id = duty.id
+        customer.is_converted = bool(payload.get("is_converted", False))
+        customer.has_google_review = bool(payload.get("has_google_review", False))
+        customer.google_review_rating = int(payload.get("google_review_rating", 5) or 5)
+        customer.google_review_text = payload.get("google_review_text") or None
+        if payload.get("photo_url"):
+            customer.photo_url = payload.get("photo_url")
+        if payload.get("google_review_screenshot"):
+            customer.google_review_screenshot = payload.get("google_review_screenshot")
+        customer.has_video_review = bool(payload.get("has_video_review", False))
+        customer.video_review_title = payload.get("video_review_title") or None
+        customer.video_review_url = payload.get("video_review_url") or None
+        customer.video_review_proof = payload.get("video_review_proof") or None
+        customer.has_customer_feedback = bool(payload.get("has_customer_feedback", False))
+        customer.feedback_rating = int(payload.get("feedback_rating", 5) or 5)
+        customer.feedback_text = payload.get("feedback_text") or None
+        if payload.get("customer_feedback_proof"):
+            customer.customer_feedback_proof = payload.get("customer_feedback_proof")
+        customer.status = payload.get("status") or ("Converted" if payload.get("is_converted") else "Lead")
+        customer.interested_in = payload.get("interested_in") or ""
+        customer.notes = payload.get("notes") or None
+
+    # Sync to CustomerActivity in PENDING status
+    _sync_outdoor_customer_to_activity(customer, db, approval_status="PENDING")
+
+    # Update duty counters
+    cust_count = db.query(OutdoorMarketingCustomer).filter(OutdoorMarketingCustomer.duty_id == duty.id).count()
+    conv_count = db.query(OutdoorMarketingCustomer).filter(OutdoorMarketingCustomer.duty_id == duty.id, OutdoorMarketingCustomer.is_converted == True).count()
+    rev_count = db.query(OutdoorMarketingCustomer).filter(OutdoorMarketingCustomer.duty_id == duty.id, OutdoorMarketingCustomer.has_google_review == True).count()
+    duty.customers_attended_count = cust_count
+    duty.converted_customers_count = conv_count
+    duty.google_ratings_count = rev_count
+
+    db.commit()
+    db.refresh(customer)
+    return {"message": "Outdoor customer saved successfully", "id": customer.id}
+
+
+@router.delete("/outdoor/customer/{customer_id}", summary="Delete an outdoor customer lead")
+def delete_individual_outdoor_customer(
+    customer_id: int,
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    customer = (
+        db.query(OutdoorMarketingCustomer)
+        .filter(
+            OutdoorMarketingCustomer.id == customer_id,
+            OutdoorMarketingCustomer.marketing_employee_id == current_emp.id,
+        )
+        .first()
+    )
+    if not customer:
+        raise HTTPException(status_code=404, detail="Outdoor customer not found")
+
+    tag = f"[Outdoor Customer #{customer.id}]"
+    act = (
+        db.query(CustomerActivity)
+        .filter(
+            CustomerActivity.branch_id == current_emp.branch_id,
+            CustomerActivity.notes.like(f"%{tag}%")
+        )
+        .first()
+    )
+    if act:
+        db.delete(act)
+
+    duty_id = customer.duty_id
+    db.delete(customer)
+    db.flush()
+
+    if duty_id:
+        duty = db.query(OutdoorMarketingDuty).filter(OutdoorMarketingDuty.id == duty_id).first()
+        if duty:
+            duty.customers_attended_count = db.query(OutdoorMarketingCustomer).filter(OutdoorMarketingCustomer.duty_id == duty.id).count()
+            duty.converted_customers_count = db.query(OutdoorMarketingCustomer).filter(OutdoorMarketingCustomer.duty_id == duty.id, OutdoorMarketingCustomer.is_converted == True).count()
+            duty.google_ratings_count = db.query(OutdoorMarketingCustomer).filter(OutdoorMarketingCustomer.duty_id == duty.id, OutdoorMarketingCustomer.has_google_review == True).count()
+
+    db.commit()
+    return {"message": "Outdoor customer deleted successfully"}

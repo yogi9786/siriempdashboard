@@ -263,6 +263,44 @@ export const EmployeePortalPage: React.FC = () => {
   const [outdoorHistory, setOutdoorHistory] = useState<OutdoorDuty[]>([]);
   const [loadedTabs, setLoadedTabs] = useState<Record<string, boolean>>({ CUSTOMERS: true });
 
+  // Outdoor Customers List & Structured Filters
+  const [outdoorCustomersList, setOutdoorCustomersList] = useState<any[]>([]);
+  const [isLoadingOutdoorCustomers, setIsLoadingOutdoorCustomers] = useState<boolean>(false);
+  const [outdoorStatusFilter, setOutdoorStatusFilter] = useState<'ALL' | 'Lead' | 'Interested' | 'Converted' | 'Contacted' | 'Lost'>('ALL');
+  const [outdoorApprovalFilter, setOutdoorApprovalFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
+  const [outdoorSearch, setOutdoorSearch] = useState<string>('');
+
+  // Outdoor Modal State (Adding / Editing)
+  const [showAddOutdoorModal, setShowAddOutdoorModal] = useState<boolean>(false);
+  const [isSubmittingOutdoorModal, setIsSubmittingOutdoorModal] = useState<boolean>(false);
+  const [isUploadingOutdoorModalFile, setIsUploadingOutdoorModalFile] = useState<boolean>(false);
+  const [outdoorModalForm, setOutdoorModalForm] = useState({
+    id: undefined as number | undefined,
+    date: new Date().toISOString().split('T')[0],
+    area_name: '',
+    customer_name: '',
+    phone: '',
+    dob: '',
+    anniversary_date: '',
+    follow_up_date: '',
+    scheme_name: '',
+    interested_gold: false,
+    interested_diamond: false,
+    interested_silver: false,
+    is_converted: false,
+    has_google_review: false,
+    google_review_rating: 5,
+    google_review_text: '',
+    google_review_screenshot: '',
+    has_customer_feedback: false,
+    feedback_rating: 5,
+    feedback_text: '',
+    customer_feedback_proof: '',
+    photo_url: '',
+    status: 'Lead',
+    notes: '',
+  });
+
   // Customer activities state
   const [customerActivities, setCustomerActivities] = useState<CustomerActivity[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState<boolean>(true);
@@ -512,6 +550,7 @@ export const EmployeePortalPage: React.FC = () => {
     } else if (activeTab === 'REVIEWS' && !loadedTabs.REVIEWS) {
       fetchReviews().then(() => setLoadedTabs((prev) => ({ ...prev, REVIEWS: true })));
     } else if (activeTab === 'OUTDOOR') {
+      fetchEmployeeOutdoorCustomers();
       fetchOutdoorDuty(selectedOutdoorDate);
       fetchOutdoorHistory();
     }
@@ -531,9 +570,10 @@ export const EmployeePortalPage: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'OUTDOOR') {
+      fetchEmployeeOutdoorCustomers();
       fetchOutdoorDuty(selectedOutdoorDate);
     }
-  }, [selectedOutdoorDate]);
+  }, [activeTab, selectedOutdoorDate, outdoorStatusFilter, outdoorApprovalFilter]);
 
   // Open Add Customer Modal
   const handleOpenAddCustomer = () => {
@@ -737,6 +777,177 @@ export const EmployeePortalPage: React.FC = () => {
       setOutdoorHistory(res.data || []);
     } catch (err) {
       console.error('Failed to load outdoor history:', err);
+    }
+  };
+
+  // Fetch All Outdoor Customers Logged by Employee
+  const fetchEmployeeOutdoorCustomers = async () => {
+    setIsLoadingOutdoorCustomers(true);
+    try {
+      const params: Record<string, any> = {};
+      if (outdoorStatusFilter !== 'ALL') {
+        params.status = outdoorStatusFilter;
+      }
+      if (outdoorApprovalFilter !== 'ALL') {
+        params.approval_status = outdoorApprovalFilter;
+      }
+      if (outdoorSearch.trim()) {
+        params.search = outdoorSearch.trim();
+      }
+      const res = await api.get<any[]>('/api/v1/employee/outdoor/customers', { params });
+      setOutdoorCustomersList(res.data || []);
+    } catch (err) {
+      console.error('Failed to load employee outdoor customers:', err);
+    } finally {
+      setIsLoadingOutdoorCustomers(false);
+    }
+  };
+
+  const handleOpenAddOutdoorCustomer = () => {
+    setOutdoorModalForm({
+      id: undefined,
+      date: selectedOutdoorDate || new Date().toISOString().split('T')[0],
+      area_name: outdoorForm.area || '',
+      customer_name: '',
+      phone: '',
+      dob: '',
+      anniversary_date: '',
+      follow_up_date: '',
+      scheme_name: '',
+      interested_gold: false,
+      interested_diamond: false,
+      interested_silver: false,
+      is_converted: false,
+      has_google_review: false,
+      google_review_rating: 5,
+      google_review_text: '',
+      google_review_screenshot: '',
+      has_customer_feedback: false,
+      feedback_rating: 5,
+      feedback_text: '',
+      customer_feedback_proof: '',
+      photo_url: '',
+      status: 'Lead',
+      notes: '',
+    });
+    setShowAddOutdoorModal(true);
+  };
+
+  const handleOpenEditOutdoorCustomer = (cust: any) => {
+    const intStr = (cust.interested_in || '').toLowerCase();
+    setOutdoorModalForm({
+      id: cust.id,
+      date: cust.date || new Date().toISOString().split('T')[0],
+      area_name: cust.area_name || '',
+      customer_name: cust.customer_name || '',
+      phone: cust.phone || '',
+      dob: cust.dob || '',
+      anniversary_date: cust.anniversary_date || '',
+      follow_up_date: cust.follow_up_date || '',
+      scheme_name: cust.scheme_name || '',
+      interested_gold: intStr.includes('gold'),
+      interested_diamond: intStr.includes('diamond'),
+      interested_silver: intStr.includes('silver'),
+      is_converted: Boolean(cust.is_converted),
+      has_google_review: Boolean(cust.has_google_review),
+      google_review_rating: cust.google_review_rating || 5,
+      google_review_text: cust.google_review_text || '',
+      google_review_screenshot: cust.google_review_screenshot || '',
+      has_customer_feedback: Boolean(cust.has_customer_feedback),
+      feedback_rating: cust.feedback_rating || 5,
+      feedback_text: cust.feedback_text || '',
+      customer_feedback_proof: cust.customer_feedback_proof || '',
+      photo_url: cust.photo_url || '',
+      status: cust.status || 'Lead',
+      notes: cust.notes || '',
+    });
+    setShowAddOutdoorModal(true);
+  };
+
+  const handleSaveOutdoorModalCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!outdoorModalForm.customer_name.trim()) {
+      toastError('Please enter customer full name.');
+      return;
+    }
+
+    const interests: string[] = [];
+    if (outdoorModalForm.interested_gold) interests.push('Gold');
+    if (outdoorModalForm.interested_diamond) interests.push('Diamond');
+    if (outdoorModalForm.interested_silver) interests.push('Silver');
+
+    setIsSubmittingOutdoorModal(true);
+    try {
+      const payload = {
+        id: outdoorModalForm.id,
+        date: outdoorModalForm.date,
+        area_name: outdoorModalForm.area_name.trim() || undefined,
+        customer_name: outdoorModalForm.customer_name.trim(),
+        phone: outdoorModalForm.phone.trim() || undefined,
+        dob: outdoorModalForm.dob || undefined,
+        anniversary_date: outdoorModalForm.anniversary_date || undefined,
+        follow_up_date: outdoorModalForm.follow_up_date || undefined,
+        scheme_name: outdoorModalForm.scheme_name.trim() || undefined,
+        interested_in: interests.join(', '),
+        is_converted: outdoorModalForm.is_converted,
+        has_google_review: outdoorModalForm.has_google_review,
+        google_review_rating: outdoorModalForm.has_google_review ? outdoorModalForm.google_review_rating : 5,
+        google_review_text: outdoorModalForm.has_google_review ? outdoorModalForm.google_review_text.trim() : undefined,
+        google_review_screenshot: outdoorModalForm.google_review_screenshot || undefined,
+        has_customer_feedback: outdoorModalForm.has_customer_feedback,
+        feedback_rating: outdoorModalForm.has_customer_feedback ? outdoorModalForm.feedback_rating : 5,
+        feedback_text: outdoorModalForm.has_customer_feedback ? outdoorModalForm.feedback_text.trim() : undefined,
+        customer_feedback_proof: outdoorModalForm.customer_feedback_proof || undefined,
+        photo_url: outdoorModalForm.photo_url || undefined,
+        status: outdoorModalForm.is_converted ? 'Converted' : (outdoorModalForm.status || 'Lead'),
+        notes: outdoorModalForm.notes.trim() || undefined,
+      };
+
+      await api.post('/api/v1/employee/outdoor/customer', payload);
+      success(outdoorModalForm.id ? 'Outdoor customer updated and sent for review!' : 'Outdoor customer saved and sent for manager review!');
+      setShowAddOutdoorModal(false);
+      fetchEmployeeOutdoorCustomers();
+      fetchCustomerActivities();
+      fetchSummary();
+      fetchOutdoorHistory();
+    } catch (err: any) {
+      console.error('Error saving outdoor customer:', err);
+      toastError(err.response?.data?.detail || 'Failed to save outdoor customer.');
+    } finally {
+      setIsSubmittingOutdoorModal(false);
+    }
+  };
+
+  const handleDeleteOutdoorCustomer = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this outdoor customer entry?')) return;
+    try {
+      await api.delete(`/api/v1/employee/outdoor/customer/${id}`);
+      success('Outdoor customer entry removed.');
+      fetchEmployeeOutdoorCustomers();
+      fetchCustomerActivities();
+      fetchSummary();
+      fetchOutdoorHistory();
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to delete outdoor customer.');
+    }
+  };
+
+  const handleUploadOutdoorModalFile = async (field: 'photo_url' | 'google_review_screenshot' | 'customer_feedback_proof', file: File) => {
+    setIsUploadingOutdoorModalFile(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const endpoint = field === 'photo_url' ? '/api/v1/employee/outdoor/upload-photo' : '/api/v1/employee/outdoor/upload-proof';
+      const res = await api.post<{ url: string; proof_url?: string }>(endpoint, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url = res.data.proof_url || res.data.url;
+      setOutdoorModalForm((prev) => ({ ...prev, [field]: url }));
+      success('File uploaded successfully!');
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to upload file.');
+    } finally {
+      setIsUploadingOutdoorModalFile(false);
     }
   };
 
@@ -1413,7 +1624,7 @@ export const EmployeePortalPage: React.FC = () => {
                   ? 'bg-white/20 text-white'
                   : 'bg-[#E8F4EE] text-[#23815F] border border-[#C5E3D5]'
               }`}>
-                {outdoorDuty?.customers?.length ?? (dashboardSummary?.total_outdoor_customers ?? 0)}
+                {outdoorCustomersList.length || (outdoorDuty?.customers?.length ?? (dashboardSummary?.total_outdoor_customers ?? 0))}
               </span>
             </button>
           </div>
@@ -1440,11 +1651,11 @@ export const EmployeePortalPage: React.FC = () => {
           {activeTab === 'OUTDOOR' && (
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Button
-                onClick={handleAddOutdoorCustomer}
+                onClick={handleOpenAddOutdoorCustomer}
                 className="w-full sm:w-auto bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4 text-white" />
-                <span>+ Add Attended Customer</span>
+                <span>+ Add Outdoor Customer</span>
               </Button>
             </div>
           )}
@@ -2853,787 +3064,574 @@ export const EmployeePortalPage: React.FC = () => {
         )}
 
         {/* ------------------------------------------------------------------- */}
+        {/* ------------------------------------------------------------------- */}
         {/* TAB 4: OUTDOOR ENTRY & FIELD CUSTOMER LEADS                         */}
+        {/* Replicated Customer Logs Template with Structured Filters & Tables   */}
         {/* ------------------------------------------------------------------- */}
         {activeTab === 'OUTDOOR' && (
-          <div className="space-y-5">
-            {/* Top Bar: Date Selector, Duty Status Badge, and Primary Action Buttons */}
-            <div className="bg-white border border-[#C5E3D5] rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-              {/* Date Navigation */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black text-[#1B694C] uppercase tracking-wider flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-[#23815F]" />
-                  <span>Duty Date:</span>
+          <div className="space-y-4">
+            {/* Customer Status Quick Filter Bar */}
+            <div className="bg-white border border-[#C5E3D5] p-2.5 sm:p-3.5 rounded-2xl shadow-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <span className="text-xs font-black text-[#1B694C] mr-1 uppercase tracking-wider text-[11px] flex items-center gap-1.5 shrink-0">
+                  <Filter className="w-3.5 h-3.5 text-[#23815F]" />
+                  <span>Customer Status:</span>
                 </span>
-                <div className="flex items-center gap-1 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl p-1 shadow-inner">
-                  <button
-                    type="button"
-                    onClick={() => handleOutdoorDateShift(-1)}
-                    className="p-1.5 rounded-lg hover:bg-white text-[#5E5A52] hover:text-[#1D1D1B] transition-all cursor-pointer"
-                    title="Previous Day"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <input
-                    type="date"
-                    value={selectedOutdoorDate}
-                    onChange={(e) => setSelectedOutdoorDate(e.target.value)}
-                    className="bg-transparent border-0 text-xs font-bold text-[#1D1D1B] focus:outline-hidden px-2 py-1 cursor-pointer"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleOutdoorDateShift(1)}
-                    className="p-1.5 rounded-lg hover:bg-white text-[#5E5A52] hover:text-[#1D1D1B] transition-all cursor-pointer"
-                    title="Next Day"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                {[
+                  {
+                    id: 'ALL',
+                    label: 'All Statuses',
+                    activeCls: 'bg-[#23815F] text-white border-[#23815F] shadow-sm shadow-emerald-500/20',
+                    inactiveCls: 'bg-white text-[#5E5A52] border-[#C5E3D5] hover:bg-[#E8F4EE]',
+                  },
+                  {
+                    id: 'Lead',
+                    label: 'Lead',
+                    activeCls: 'bg-[#475569] text-white border-[#475569] shadow-xs',
+                    inactiveCls: 'bg-[#F1F5F9] text-[#475569] border-[#CBD5E1] hover:bg-[#E2E8F0]',
+                  },
+                  {
+                    id: 'Interested',
+                    label: 'Interested',
+                    activeCls: 'bg-[#D97706] text-white border-[#D97706] shadow-sm shadow-amber-500/20',
+                    inactiveCls: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A] hover:bg-[#FDE047]/30',
+                  },
+                  {
+                    id: 'Converted',
+                    label: 'Converted / Sold',
+                    activeCls: 'bg-[#21845F] text-white border-[#21845F] shadow-sm shadow-emerald-500/20',
+                    inactiveCls: 'bg-[#E8F4EE] text-[#21845F] border-[#A7F3D0] hover:bg-[#D1FAE5]',
+                  },
+                  {
+                    id: 'Contacted',
+                    label: 'Contacted',
+                    activeCls: 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm shadow-blue-500/20',
+                    inactiveCls: 'bg-[#EFF6FF] text-[#1E40AF] border-[#BFDBFE] hover:bg-[#DBEAFE]',
+                  },
+                  {
+                    id: 'Lost',
+                    label: 'Lost',
+                    activeCls: 'bg-[#C24141] text-white border-[#C24141] shadow-sm shadow-red-500/20',
+                    inactiveCls: 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA] hover:bg-[#FEE2E2]',
+                  },
+                ].map((sTab) => {
+                  const isSelected = outdoorStatusFilter === sTab.id;
+                  return (
+                    <button
+                      key={sTab.id}
+                      type="button"
+                      onClick={() => setOutdoorStatusFilter(sTab.id as any)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                        isSelected
+                          ? `${sTab.activeCls} font-black scale-[1.02]`
+                          : `${sTab.inactiveCls} font-bold`
+                      }`}
+                    >
+                      <span>{sTab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="bg-white border border-[#C5E3D5] rounded-2xl p-3 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 shadow-xs">
+              <div className="relative w-full md:w-80">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8A8479]" />
+                <input
+                  type="text"
+                  placeholder="Search customer name, phone, area, notes..."
+                  value={outdoorSearch}
+                  onChange={(e) => setOutdoorSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && fetchEmployeeOutdoorCustomers()}
+                  className="w-full pl-9 pr-4 py-2 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner font-medium"
+                />
               </div>
 
-              {/* Status & Counts */}
-              <div className="flex items-center gap-2.5 flex-wrap">
-                {/* Status Badge */}
-                {outdoorDuty?.status ? (
-                  <span
-                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 border shadow-2xs ${
-                      outdoorDuty.status === 'Approved' || outdoorDuty.status === 'Completed' || outdoorDuty.status === 'Verified'
-                        ? 'bg-[#E8F4EE] text-[#21845F] border-[#A7F3D0]'
-                        : outdoorDuty.status === 'Pending Review'
-                        ? 'bg-[#FEFCE8] text-[#854D0E] border-[#FDE047]'
-                        : outdoorDuty.status === 'Rejected'
-                        ? 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA]'
-                        : 'bg-[#FAF8F5] text-[#5E5A52] border-[#E6E1D6]'
-                    }`}
-                  >
-                    {outdoorDuty.status === 'Pending Review' && <Clock className="w-3.5 h-3.5 text-[#B45309]" />}
-                    {(outdoorDuty.status === 'Approved' || outdoorDuty.status === 'Completed' || outdoorDuty.status === 'Verified') && (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#21845F]" />
-                    )}
-                    {outdoorDuty.status === 'Rejected' && <XCircle className="w-3.5 h-3.5 text-[#C24141]" />}
-                    <span>{outdoorDuty.status}</span>
-                  </span>
-                ) : (
-                  <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#FAF8F5] text-[#8A8479] border border-[#E6E1D6]">
-                    📝 New Field Entry
-                  </span>
-                )}
+              {/* Approval Filter Tabs & Add Customer Action */}
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 w-full md:w-auto justify-between md:justify-end">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[#5E5A52] mr-1 hidden sm:inline uppercase text-[10px] shrink-0">Approval:</span>
+                  {[
+                    { id: 'ALL', label: 'All', active: 'bg-[#23815F] text-white shadow-xs', inactive: 'bg-[#FAF8F5] text-[#5E5A52] border border-[#E6E1D6] hover:bg-white' },
+                    { id: 'PENDING', label: 'Pending Review', active: 'bg-[#B45309] text-white shadow-xs', inactive: 'bg-[#FEFCE8] text-[#854D0E] border border-[#FEF08A] hover:bg-[#FEF08A]' },
+                    { id: 'APPROVED', label: 'Approved', active: 'bg-[#21845F] text-white shadow-xs', inactive: 'bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7]' },
+                    { id: 'REJECTED', label: 'Rejected', active: 'bg-[#C24141] text-white shadow-xs', inactive: 'bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA] hover:bg-[#FEE2E2]' },
+                  ].map((tab) => {
+                    const isSel = outdoorApprovalFilter === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setOutdoorApprovalFilter(tab.id as any)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                          isSel ? `${tab.active} font-black` : tab.inactive
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
 
-                {/* Counter Pills */}
-                <span className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]">
-                  👥 {outdoorForm.customers.length} Attended
-                </span>
-                <span className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[#FAF5FF] text-[#7E22CE] border border-[#D8B4FE]">
-                  ⭐ {outdoorForm.customers.filter((c) => c.has_google_review).length} Reviews
-                </span>
-
-                {/* Primary Save Button */}
                 <Button
-                  onClick={handleSaveOutdoorDuty}
-                  disabled={isSavingOutdoor}
-                  className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-xs cursor-pointer"
+                  onClick={handleOpenAddOutdoorCustomer}
+                  className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center gap-1.5 px-3.5 py-2 rounded-xl shadow-xs cursor-pointer shrink-0 hover:scale-[1.02] active:scale-98 transition-all"
                 >
-                  {isSavingOutdoor ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
-                  <span>{isSavingOutdoor ? 'Saving...' : 'Save & Submit'}</span>
+                  <Plus className="w-4 h-4 text-white" />
+                  <span className="hidden sm:inline">Add Outdoor Customer</span>
+                  <span className="sm:hidden">Add Customer</span>
                 </Button>
               </div>
             </div>
 
-            {/* Outdoor Customer Leads & Interactions List */}
-            <div className="bg-white border border-[#C5E3D5] rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#EBE6DC] pb-3">
-                <div>
-                  <h3 className="text-sm sm:text-base font-extrabold text-[#1D1D1B] flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#23815F]" />
-                    <span>Outdoor Attended Customers & Leads ({outdoorForm.customers.length})</span>
-                  </h3>
-                  <p className="text-xs text-[#5E5A52] mt-0.5">
-                    Log name, mobile number, jewelry preferences, reviews, and conversion details.
-                  </p>
-                </div>
-
-                <Button
-                  onClick={handleAddOutdoorCustomer}
-                  className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center gap-1.5 px-3.5 py-2 rounded-xl shadow-xs cursor-pointer"
-                >
-                  <Plus className="w-4 h-4 text-white" />
-                  <span>+ Add Customer</span>
-                </Button>
+            {/* Outdoor Customer List */}
+            {isLoadingOutdoorCustomers ? (
+              <div className="py-20 flex justify-center bg-white rounded-3xl border border-[#C5E3D5]">
+                <LoadingSpinner message="Loading outdoor marketing customer leads..." />
               </div>
+            ) : outdoorCustomersList.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-[#C5E3D5] py-16 shadow-xs">
+                <EmptyState
+                  title="No Outdoor Customers Recorded"
+                  description="You have not logged any outdoor customer interactions matching the selected filter. Click '+ Add Outdoor Customer' to log your first field lead."
+                  icon={Compass}
+                  actionText="+ Add Outdoor Customer"
+                  onAction={handleOpenAddOutdoorCustomer}
+                />
+              </div>
+            ) : (
+              <>
+                {/* Mobile Responsive Card List (block sm:hidden) */}
+                <div className="block sm:hidden space-y-3">
+                  {outdoorCustomersList.map((cust) => {
+                    const isPending = cust.approval_status === 'PENDING';
+                    const isApproved = cust.approval_status === 'APPROVED';
+                    const isRejected = cust.approval_status === 'REJECTED';
 
-              {isLoadingOutdoor ? (
-                <div className="py-12 flex flex-col items-center justify-center text-[#5E5A52]">
-                  <Loader2 className="w-8 h-8 animate-spin text-[#23815F] mb-2" />
-                  <p className="text-xs font-bold">Loading outdoor marketing log...</p>
-                </div>
-              ) : outdoorForm.customers.length === 0 ? (
-                <div className="py-10 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#23815F] flex items-center justify-center mx-auto shadow-2xs">
-                    <Users className="w-6 h-6 text-[#23815F]" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-[#1D1D1B]">No Outdoor Customers Logged for this Date</h4>
-                    <p className="text-xs text-[#8A8479] max-w-sm mx-auto mt-1">
-                      Click the button below to start entering customer leads attended during outdoor duty.
-                    </p>
-                  </div>
-                  <Button
-                    onClick={handleAddOutdoorCustomer}
-                    className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs inline-flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-xs cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4 text-white" />
-                    <span>+ Add First Customer Entry</span>
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {outdoorForm.customers.map((cust, cIdx) => (
-                    <div
-                      key={cIdx}
-                      className="bg-[#FAF8F5] border border-[#E6E1D6] hover:border-[#23815F] rounded-2xl p-4 sm:p-4.5 space-y-3.5 transition-all shadow-2xs"
-                    >
-                      {/* Row Header */}
-                      <div className="flex items-center justify-between border-b border-[#EBE6DC] pb-2.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="px-2.5 py-0.5 rounded-lg bg-[#23815F] text-white text-[11px] font-black">
-                            #{cIdx + 1}
-                          </span>
-                          <span className="text-xs font-bold text-[#1D1D1B]">
-                            {cust.name.trim() || `Customer Lead #${cIdx + 1}`}
-                          </span>
-                          {cust.is_converted && (
-                            <span className="px-2 py-0.5 rounded-md bg-[#E8F4EE] text-[#21845F] border border-[#A7F3D0] text-[10px] font-black">
-                              ✓ Converted to Sale
+                    return (
+                      <div
+                        key={cust.id}
+                        className="bg-white border border-[#C5E3D5] rounded-2xl p-4 shadow-xs space-y-3"
+                      >
+                        {/* Header: Date, ID, Status Badge */}
+                        <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-[#F0ECE1]">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1B]">
+                            <Calendar className="w-3.5 h-3.5 text-[#23815F]" />
+                            <span>{cust.date}</span>
+                            <span className="text-[10px] text-[#8A8479] font-mono">#{cust.id}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0] flex items-center gap-1">
+                              <Compass className="w-3 h-3 text-[#1B694C]" />
+                              <span>Outdoor Marketing</span>
+                            </span>
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                cust.status === 'Converted' || cust.is_converted
+                                  ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
+                                  : cust.status === 'Interested'
+                                  ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                                  : cust.status === 'Contacted'
+                                  ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
+                                  : cust.status === 'Lost'
+                                  ? 'bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]'
+                                  : 'bg-[#F1F5F9] text-[#475569] border border-[#CBD5E1]'
+                              }`}
+                            >
+                              {cust.status || 'Lead'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Customer & Location Details */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-extrabold text-[#1D1D1B] text-sm flex items-center gap-1.5 flex-wrap">
+                              <User className="w-3.5 h-3.5 text-[#23815F] shrink-0" />
+                              <span className="truncate">{cust.customer_name || 'Outdoor Customer Lead'}</span>
+                            </h4>
+                            {cust.phone ? (
+                              <div className="flex items-center gap-2 text-xs text-[#6B6559] mt-1 font-mono">
+                                <Phone className="w-3 h-3 text-[#8A8479]" />
+                                <a href={`tel:${cust.phone}`} className="hover:underline">{cust.phone}</a>
+                              </div>
+                            ) : (
+                              <span className="text-[11px] text-[#8A8479] italic mt-0.5 block">No phone</span>
+                            )}
+                            {cust.area_name && (
+                              <div className="flex items-center gap-1 text-[11px] text-[#5E5A52] mt-1 font-medium">
+                                <MapPin className="w-3 h-3 text-[#23815F] shrink-0" />
+                                <span className="truncate">{cust.area_name}</span>
+                              </div>
+                            )}
+                            {(cust.dob || cust.anniversary_date || cust.follow_up_date) && (
+                              <div className="text-[10px] text-[#8A8479] font-medium mt-1 flex items-center gap-2 flex-wrap">
+                                {cust.dob && <span>DOB: {cust.dob}</span>}
+                                {cust.anniversary_date && <span>Anniv: {cust.anniversary_date}</span>}
+                                {cust.follow_up_date && <span className="text-[#2563EB] font-bold">Follow-up: {cust.follow_up_date}</span>}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Proof Photo Thumb */}
+                          {cust.photo_url && (
+                            <button
+                              type="button"
+                              onClick={() => setViewProofUrl(getMediaUrl(cust.photo_url))}
+                              className="shrink-0 p-1 bg-white border border-[#C5E3D5] rounded-xl hover:shadow-xs transition-all cursor-pointer"
+                              title="View field photo proof"
+                            >
+                              <img
+                                src={getMediaUrl(cust.photo_url)}
+                                alt="Field Proof"
+                                className="w-12 h-12 object-cover rounded-lg"
+                              />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Schemes & Engagements */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          {cust.scheme_name && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold">
+                              <Award className="w-3 h-3 text-[#D97706]" />
+                              <span>{cust.scheme_name}</span>
                             </span>
                           )}
-                          {cust.updated_by_manager && (
-                            <span className="px-2 py-0.5 rounded-md bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] text-[10px] font-black flex items-center gap-1">
-                              <Check className="w-2.5 h-2.5" />
-                              <span>Updated by Manager</span>
+                          {cust.has_google_review && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-[10px] font-bold">
+                              <Star className="w-3 h-3 text-[#F59E0B] fill-[#F59E0B]" />
+                              <span>{cust.google_review_rating || 5}★ Google Review</span>
+                            </span>
+                          )}
+                          {cust.has_customer_feedback && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FDF2F8] text-[#BE185D] border border-[#FBCFE8] text-[10px] font-bold">
+                              <MessageSquareHeart className="w-3 h-3 text-[#EC4899]" />
+                              <span>Feedback ({cust.feedback_rating || 5}★)</span>
+                            </span>
+                          )}
+                          {cust.interested_in && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F1F5F9] text-[#334155] border border-[#CBD5E1] text-[10px] font-bold">
+                              <span>Interested: {cust.interested_in}</span>
                             </span>
                           )}
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveOutdoorCustomer(cIdx)}
-                          className="p-1 text-[#8A8479] hover:text-red-600 rounded-lg transition-colors cursor-pointer"
-                          title="Remove this customer row"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                        {/* Notes */}
+                        {cust.notes && (
+                          <p className="text-xs text-[#6B6559] bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EBE6DC] leading-relaxed">
+                            {cust.notes}
+                          </p>
+                        )}
 
-                      {/* Customer Details Form */}
-                      <div className="space-y-3.5">
-                        {/* Row 1: Name & Phone */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {/* 1. Name */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                              <User className="w-3 h-3 text-[#23815F]" />
-                              <span>Customer Name <span className="text-red-500">*</span></span>
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="Full name"
-                              value={cust.name}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'name', e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium"
-                            />
-                          </div>
-
-                          {/* 2. Phone */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                              <Phone className="w-3 h-3 text-[#23815F]" />
-                              <span>Mobile Number</span>
-                            </label>
-                            <input
-                              type="tel"
-                              placeholder="10-digit mobile"
-                              value={cust.phone}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'phone', e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-mono"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Row 2: Location & Proof Photo (1) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {/* Field Location */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                              <MapPin className="w-3 h-3 text-[#23815F]" />
-                              <span>Field Location / Market Area</span>
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="e.g. Market Booth, Yelahanka 4th Cross..."
-                              value={cust.area_name}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'area_name', e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium"
-                            />
-                          </div>
-
-                          {/* Field Photo (1) */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                              <Camera className="w-3 h-3 text-[#23815F]" />
-                              <span>Field Photo (1) Proof</span>
-                            </label>
-
-                            {cust.photo_url ? (
-                              <div className="flex items-center gap-2 bg-white border border-[#C5E3D5] rounded-xl p-1.5 shadow-2xs">
-                                <img
-                                  src={getMediaUrl(cust.photo_url)}
-                                  alt="Customer Photo Proof"
-                                  className="w-10 h-10 object-cover rounded-lg border border-[#E6E1D6] shrink-0"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] font-bold text-[#23815F] truncate">Photo Attached</p>
-                                  <p className="text-[10px] text-[#8A8479]">1 proof uploaded</p>
+                        {/* Footer: Manager Approval & Actions */}
+                        <div className="pt-2.5 border-t border-[#F0ECE1] space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              {isPending && (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FEFCE8] border border-[#FEF08A] text-[#854D0E] text-[10px] font-bold">
+                                  <Clock className="w-3 h-3 text-[#EAB308] shrink-0" />
+                                  <span className="truncate">Pending Verification</span>
                                 </div>
-                                <div className="flex items-center gap-1 shrink-0 pr-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => setViewProofUrl(getMediaUrl(cust.photo_url))}
-                                    className="p-1.5 rounded-lg bg-[#E8F4EE] hover:bg-[#D1FAE5] text-[#21845F] transition-all cursor-pointer"
-                                    title="View Photo"
+                              )}
+                              {isApproved && (
+                                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[10px] font-bold max-w-[200px]">
+                                  <CheckCircle2 className="w-3 h-3 text-[#16A34A] shrink-0" />
+                                  <span className="truncate">Approved{cust.reviewed_by_name ? ` by ${cust.reviewed_by_name}` : ''}</span>
+                                </div>
+                              )}
+                              {isRejected && (
+                                <div>
+                                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[10px] font-bold max-w-[200px]">
+                                    <XCircle className="w-3 h-3 text-[#EF4444] shrink-0" />
+                                    <span className="truncate">Rejected{cust.reviewed_by_name ? ` by ${cust.reviewed_by_name}` : ''}</span>
+                                  </div>
+                                  {cust.rejection_reason && (
+                                    <p className="text-[10px] text-[#DC2626] mt-0.5 truncate max-w-[200px]" title={cust.rejection_reason}>
+                                      Note: {cust.rejection_reason}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* WhatsApp Button on Tier 1 */}
+                            {cust.phone && (
+                              <a
+                                href={`https://wa.me/91${cust.phone.replace(/[^0-9]/g, '').slice(-10)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2.5 py-1 rounded-xl bg-white border border-[#A6E7B9] text-[#1E7E34] hover:bg-[#E8F8EE] shadow-2xs cursor-pointer flex items-center gap-1 text-[11px] font-bold shrink-0"
+                                title="WhatsApp customer"
+                              >
+                                <WhatsAppIcon className="w-3.5 h-3.5" />
+                                <span>WhatsApp</span>
+                              </a>
+                            )}
+                          </div>
+
+                          {/* Tier 2: Update & Delete Action Buttons in Clean Grid */}
+                          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#F0ECE1]/80">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditOutdoorCustomer(cust)}
+                              className="w-full py-2 px-3 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#E8F4EE] hover:border-[#A7F3D0] text-[#23815F] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                              title="Update outdoor customer"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              <span>Update</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteOutdoorCustomer(cust.id)}
+                              className="w-full py-2 px-3 rounded-xl bg-white border border-red-200 hover:bg-red-50 text-[#C24141] hover:text-red-700 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                              title="Delete outdoor customer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Tablet & Desktop Table View (hidden sm:block) */}
+                <div className="hidden sm:block bg-white border border-[#C5E3D5] rounded-3xl overflow-hidden shadow-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-[#1D1D1B]">
+                      <thead className="bg-[#FAF8F3] text-[#5E5A52] uppercase font-bold text-[11px] tracking-wider border-b border-[#EBE6DC]">
+                        <tr>
+                          <th className="px-4 py-3.5">Visit / Duty Date</th>
+                          <th className="px-4 py-3.5">Customer & Contact</th>
+                          <th className="px-4 py-3.5">Outcome / Status</th>
+                          <th className="px-4 py-3.5">Location / Area</th>
+                          <th className="px-4 py-3.5">Schemes & Engagements</th>
+                          <th className="px-4 py-3.5">Manager Approval</th>
+                          <th className="px-4 py-3.5">Notes</th>
+                          <th className="px-4 py-3.5 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#F0ECE1]">
+                        {outdoorCustomersList.map((cust) => {
+                          const isPending = cust.approval_status === 'PENDING';
+                          const isApproved = cust.approval_status === 'APPROVED';
+                          const isRejected = cust.approval_status === 'REJECTED';
+
+                          return (
+                            <tr
+                              key={cust.id}
+                              className="hover:bg-[#FAF9F5] transition-colors"
+                            >
+                              {/* Date */}
+                              <td className="px-4 py-3.5 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5 font-bold text-[#1D1D1B]">
+                                  <Calendar className="w-3.5 h-3.5 text-[#23815F]" />
+                                  <span>{cust.date}</span>
+                                </div>
+                                <span className="text-[10px] text-[#8A8479] ml-5 font-mono">
+                                  #{cust.id}
+                                </span>
+                              </td>
+
+                              {/* Customer info */}
+                              <td className="px-4 py-3.5">
+                                <div className="font-bold text-[#1D1D1B] flex items-center gap-1.5 flex-wrap">
+                                  <User className="w-3.5 h-3.5 text-[#23815F]" />
+                                  <span>{cust.customer_name || 'Outdoor Lead'}</span>
+                                </div>
+                                {cust.phone ? (
+                                  <div className="flex items-center gap-1.5 text-[11px] text-[#6B6559] mt-1 font-mono">
+                                    <Phone className="w-3 h-3 text-[#8A8479]" />
+                                    <span>{cust.phone}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-[11px] text-[#8A8479] italic mt-0.5 block">
+                                    No phone provided
+                                  </span>
+                                )}
+                                {(cust.dob || cust.anniversary_date || cust.follow_up_date) && (
+                                  <div className="text-[10px] text-[#8A8479] font-medium mt-1 flex items-center gap-2 flex-wrap">
+                                    {cust.dob && <span>DOB: {cust.dob}</span>}
+                                    {cust.anniversary_date && <span>Anniv: {cust.anniversary_date}</span>}
+                                    {cust.follow_up_date && <span className="text-[#2563EB] font-bold">Follow-up: {cust.follow_up_date}</span>}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Outcome status */}
+                              <td className="px-4 py-3.5 whitespace-nowrap">
+                                <div className="flex flex-col gap-1 items-start">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F4EE] border border-[#A7F3D0] text-[#1B694C]">
+                                    <Compass className="w-3 h-3 text-[#1B694C]" />
+                                    <span>Outdoor Marketing</span>
+                                  </span>
+                                  <span
+                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                      cust.status === 'Converted' || cust.is_converted
+                                        ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
+                                        : cust.status === 'Interested'
+                                        ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                                        : cust.status === 'Contacted'
+                                        ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
+                                        : cust.status === 'Lost'
+                                        ? 'bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]'
+                                        : 'bg-[#F1F5F9] text-[#475569] border border-[#CBD5E1]'
+                                    }`}
                                   >
-                                    <Eye className="w-3.5 h-3.5" />
-                                  </button>
+                                    {cust.status || 'Lead'}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Location / Area */}
+                              <td className="px-4 py-3.5">
+                                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#1D1D1B]">
+                                  <MapPin className="w-3.5 h-3.5 text-[#23815F] shrink-0" />
+                                  <span>{cust.area_name || 'Field Area'}</span>
+                                </div>
+                              </td>
+
+                              {/* Schemes & Engagements */}
+                              <td className="px-4 py-3.5">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {cust.scheme_name && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold">
+                                      <Award className="w-3 h-3 text-[#D97706]" />
+                                      <span>{cust.scheme_name}</span>
+                                    </span>
+                                  )}
+                                  {cust.has_google_review && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-[10px] font-bold">
+                                      <Star className="w-3 h-3 text-[#F59E0B] fill-[#F59E0B]" />
+                                      <span>{cust.google_review_rating || 5}★ Review</span>
+                                    </span>
+                                  )}
+                                  {cust.has_customer_feedback && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FDF2F8] text-[#BE185D] border border-[#FBCFE8] text-[10px] font-bold">
+                                      <MessageSquareHeart className="w-3 h-3 text-[#EC4899]" />
+                                      <span>Feedback ({cust.feedback_rating || 5}★)</span>
+                                    </span>
+                                  )}
+                                  {cust.interested_in && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F1F5F9] text-[#334155] border border-[#CBD5E1] text-[10px] font-bold">
+                                      <span>{cust.interested_in}</span>
+                                    </span>
+                                  )}
+                                  {cust.photo_url && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setViewProofUrl(getMediaUrl(cust.photo_url))}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E8F4EE] text-[#21845F] border border-[#A7F3D0] text-[10px] font-bold hover:bg-[#D1FAE5] cursor-pointer"
+                                      title="View field photo proof"
+                                    >
+                                      <Camera className="w-3 h-3" />
+                                      <span>Photo Proof</span>
+                                    </button>
+                                  )}
+                                  {!cust.scheme_name && !cust.has_google_review && !cust.has_customer_feedback && !cust.photo_url && (
+                                    <span className="text-[11px] text-[#8A8479]">Standard Field Lead</span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Approval Status */}
+                              <td className="px-4 py-3.5 whitespace-nowrap">
+                                {isPending && (
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FEFCE8] border border-[#FEF08A] text-[#854D0E] text-[11px] font-bold shadow-2xs">
+                                    <Clock className="w-3.5 h-3.5 text-[#EAB308]" />
+                                    <span>Pending Verification</span>
+                                  </div>
+                                )}
+                                {isApproved && (
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[11px] font-bold shadow-2xs">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />
+                                    <span>Approved{cust.reviewed_by_name ? ` by ${cust.reviewed_by_name}` : ''}</span>
+                                  </div>
+                                )}
+                                {isRejected && (
+                                  <div>
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[11px] font-bold shadow-2xs">
+                                      <XCircle className="w-3.5 h-3.5 text-[#EF4444]" />
+                                      <span>Rejected{cust.reviewed_by_name ? ` by ${cust.reviewed_by_name}` : ''}</span>
+                                    </div>
+                                    {cust.rejection_reason && (
+                                      <p className="text-[10px] text-[#DC2626] mt-1 max-w-[150px] truncate" title={cust.rejection_reason}>
+                                        Note: {cust.rejection_reason}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Notes */}
+                              <td className="px-4 py-3.5 max-w-xs">
+                                {cust.notes ? (
+                                  <p className="text-[11px] text-[#6B6559] line-clamp-2" title={cust.notes}>
+                                    {cust.notes}
+                                  </p>
+                                ) : (
+                                  <span className="text-[11px] text-[#8A8479] italic">—</span>
+                                )}
+                              </td>
+
+                              {/* Actions Column: Edit / Update, WhatsApp, Delete */}
+                              <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                                <div className="inline-flex items-center gap-1">
+                                  {/* Update Button */}
                                   <button
                                     type="button"
-                                    onClick={() => handleUpdateOutdoorCustomer(cIdx, 'photo_url', '')}
-                                    className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all cursor-pointer"
-                                    title="Remove Photo"
+                                    onClick={() => handleOpenEditOutdoorCustomer(cust)}
+                                    title="Edit / Update outdoor customer"
+                                    className="p-1.5 rounded-lg bg-white border border-[#E6E1D6] hover:bg-[#E8F4EE] hover:border-[#A7F3D0] text-[#23815F] transition-all cursor-pointer shadow-2xs"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {/* WhatsApp Button */}
+                                  {cust.phone && (
+                                    <a
+                                      href={`https://wa.me/${cust.phone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                                        `Namaste ${cust.customer_name || 'Customer'}, thank you for meeting our Siri Samruddhi Gold Palace team at ${cust.area_name || 'the field event'}! We look forward to welcoming you to our showroom.`
+                                      )}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title="Send WhatsApp message"
+                                      className="p-1.5 rounded-lg bg-white border border-[#E6E1D6] hover:bg-[#E8F4EE] hover:border-[#A7F3D0] text-[#25D366] transition-all cursor-pointer shadow-2xs"
+                                    >
+                                      <WhatsAppIcon className="w-3.5 h-3.5" />
+                                    </a>
+                                  )}
+
+                                  {/* Delete Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteOutdoorCustomer(cust.id)}
+                                    title="Delete outdoor customer"
+                                    className="p-1.5 rounded-lg bg-white border border-[#E6E1D6] hover:bg-red-50 hover:border-red-200 text-[#C24141] hover:text-red-700 transition-all cursor-pointer shadow-2xs"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
-                              </div>
-                            ) : (
-                              <label className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-dashed border-[#CBD5E1] hover:border-[#23815F] bg-white hover:bg-[#E8F4EE] text-xs font-bold text-[#23815F] cursor-pointer transition-all shadow-2xs">
-                                {uploadingCustomerPhotoIdx === cIdx ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#23815F]" />
-                                ) : (
-                                  <Camera className="w-3.5 h-3.5 text-[#23815F]" />
-                                )}
-                                <span>{uploadingCustomerPhotoIdx === cIdx ? 'Uploading photo...' : '+ Upload Field Photo (1)'}</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  capture="environment"
-                                  onChange={(e) => handleUploadCustomerPhoto(cIdx, e)}
-                                  disabled={uploadingCustomerPhotoIdx === cIdx}
-                                  className="hidden"
-                                />
-                              </label>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Row 3: Important Dates (DOB, Anniversary, Follow-up / Notification Date) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          {/* DOB */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-[#7E22CE]" />
-                              <span>Date of Birth</span>
-                            </label>
-                            <input
-                              type="date"
-                              value={cust.dob}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'dob', e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium cursor-pointer"
-                            />
-                          </div>
-
-                          {/* Anniversary Date */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                              <Gift className="w-3 h-3 text-[#D97706]" />
-                              <span>Anniversary Date</span>
-                            </label>
-                            <input
-                              type="date"
-                              value={cust.anniversary_date}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'anniversary_date', e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium cursor-pointer"
-                            />
-                          </div>
-
-                          {/* Follow-up / Notification Date */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                              <Bell className="w-3 h-3 text-[#2563EB]" />
-                              <span className="text-[#1E40AF] font-black">Follow-up / Notification Date</span>
-                            </label>
-                            <input
-                              type="date"
-                              value={cust.follow_up_date}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'follow_up_date', e.target.value)}
-                              className="w-full px-3 py-2 bg-[#EFF6FF] border border-[#93C5FD] rounded-xl text-xs text-[#1E3A8A] focus:border-[#2563EB] focus:outline-hidden font-medium cursor-pointer"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Jewelry Interest & Conversion Row */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#EBE6DC]/80">
-                          {/* Interest Toggles */}
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[11px] font-bold text-[#5E5A52] uppercase mr-1">
-                              Interested In:
-                            </span>
-                            {/* Gold Pill */}
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_gold', !cust.interested_gold)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                                cust.interested_gold
-                                  ? 'bg-[#FEFCE8] text-[#854D0E] border-[#CA8A04] shadow-2xs font-black'
-                                  : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
-                              }`}
-                            >
-                              <span>🪙 Gold</span>
-                              {cust.interested_gold && <Check className="w-3 h-3 text-[#854D0E]" />}
-                            </button>
-
-                            {/* Diamond Pill */}
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_diamond', !cust.interested_diamond)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                                cust.interested_diamond
-                                  ? 'bg-[#EFF6FF] text-[#1E40AF] border-[#3B82F6] shadow-2xs font-black'
-                                  : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
-                              }`}
-                            >
-                              <span>💎 Diamond</span>
-                              {cust.interested_diamond && <Check className="w-3 h-3 text-[#1E40AF]" />}
-                            </button>
-
-                            {/* Silver Pill */}
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateOutdoorCustomer(cIdx, 'interested_silver', !cust.interested_silver)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                                cust.interested_silver
-                                  ? 'bg-[#F1F5F9] text-[#334155] border-[#64748B] shadow-2xs font-black'
-                                  : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
-                              }`}
-                            >
-                              <span>🥈 Silver</span>
-                              {cust.interested_silver && <Check className="w-3 h-3 text-[#334155]" />}
-                            </button>
-                          </div>
-
-                          {/* Conversion Checkbox */}
-                          <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#CBD5E1] hover:border-[#23815F] text-xs font-bold text-[#1D1D1B] cursor-pointer shadow-2xs transition-all">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(cust.is_converted)}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'is_converted', e.target.checked)}
-                              className="w-4 h-4 text-[#23815F] rounded border-[#CBD5E1] focus:ring-[#23815F]"
-                            />
-                            <span className={cust.is_converted ? 'text-[#21845F] font-black' : 'text-[#5E5A52]'}>
-                              Converted to Sale / Order
-                            </span>
-                          </label>
-                        </div>
-
-                        {/* Promoted Scheme / Gold Scheme Selection */}
-                        <div className="pt-2 border-t border-[#EBE6DC]/80 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <label className="text-[11px] font-bold text-[#5E5A52] uppercase flex items-center gap-1.5">
-                              <Award className="w-3.5 h-3.5 text-[#D97706]" />
-                              <span>Gold Scheme Enrollment / Interest</span>
-                            </label>
-                            {cust.scheme_name && (
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateOutdoorCustomer(cIdx, 'scheme_name', '')}
-                                className="text-[10px] text-red-600 hover:underline font-bold"
-                              >
-                                Clear Scheme
-                              </button>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            {SCHEMES.map((sch) => {
-                              const isSelected = cust.scheme_name === sch;
-                              return (
-                                <button
-                                  key={sch}
-                                  type="button"
-                                  onClick={() => handleUpdateOutdoorCustomer(cIdx, 'scheme_name', isSelected ? '' : sch)}
-                                  className={`p-2 rounded-xl text-xs font-bold border transition-all text-left flex items-center gap-2 cursor-pointer ${
-                                    isSelected
-                                      ? 'bg-[#FEF3C7] text-[#92400E] border-[#D97706] shadow-xs font-black'
-                                      : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
-                                  }`}
-                                >
-                                  <Award className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[#D97706]' : 'text-[#8A8479]'}`} />
-                                  <span className="truncate">{sch}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Reviews & Feedback Row */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-[#EBE6DC]/80">
-                          {/* Google Review Box */}
-                          <div className={`p-3 rounded-xl border transition-all ${
-                            cust.has_google_review ? 'bg-[#FEFCE8] border-[#CA8A04]' : 'bg-white border-[#E6E1D6]'
-                          }`}>
-                            <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
-                              <input
-                                type="checkbox"
-                                checked={cust.has_google_review}
-                                onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'has_google_review', e.target.checked)}
-                                className="w-4 h-4 text-[#CA8A04] rounded border-[#CBD5E1] focus:ring-[#CA8A04]"
-                              />
-                              <span className="flex items-center gap-1 text-[#854D0E] font-black">
-                                <Star className="w-3.5 h-3.5 fill-[#CA8A04] text-[#CA8A04]" />
-                                <span>Google 5-Star Review Given</span>
-                              </span>
-                            </label>
-
-                            {cust.has_google_review && (
-                              <div className="space-y-2 mt-2 pt-2 border-t border-[#FDE047]">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[11px] font-bold text-[#854D0E]">Rating:</span>
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                      key={star}
-                                      type="button"
-                                      onClick={() => handleUpdateOutdoorCustomer(cIdx, 'google_review_rating', star)}
-                                      className="p-0.5 cursor-pointer"
-                                    >
-                                      <Star
-                                        className={`w-4 h-4 ${
-                                          star <= (cust.google_review_rating || 5)
-                                            ? 'fill-[#F59E0B] text-[#F59E0B]'
-                                            : 'text-gray-300'
-                                        }`}
-                                      />
-                                    </button>
-                                  ))}
-                                </div>
-                                <input
-                                  type="text"
-                                  placeholder="Review text or customer praise summary..."
-                                  value={cust.google_review_text}
-                                  onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'google_review_text', e.target.value)}
-                                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#CA8A04] focus:outline-hidden"
-                                />
-
-                                <div>
-                                  <label className="block text-[10px] font-bold text-[#854D0E] uppercase mb-1">
-                                    Google Review Screenshot Proof
-                                  </label>
-                                  {cust.google_review_screenshot ? (
-                                    <div className="flex items-center gap-2 bg-white border border-[#FDE68A] rounded-lg p-1.5 shadow-2xs">
-                                      <img
-                                        src={getMediaUrl(cust.google_review_screenshot)}
-                                        alt="Review Proof"
-                                        className="w-8 h-8 object-cover rounded border border-[#E6E1D6] shrink-0"
-                                      />
-                                      <p className="text-[11px] font-bold text-[#854D0E] flex-1 truncate">Proof Attached</p>
-                                      <button
-                                        type="button"
-                                        onClick={() => setViewProofUrl(getMediaUrl(cust.google_review_screenshot))}
-                                        className="p-1 text-[#854D0E] hover:bg-[#FEF3C7] rounded cursor-pointer"
-                                        title="View"
-                                      >
-                                        <Eye className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUpdateOutdoorCustomer(cIdx, 'google_review_screenshot', '')}
-                                        className="p-1 text-red-600 hover:bg-red-50 rounded cursor-pointer"
-                                        title="Remove"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <label className="flex items-center justify-center gap-1.5 w-full py-1.5 px-2.5 rounded-lg border border-dashed border-[#CA8A04]/50 bg-white hover:bg-[#FEFCE8] text-[11px] font-bold text-[#854D0E] cursor-pointer transition-all">
-                                      {uploadingCustProofKey === `${cIdx}_google_review_screenshot` ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                      ) : (
-                                        <Camera className="w-3 h-3" />
-                                      )}
-                                      <span>{uploadingCustProofKey === `${cIdx}_google_review_screenshot` ? 'Uploading...' : '+ Upload Review Screenshot'}</span>
-                                      <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                          if (e.target.files?.[0]) handleUploadEmployeeProof(cIdx, 'google_review_screenshot', e.target.files[0]);
-                                        }}
-                                      />
-                                    </label>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Customer Feedback Box */}
-                          <div className={`p-3 rounded-xl border transition-all ${
-                            cust.has_customer_feedback ? 'bg-[#FAF5FF] border-[#A855F7]' : 'bg-white border-[#E6E1D6]'
-                          }`}>
-                            <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
-                              <input
-                                type="checkbox"
-                                checked={cust.has_customer_feedback}
-                                onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'has_customer_feedback', e.target.checked)}
-                                className="w-4 h-4 text-[#7E22CE] rounded border-[#CBD5E1] focus:ring-[#7E22CE]"
-                              />
-                              <span className="flex items-center gap-1 text-[#7E22CE] font-black">
-                                <MessageSquareHeart className="w-3.5 h-3.5 text-[#7E22CE]" />
-                                <span>Customer Feedback Recorded</span>
-                              </span>
-                            </label>
-
-                            {cust.has_customer_feedback && (
-                              <div className="space-y-2 mt-2 pt-2 border-t border-[#E9D5FF]">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[11px] font-bold text-[#7E22CE]">Rating:</span>
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                      key={star}
-                                      type="button"
-                                      onClick={() => handleUpdateOutdoorCustomer(cIdx, 'feedback_rating', star)}
-                                      className="p-0.5 cursor-pointer"
-                                    >
-                                      <Star
-                                        className={`w-4 h-4 ${
-                                          star <= (cust.feedback_rating || 5)
-                                            ? 'fill-[#7E22CE] text-[#7E22CE]'
-                                            : 'text-gray-300'
-                                        }`}
-                                      />
-                                    </button>
-                                  ))}
-                                </div>
-                                <input
-                                  type="text"
-                                  placeholder="Feedback notes, designs inquired, customer impressions..."
-                                  value={cust.feedback_text}
-                                  onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'feedback_text', e.target.value)}
-                                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#7E22CE] focus:outline-hidden"
-                                />
-
-                                <div>
-                                  <label className="block text-[10px] font-bold text-[#7E22CE] uppercase mb-1">
-                                    Customer Feedback Proof / Video
-                                  </label>
-                                  {cust.customer_feedback_proof ? (
-                                    <div className="flex items-center gap-2 bg-white border border-[#E9D5FF] rounded-lg p-1.5 shadow-2xs">
-                                      <div className="w-8 h-8 rounded bg-[#FAF5FF] border border-[#D8B4FE] flex items-center justify-center shrink-0 text-xs">
-                                        {cust.customer_feedback_proof.match(/\.(mp4|webm|mov|avi)$/i) ? '🎬' : '🖼️'}
-                                      </div>
-                                      <p className="text-[11px] font-bold text-[#7E22CE] flex-1 truncate">Feedback Proof Attached</p>
-                                      <button
-                                        type="button"
-                                        onClick={() => setViewProofUrl(getMediaUrl(cust.customer_feedback_proof))}
-                                        className="p-1 text-[#7E22CE] hover:bg-[#FAF5FF] rounded cursor-pointer"
-                                        title="View"
-                                      >
-                                        <Eye className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUpdateOutdoorCustomer(cIdx, 'customer_feedback_proof', '')}
-                                        className="p-1 text-red-600 hover:bg-red-50 rounded cursor-pointer"
-                                        title="Remove"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <label className="flex items-center justify-center gap-1.5 w-full py-1.5 px-2.5 rounded-lg border border-dashed border-[#A855F7]/50 bg-white hover:bg-[#FAF5FF] text-[11px] font-bold text-[#7E22CE] cursor-pointer transition-all">
-                                      {uploadingCustProofKey === `${cIdx}_customer_feedback_proof` ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                      ) : (
-                                        <Camera className="w-3 h-3" />
-                                      )}
-                                      <span>{uploadingCustProofKey === `${cIdx}_customer_feedback_proof` ? 'Uploading...' : '+ Upload Feedback Proof (Photo/Video)'}</span>
-                                      <input
-                                        type="file"
-                                        accept="image/*,video/*"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                          if (e.target.files?.[0]) handleUploadEmployeeProof(cIdx, 'customer_feedback_proof', e.target.files[0]);
-                                        }}
-                                      />
-                                    </label>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Customer Video Review Box */}
-                        <div className={`p-3 rounded-xl border transition-all ${
-                          cust.has_video_review ? 'bg-[#EFF6FF] border-[#3B82F6]' : 'bg-white border-[#E6E1D6]'
-                        }`}>
-                          <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(cust.has_video_review)}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'has_video_review', e.target.checked)}
-                              className="w-4 h-4 text-[#2563EB] rounded border-[#CBD5E1] focus:ring-[#2563EB]"
-                            />
-                            <span className="flex items-center gap-1 text-[#1E40AF] font-black">
-                              <Video className="w-3.5 h-3.5 text-[#2563EB]" />
-                              <span>Customer Video Review Recorded</span>
-                            </span>
-                          </label>
-
-                          {cust.has_video_review && (
-                            <div className="space-y-2 mt-2 pt-2 border-t border-[#BFDBFE]">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <input
-                                  type="text"
-                                  placeholder="Video title / topic (e.g. Bridal choker review)..."
-                                  value={cust.video_review_title || ''}
-                                  onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'video_review_title', e.target.value)}
-                                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#2563EB] focus:outline-hidden"
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="Video link (YouTube, Reel, Drive)..."
-                                  value={cust.video_review_url || ''}
-                                  onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'video_review_url', e.target.value)}
-                                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#1D1D1B] focus:border-[#2563EB] focus:outline-hidden"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#1E40AF] uppercase mb-1">
-                                  Video Review Proof (Photo / Video Clip)
-                                </label>
-                                {cust.video_review_proof ? (
-                                  <div className="flex items-center gap-2 bg-white border border-[#BFDBFE] rounded-lg p-1.5 shadow-2xs">
-                                    <div className="w-8 h-8 rounded bg-[#EFF6FF] border border-[#93C5FD] flex items-center justify-center shrink-0 text-xs">
-                                      {cust.video_review_proof.match(/\.(mp4|webm|mov|avi)$/i) ? '🎬' : '🖼️'}
-                                    </div>
-                                    <p className="text-[11px] font-bold text-[#1E40AF] flex-1 truncate">Video Proof Attached</p>
-                                    <button
-                                      type="button"
-                                      onClick={() => setViewProofUrl(getMediaUrl(cust.video_review_proof))}
-                                      className="p-1 text-[#1E40AF] hover:bg-[#DBEAFE] rounded cursor-pointer"
-                                      title="View"
-                                    >
-                                      <Eye className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUpdateOutdoorCustomer(cIdx, 'video_review_proof', '')}
-                                      className="p-1 text-red-600 hover:bg-red-50 rounded cursor-pointer"
-                                      title="Remove"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <label className="flex items-center justify-center gap-1.5 w-full py-1.5 px-2.5 rounded-lg border border-dashed border-[#3B82F6]/50 bg-white hover:bg-[#EFF6FF] text-[11px] font-bold text-[#1E40AF] cursor-pointer transition-all">
-                                    {uploadingCustProofKey === `${cIdx}_video_review_proof` ? (
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <Video className="w-3 h-3" />
-                                    )}
-                                    <span>{uploadingCustProofKey === `${cIdx}_video_review_proof` ? 'Uploading...' : '+ Upload Video Proof'}</span>
-                                    <input
-                                      type="file"
-                                      accept="image/*,video/*"
-                                      className="hidden"
-                                      onChange={(e) => {
-                                        if (e.target.files?.[0]) handleUploadEmployeeProof(cIdx, 'video_review_proof', e.target.files[0]);
-                                      }}
-                                    />
-                                  </label>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Row 6: Duty Field Notes & Note Notification Date */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          <div className="sm:col-span-2">
-                            <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                              <Edit2 className="w-3 h-3 text-[#7E22CE]" />
-                              <span>Duty Field Notes / Team Observations</span>
-                            </label>
-                            <textarea
-                              rows={2}
-                              placeholder="Key conversation notes, customer requirements (e.g. looking for 22kt antique choker, budget ₹1.5L), follow-up observations..."
-                              value={cust.notes}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'notes', e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#23815F] focus:outline-hidden font-medium resize-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-bold text-[#1E40AF] uppercase mb-1 flex items-center gap-1">
-                              <Bell className="w-3 h-3 text-[#2563EB]" />
-                              <span>Note Notification Date</span>
-                            </label>
-                            <input
-                              type="date"
-                              value={cust.note_notification_date || ''}
-                              onChange={(e) => handleUpdateOutdoorCustomer(cIdx, 'note_notification_date', e.target.value)}
-                              className="w-full px-3 py-2 bg-[#EFF6FF] border border-[#93C5FD] rounded-xl text-xs text-[#1E3A8A] focus:border-[#2563EB] focus:outline-hidden font-medium cursor-pointer"
-                            />
-                            <p className="text-[9px] text-[#6B7280] mt-1">Triggers manager header reminder on this date</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Add Another Customer Button */}
-                  <button
-                    type="button"
-                    onClick={handleAddOutdoorCustomer}
-                    className="w-full py-3.5 rounded-2xl border-2 border-dashed border-[#C5E3D5] hover:border-[#23815F] bg-[#FAF8F5] hover:bg-[#E8F4EE] text-[#23815F] font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-[1.005]"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>+ Add Another Customer Lead</span>
-                  </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              )}
-
-              {/* Bottom Save & Submission Bar */}
-              <div className="pt-4 border-t border-[#EBE6DC] flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-[11px] text-[#5E5A52] flex items-center gap-1.5">
-                  <Shield className="w-4 h-4 text-[#23815F] shrink-0" />
-                  <span>
-                    Submits directly to Showroom Manager for review • Status updates to <strong>Pending Review</strong> • Zero WhatsApp messages sent.
-                  </span>
-                </div>
-
-                <Button
-                  onClick={handleSaveOutdoorDuty}
-                  disabled={isSavingOutdoor}
-                  className="w-full sm:w-auto bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center justify-center gap-2 px-6 py-3 rounded-xl shadow-md cursor-pointer hover:scale-102 active:scale-98 transition-all"
-                >
-                  {isSavingOutdoor ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
-                  <span>{isSavingOutdoor ? 'Submitting to Manager...' : 'Save & Submit Outdoor Entries'}</span>
-                </Button>
-              </div>
-            </div>
+              </>
+            )}
 
             {/* Past Outdoor Duty History Card */}
             {outdoorHistory.length > 0 && (
-              <div className="bg-white border border-[#E6E1D6] rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+              <div className="bg-white border border-[#C5E3D5] rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
                 <h4 className="text-xs font-black text-[#1D1D1B] uppercase tracking-wider flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-[#526F91]" />
+                  <Clock className="w-3.5 h-3.5 text-[#23815F]" />
                   <span>Recent Outdoor Duty History</span>
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
@@ -3694,6 +3692,543 @@ export const EmployeePortalPage: React.FC = () => {
         apiBaseUrl="/api/v1/employee/customers"
         defaultCustomerCount={1}
       />
+
+      {/* ------------------------------------------------------------------- */}
+      {/* MODAL: ADD / EDIT OUTDOOR CUSTOMER LEAD (CLOSES ON SAVE)             */}
+      {/* ------------------------------------------------------------------- */}
+      {showAddOutdoorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white border border-[#C5E3D5] rounded-3xl w-full max-w-2xl p-5 sm:p-7 shadow-2xl relative my-8 text-[#1D1D1B] max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-[#EBE6DC] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] flex items-center justify-center text-[#23815F] shadow-2xs shrink-0">
+                  <Compass className="w-5 h-5 text-[#23815F]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#1D1D1B]">
+                    {outdoorModalForm.id ? 'Edit Outdoor Customer Lead' : 'Add Outdoor Customer Lead'}
+                  </h3>
+                  <p className="text-xs text-[#5E5A52]">
+                    Log field prospect details gathered during outdoor campaigns. Auto-syncs for manager verification.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddOutdoorModal(false)}
+                className="text-[#8A8479] hover:text-[#1D1D1B] p-1.5 rounded-xl hover:bg-[#FAF8F5] transition-colors cursor-pointer shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Form Scrollable */}
+            <form onSubmit={handleSaveOutdoorModalCustomer} className="py-4 space-y-4 overflow-y-auto flex-1 pr-1">
+              {/* Row 1: Duty Date & Campaign Area */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-[#23815F]" />
+                    <span>Duty Date <span className="text-red-500">*</span></span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={outdoorModalForm.date}
+                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, date: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs font-bold text-[#1D1D1B] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-[#23815F]" />
+                    <span>Campaign Area / Location <span className="text-red-500">*</span></span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Yelahanka Old Town Market, 4th Cross"
+                    value={outdoorModalForm.area_name}
+                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, area_name: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Customer Name & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                    <User className="w-3.5 h-3.5 text-[#23815F]" />
+                    <span>Customer Full Name <span className="text-red-500">*</span></span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Ramesh Kumar"
+                    value={outdoorModalForm.customer_name}
+                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, customer_name: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-[#23815F]" />
+                    <span>Mobile / Phone Number</span>
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. 9876543210"
+                    value={outdoorModalForm.phone}
+                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, phone: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: DOB, Anniversary, Follow-up Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-[#7E22CE]" />
+                    <span>Date of Birth</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={outdoorModalForm.dob}
+                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, dob: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1D1D1B] focus:outline-hidden focus:border-[#23815F] shadow-inner cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                    <Gift className="w-3 h-3 text-[#D97706]" />
+                    <span>Wedding Anniversary</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={outdoorModalForm.anniversary_date}
+                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, anniversary_date: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1D1D1B] focus:outline-hidden focus:border-[#23815F] shadow-inner cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1E40AF] uppercase mb-1 flex items-center gap-1">
+                    <Bell className="w-3 h-3 text-[#2563EB]" />
+                    <span>Follow-up Date</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={outdoorModalForm.follow_up_date}
+                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, follow_up_date: e.target.value })}
+                    className="w-full bg-[#EFF6FF] border border-[#93C5FD] rounded-xl px-3 py-2 text-xs text-[#1E3A8A] font-medium focus:outline-hidden focus:border-[#2563EB] shadow-inner cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Row 4: Status & Jewelry Interests */}
+              <div className="p-3 bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-[#5E5A52] uppercase">
+                    Customer Outcome / Status
+                  </label>
+                  <select
+                    value={outdoorModalForm.status}
+                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, status: e.target.value })}
+                    className="bg-white border border-[#CBD5E1] rounded-xl px-3 py-1.5 text-xs font-bold text-[#1D1D1B] focus:outline-hidden focus:border-[#23815F]"
+                  >
+                    <option value="Lead">Lead (Initial Contact)</option>
+                    <option value="Interested">Interested (Considering)</option>
+                    <option value="Converted">Converted (Placed Order / Bought)</option>
+                    <option value="Contacted">Contacted (Follow-up scheduled)</option>
+                    <option value="Lost">Lost (Not interested)</option>
+                  </select>
+                </div>
+
+                {/* Jewelry Preferences & Conversion */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#EBE6DC]">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-[#5E5A52] uppercase mr-1">Customer Interested In:</span>
+                    <button
+                      type="button"
+                      onClick={() => setOutdoorModalForm((prev) => ({ ...prev, interested_gold: !prev.interested_gold }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                        outdoorModalForm.interested_gold
+                          ? 'bg-[#FEFCE8] text-[#854D0E] border-[#CA8A04] shadow-2xs font-black'
+                          : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                      }`}
+                    >
+                      <span>🪙 Gold</span>
+                      {outdoorModalForm.interested_gold && <Check className="w-3 h-3 text-[#854D0E]" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setOutdoorModalForm((prev) => ({ ...prev, interested_diamond: !prev.interested_diamond }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                        outdoorModalForm.interested_diamond
+                          ? 'bg-[#EFF6FF] text-[#1E40AF] border-[#3B82F6] shadow-2xs font-black'
+                          : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                      }`}
+                    >
+                      <span>💎 Diamond</span>
+                      {outdoorModalForm.interested_diamond && <Check className="w-3 h-3 text-[#1E40AF]" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setOutdoorModalForm((prev) => ({ ...prev, interested_silver: !prev.interested_silver }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                        outdoorModalForm.interested_silver
+                          ? 'bg-[#F1F5F9] text-[#334155] border-[#64748B] shadow-2xs font-black'
+                          : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                      }`}
+                    >
+                      <span>🥈 Silver</span>
+                      {outdoorModalForm.interested_silver && <Check className="w-3 h-3 text-[#334155]" />}
+                    </button>
+                  </div>
+
+                  <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#CBD5E1] hover:border-[#23815F] text-xs font-bold text-[#1D1D1B] cursor-pointer shadow-2xs transition-all">
+                    <input
+                      type="checkbox"
+                      checked={outdoorModalForm.is_converted}
+                      onChange={(e) => setOutdoorModalForm((prev) => ({ ...prev, is_converted: e.target.checked }))}
+                      className="w-4 h-4 text-[#23815F] rounded border-[#CBD5E1] focus:ring-[#23815F]"
+                    />
+                    <span className={outdoorModalForm.is_converted ? 'text-[#21845F] font-black' : 'text-[#5E5A52]'}>
+                      Converted to Sale
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Row 5: Scheme Selection */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-[#5E5A52] uppercase flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span>Promoted Gold Scheme Enrollment / Interest</span>
+                  </label>
+                  {outdoorModalForm.scheme_name && (
+                    <button
+                      type="button"
+                      onClick={() => setOutdoorModalForm({ ...outdoorModalForm, scheme_name: '' })}
+                      className="text-xs text-red-600 hover:underline font-bold"
+                    >
+                      Clear Scheme
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {SCHEMES.map((sch) => {
+                    const isSelected = outdoorModalForm.scheme_name === sch;
+                    return (
+                      <button
+                        key={sch}
+                        type="button"
+                        onClick={() => setOutdoorModalForm({ ...outdoorModalForm, scheme_name: isSelected ? '' : sch })}
+                        className={`p-2.5 rounded-xl text-xs font-bold border transition-all text-left flex items-center gap-2 cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#FEF3C7] text-[#92400E] border-[#D97706] shadow-xs font-black'
+                            : 'bg-[#FAF8F5] text-[#5E5A52] border-[#CBD5E1] hover:bg-white'
+                        }`}
+                      >
+                        <Award className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[#D97706]' : 'text-[#8A8479]'}`} />
+                        <span className="truncate">{sch}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Row 6: Field Photo Proof (1) */}
+              <div>
+                <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                  <Camera className="w-3.5 h-3.5 text-[#23815F]" />
+                  <span>Field Photo Proof (1)</span>
+                </label>
+                {outdoorModalForm.photo_url ? (
+                  <div className="flex items-center gap-2 bg-[#FAF8F5] border border-[#C5E3D5] rounded-xl p-2 shadow-2xs">
+                    <img
+                      src={getMediaUrl(outdoorModalForm.photo_url)}
+                      alt="Field Proof Preview"
+                      className="w-12 h-12 object-cover rounded-lg border border-[#E6E1D6] shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-[#23815F] truncate">Field Photo Attached</p>
+                      <p className="text-[10px] text-[#8A8479]">Ready to submit</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 pr-1">
+                      <button
+                        type="button"
+                        onClick={() => setViewProofUrl(getMediaUrl(outdoorModalForm.photo_url))}
+                        className="p-1.5 rounded-lg bg-[#E8F4EE] hover:bg-[#D1FAE5] text-[#21845F] transition-all cursor-pointer"
+                        title="View Photo"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOutdoorModalForm({ ...outdoorModalForm, photo_url: '' })}
+                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all cursor-pointer"
+                        title="Remove Photo"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border border-dashed border-[#CBD5E1] hover:border-[#23815F] bg-[#FAF8F5] hover:bg-[#E8F4EE] text-xs font-bold text-[#23815F] cursor-pointer transition-all shadow-2xs">
+                    {isUploadingOutdoorModalFile ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-[#23815F]" />
+                    ) : (
+                      <Camera className="w-4 h-4 text-[#23815F]" />
+                    )}
+                    <span>{isUploadingOutdoorModalFile ? 'Uploading photo...' : '+ Upload Field Photo (1)'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) handleUploadOutdoorModalFile('photo_url', e.target.files[0]);
+                      }}
+                      disabled={isUploadingOutdoorModalFile}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Row 7: Google Review Box */}
+              <div className={`p-3.5 rounded-2xl border transition-all ${
+                outdoorModalForm.has_google_review ? 'bg-[#FEFCE8] border-[#CA8A04]' : 'bg-[#FAF8F5] border-[#E6E1D6]'
+              }`}>
+                <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={outdoorModalForm.has_google_review}
+                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, has_google_review: e.target.checked })}
+                    className="w-4 h-4 text-[#CA8A04] rounded border-[#CBD5E1] focus:ring-[#CA8A04]"
+                  />
+                  <span className="flex items-center gap-1 text-[#854D0E] font-black">
+                    <Star className="w-4 h-4 fill-[#CA8A04] text-[#CA8A04]" />
+                    <span>Google 5-Star Review Given</span>
+                  </span>
+                </label>
+
+                {outdoorModalForm.has_google_review && (
+                  <div className="space-y-2 mt-2 pt-2 border-t border-[#FDE047]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-[#854D0E]">Rating:</span>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setOutdoorModalForm({ ...outdoorModalForm, google_review_rating: star })}
+                          className="p-0.5 cursor-pointer"
+                        >
+                          <Star
+                            className={`w-4 h-4 ${
+                              star <= (outdoorModalForm.google_review_rating || 5)
+                                ? 'fill-[#F59E0B] text-[#F59E0B]'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Review summary or text..."
+                      value={outdoorModalForm.google_review_text}
+                      onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, google_review_text: e.target.value })}
+                      className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#CA8A04] focus:outline-hidden"
+                    />
+
+                    {/* Screenshot Upload */}
+                    {outdoorModalForm.google_review_screenshot ? (
+                      <div className="flex items-center gap-2 bg-white border border-[#FDE68A] rounded-xl p-2 shadow-2xs">
+                        <img
+                          src={getMediaUrl(outdoorModalForm.google_review_screenshot)}
+                          alt="Review Proof"
+                          className="w-10 h-10 object-cover rounded-lg border border-[#E6E1D6] shrink-0"
+                        />
+                        <p className="text-xs font-bold text-[#854D0E] flex-1 truncate">Screenshot Attached</p>
+                        <button
+                          type="button"
+                          onClick={() => setViewProofUrl(getMediaUrl(outdoorModalForm.google_review_screenshot))}
+                          className="p-1.5 text-[#854D0E] hover:bg-[#FEF3C7] rounded-lg cursor-pointer"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOutdoorModalForm({ ...outdoorModalForm, google_review_screenshot: '' })}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                          title="Remove"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-dashed border-[#CA8A04]/50 bg-white hover:bg-[#FEFCE8] text-xs font-bold text-[#854D0E] cursor-pointer transition-all">
+                        <Camera className="w-4 h-4" />
+                        <span>+ Upload Review Screenshot</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) handleUploadOutdoorModalFile('google_review_screenshot', e.target.files[0]);
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Row 8: Customer Feedback Box */}
+              <div className={`p-3.5 rounded-2xl border transition-all ${
+                outdoorModalForm.has_customer_feedback ? 'bg-[#FAF5FF] border-[#A855F7]' : 'bg-[#FAF8F5] border-[#E6E1D6]'
+              }`}>
+                <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={outdoorModalForm.has_customer_feedback}
+                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, has_customer_feedback: e.target.checked })}
+                    className="w-4 h-4 text-[#7E22CE] rounded border-[#CBD5E1] focus:ring-[#7E22CE]"
+                  />
+                  <span className="flex items-center gap-1 text-[#7E22CE] font-black">
+                    <MessageSquareHeart className="w-4 h-4 text-[#7E22CE]" />
+                    <span>Customer Feedback Recorded</span>
+                  </span>
+                </label>
+
+                {outdoorModalForm.has_customer_feedback && (
+                  <div className="space-y-2 mt-2 pt-2 border-t border-[#E9D5FF]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-[#7E22CE]">Rating:</span>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setOutdoorModalForm({ ...outdoorModalForm, feedback_rating: star })}
+                          className="p-0.5 cursor-pointer"
+                        >
+                          <Star
+                            className={`w-4 h-4 ${
+                              star <= (outdoorModalForm.feedback_rating || 5)
+                                ? 'fill-[#7E22CE] text-[#7E22CE]'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Customer feedback notes, collection impressions..."
+                      value={outdoorModalForm.feedback_text}
+                      onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, feedback_text: e.target.value })}
+                      className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#7E22CE] focus:outline-hidden"
+                    />
+
+                    {/* Feedback Proof Upload */}
+                    {outdoorModalForm.customer_feedback_proof ? (
+                      <div className="flex items-center gap-2 bg-white border border-[#E9D5FF] rounded-xl p-2 shadow-2xs">
+                        <div className="w-10 h-10 rounded-lg bg-[#FAF5FF] border border-[#D8B4FE] flex items-center justify-center shrink-0 text-sm">
+                          {outdoorModalForm.customer_feedback_proof.match(/\.(mp4|webm|mov|avi)$/i) ? '🎬' : '🖼️'}
+                        </div>
+                        <p className="text-xs font-bold text-[#7E22CE] flex-1 truncate">Feedback Proof Attached</p>
+                        <button
+                          type="button"
+                          onClick={() => setViewProofUrl(getMediaUrl(outdoorModalForm.customer_feedback_proof))}
+                          className="p-1.5 text-[#7E22CE] hover:bg-[#FAF5FF] rounded-lg cursor-pointer"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOutdoorModalForm({ ...outdoorModalForm, customer_feedback_proof: '' })}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                          title="Remove"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-dashed border-[#A855F7]/50 bg-white hover:bg-[#FAF5FF] text-xs font-bold text-[#7E22CE] cursor-pointer transition-all">
+                        <Camera className="w-4 h-4" />
+                        <span>+ Upload Feedback Proof (Photo/Video)</span>
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) handleUploadOutdoorModalFile('customer_feedback_proof', e.target.files[0]);
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Row 9: Discussion Notes */}
+              <div>
+                <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
+                  <Edit2 className="w-3.5 h-3.5 text-[#23815F]" />
+                  <span>Discussion / Duty Field Notes</span>
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Key conversation points, designs requested, budget, customer preferences..."
+                  value={outdoorModalForm.notes}
+                  onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, notes: e.target.value })}
+                  className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl p-3 text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner resize-none font-medium"
+                />
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#EBE6DC] shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowAddOutdoorModal(false)}
+                  disabled={isSubmittingOutdoorModal}
+                  className="bg-white hover:bg-[#FAF8F5] text-[#1D1D1B] border-[#E6E1D6] text-xs rounded-xl shadow-2xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmittingOutdoorModal}
+                  className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs shadow-sm rounded-xl px-5 py-2.5 flex items-center gap-2 cursor-pointer hover:scale-102 active:scale-98 transition-all"
+                >
+                  {isSubmittingOutdoorModal ? (
+                    <span className="flex items-center gap-1.5">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                      Saving...
+                    </span>
+                  ) : (
+                    outdoorModalForm.id ? 'Update Customer Lead' : 'Save Customer Lead'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
 
       {/* ------------------------------------------------------------------- */}
       {/* MODAL: ADD CALL LOG                                                 */}

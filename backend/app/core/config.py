@@ -71,27 +71,27 @@ class Settings(BaseSettings):
     # =========================================================================
     # AiSensy WhatsApp Configuration & Outcome Status Templates
     # =========================================================================
-    AISENSY_API_KEY: str = "your_aisensy_api_key_here"
+    AISENSY_API_KEY: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5NGU2ZWFmNTc4MjAwMWJjNzI1MDk4YiIsIm5hbWUiOiJTSVJJU0FNUlVEREhJIEdPTEQgUEFMQUNFIFBSSVZBVEUgTElNSVRFRCIsImFwcE5hbWUiOiJBaVNlbnN5IiwiY2xpZW50SWQiOiI2OTRlNmVhZjU3ODIwMDFiYzcyNTA5ODQiLCJhY3RpdmVQbGFuIjoiUFJPX1lFQVJMWSIsImlhdCI6MTc4ODQyMzEwNn0.FjmToVxVRb5Xs5EWsTOPObAn8o2vOAVehl71CDlRvnU"
     AISENSY_BASE_URL: str = "https://backend.aisensy.com"
     AISENSY_API_URL: Optional[str] = None
     AISENSY_AUTO_SEND_ON_SAVE: bool = True
     AISENSY_SEND_TEMPLATE_PARAMS: bool = False  # Set to True only if templates have {{1}}, {{2}} placeholders
 
     # 5 Customer Outcome Status Campaign & Template Names
-    AISENSY_CAMPAIGN_SOLD: str = "customer_purchase_thank_you"
+    AISENSY_CAMPAIGN_SOLD: str = "sold-camp"
     AISENSY_TEMPLATE_SOLD: str = "customer_purchase_thank_you"
 
-    AISENSY_CAMPAIGN_EXCHANGE: str = "customer_exchange_thank_you"
-    AISENSY_TEMPLATE_EXCHANGE: str = "customer_exchange_thank_you"
+    AISENSY_CAMPAIGN_EXCHANGE: str = "Exchangejwellery"
+    AISENSY_TEMPLATE_EXCHANGE: str = "jewellery_exchange_thank_you"
 
-    AISENSY_CAMPAIGN_IN_HOLD: str = "customer_in_hold_update"
-    AISENSY_TEMPLATE_IN_HOLD: str = "customer_in_hold_update"
+    AISENSY_CAMPAIGN_IN_HOLD: str = "Holdcamp"
+    AISENSY_TEMPLATE_IN_HOLD: str = "jewellery_hold_reminder"
 
-    AISENSY_CAMPAIGN_WALKIN: str = "customer_walkin_welcome"
-    AISENSY_TEMPLATE_WALKIN: str = "customer_walkin_welcome"
+    AISENSY_CAMPAIGN_WALKIN: str = "Thankyouforvisiting"
+    AISENSY_TEMPLATE_WALKIN: str = "thank_you_for_visiting"
 
-    AISENSY_CAMPAIGN_LOST: str = "customer_visit_thank_you"
-    AISENSY_TEMPLATE_LOST: str = "customer_visit_thank_you"
+    AISENSY_CAMPAIGN_LOST: str = "Thankyouforvisiting"
+    AISENSY_TEMPLATE_LOST: str = "thank_you_for_visiting"
 
     # Optional Per-Campaign API Keys
     AISENSY_API_KEY_SOLD: Optional[str] = None
@@ -100,14 +100,14 @@ class Settings(BaseSettings):
     AISENSY_API_KEY_WALKIN: Optional[str] = None
     AISENSY_API_KEY_LOST: Optional[str] = None
 
-    # Media URLs for templates with image/media headers (e.g. customer_purchase_thank_you)
-    AISENSY_DEFAULT_MEDIA_URL: str = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/148ca827-fc11-4b78-9c4f-b224dc3a4e09_purchase.png"
-    AISENSY_MEDIA_URL: Optional[str] = None
+    # Media URLs for templates with image/media headers
+    AISENSY_DEFAULT_MEDIA_URL: str = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png"
+    AISENSY_MEDIA_URL: Optional[str] = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png"
     AISENSY_MEDIA_URL_SOLD: str = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/148ca827-fc11-4b78-9c4f-b224dc3a4e09_purchase.png"
-    AISENSY_MEDIA_URL_EXCHANGE: Optional[str] = None
-    AISENSY_MEDIA_URL_IN_HOLD: Optional[str] = None
-    AISENSY_MEDIA_URL_WALKIN: Optional[str] = None
-    AISENSY_MEDIA_URL_LOST: Optional[str] = None
+    AISENSY_MEDIA_URL_EXCHANGE: Optional[str] = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/ce4c3082-ffa1-4bc9-8962-0e3a53823d4f_exchangejwellery.png"
+    AISENSY_MEDIA_URL_IN_HOLD: Optional[str] = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/ad1d7745-d1a5-4b43-8054-08aef85fa48d_hold jwellery.png"
+    AISENSY_MEDIA_URL_WALKIN: Optional[str] = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png"
+    AISENSY_MEDIA_URL_LOST: Optional[str] = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png"
 
     # =========================================================================
     # Super Admin Authentication (ENV-Configured Identity — ZERO Database Storage)

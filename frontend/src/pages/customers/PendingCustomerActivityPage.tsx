@@ -125,11 +125,18 @@ const hasQueuedWhatsapp = (act: CustomerActivity): boolean => {
   if (act.notes && act.notes.includes('[WhatsApp Dispatch Queued on Manager Approval]')) {
     return true;
   }
+  const cleanPhone = (act.phone_number || '').replace(/\D/g, '');
+  if (cleanPhone.length >= 10) {
+    return true;
+  }
   if (act.breakdown) {
     try {
       const parsed = JSON.parse(act.breakdown);
       if (Array.isArray(parsed)) {
-        return parsed.some((p: any) => p.send_whatsapp_on_approval || p.queued_whatsapp);
+        return parsed.some((p: any) => {
+          const ph = (p.phone || p.phone_number || '').replace(/\D/g, '');
+          return ph.length >= 10 || p.send_whatsapp_on_approval || p.queued_whatsapp;
+        });
       }
     } catch {}
   }
@@ -255,13 +262,20 @@ export const PendingCustomerActivityPage: React.FC = () => {
       setIsSubmittingReview(true);
       const waQueued = hasQueuedWhatsapp(selectedForReview);
 
-      await api.post(`/api/v1/customers/${selectedForReview.id}/review`, {
+      const reviewRes = await api.post(`/api/v1/customers/${selectedForReview.id}/review`, {
         action: reviewAction,
         rejection_reason: reviewAction === 'REJECT' ? rejectionReason.trim() : null,
       });
 
       if (reviewAction === 'APPROVE') {
-        if (waQueued) {
+        const returnedNotes = reviewRes.data?.notes || '';
+        if (returnedNotes.includes('[WhatsApp System]:')) {
+          const waMsg = returnedNotes.split('[WhatsApp System]:')[1]?.split('\n')[0]?.trim();
+          success(`Approved ${selectedForReview.customer_name || 'customer log'}! ${waMsg || 'WhatsApp notification dispatched to customer.'}`);
+        } else if (returnedNotes.includes('[WhatsApp System Error]:')) {
+          const errDetail = returnedNotes.split('[WhatsApp System Error]:')[1]?.split('\n')[0]?.trim();
+          toastError(`Approved, but WhatsApp delivery warning: ${errDetail || 'failed to dispatch'}`);
+        } else if (waQueued) {
           success(`Approved ${selectedForReview.customer_name || 'customer log'}! WhatsApp notification dispatched to customer automatically.`);
         } else {
           success(`Successfully approved ${selectedForReview.customer_name || 'customer activity'}! Subrecords synced.`);

@@ -202,32 +202,59 @@ def review_customer_activity(
         db.refresh(record)
         _sync_activity_subrecords(record, db)
 
-        # Check if WhatsApp dispatch was requested on manager approval
+        # Check if customer activity has valid phone numbers to dispatch WhatsApp upon manager approval
         should_send_wa = False
-        if record.notes and "[WhatsApp Dispatch Queued on Manager Approval]" in record.notes:
+
+        # 1. Direct record phone
+        if record.phone_number and len(re.sub(r"\D", "", str(record.phone_number))) >= 10:
             should_send_wa = True
+
+        # 2. Breakdown items with phone or explicit queue flag
         if not should_send_wa and record.breakdown:
             try:
                 bd_items = json.loads(record.breakdown)
                 if isinstance(bd_items, list):
                     for item in bd_items:
-                        if isinstance(item, dict) and (item.get("send_whatsapp_on_approval") or item.get("queued_whatsapp")):
-                            should_send_wa = True
-                            break
+                        if isinstance(item, dict):
+                            ph = item.get("phone") or item.get("phone_number")
+                            if ph and len(re.sub(r"\D", "", str(ph))) >= 10:
+                                should_send_wa = True
+                                break
+                            if item.get("send_whatsapp_on_approval") or item.get("queued_whatsapp"):
+                                should_send_wa = True
+                                break
             except Exception:
                 pass
+
+        # 3. Queued flag in notes
+        if not should_send_wa and record.notes and "[WhatsApp Dispatch Queued on Manager Approval]" in record.notes:
+            should_send_wa = True
 
         if should_send_wa:
             try:
                 wa_results = AiSensyService.send_activity_whatsapp_notifications(record)
                 sent_count = sum(1 for r in wa_results if r.get("success"))
+                error_msgs = [r.get("error") for r in wa_results if not r.get("success") and r.get("error")]
+
                 clean_notes = (record.notes or "").replace("[WhatsApp Dispatch Queued on Manager Approval]", "").strip()
-                record.notes = f"{clean_notes}\n[WhatsApp System]: {sent_count} message(s) sent automatically upon Manager Approval.".strip()
+                if sent_count > 0:
+                    record.notes = f"{clean_notes}\n[WhatsApp System]: {sent_count} message(s) sent successfully upon Manager Approval.".strip()
+                elif error_msgs:
+                    record.notes = f"{clean_notes}\n[WhatsApp System]: Delivery warning: {'; '.join(error_msgs[:2])}".strip()
+                else:
+                    record.notes = f"{clean_notes}\n[WhatsApp System]: No messages dispatched (no valid phone numbers).".strip()
                 db.commit()
                 db.refresh(record)
             except Exception as wa_err:
                 import logging
                 logging.getLogger("aisensy_service").error(f"Failed to auto-send WhatsApp on approval for activity #{record.id}: {wa_err}")
+                clean_notes = (record.notes or "").replace("[WhatsApp Dispatch Queued on Manager Approval]", "").strip()
+                record.notes = f"{clean_notes}\n[WhatsApp System Error]: {str(wa_err)}".strip()
+                try:
+                    db.commit()
+                    db.refresh(record)
+                except Exception:
+                    pass
     else:
         record.approval_status = "REJECTED"
         record.rejection_reason = action_data.rejection_reason or "Rejected by Showroom Manager."

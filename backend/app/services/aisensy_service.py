@@ -138,13 +138,17 @@ class AiSensyService:
         # Fallback to general AISENSY_MEDIA_URL if status-specific is not set
         if not url or not str(url).strip():
             url = getattr(settings, "AISENSY_MEDIA_URL", None)
+        if not url or not str(url).strip():
+            url = getattr(settings, "AISENSY_DEFAULT_MEDIA_URL", None)
+        if not url or not str(url).strip():
+            url = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png"
 
         if url and str(url).strip():
             clean_url = str(url).strip()
             if clean_url.startswith("http://") or clean_url.startswith("https://"):
                 return clean_url
 
-        return None
+        return "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png"
 
     @classmethod
     def get_template_for_status(cls, status_str: Optional[str]) -> Tuple[str, str]:
@@ -420,9 +424,12 @@ class AiSensyService:
 
                 cust_phone = item.get("phone") or item.get("phone_number")
                 if not cust_phone or not str(cust_phone).strip():
-                    continue
+                    if idx == 0 and getattr(activity, "phone_number", None):
+                        cust_phone = activity.phone_number
+                    else:
+                        continue
 
-                cust_name = (item.get("name") or item.get("customer_name") or f"Customer #{idx + 1}").strip()
+                cust_name = (item.get("name") or item.get("customer_name") or getattr(activity, "customer_name", None) or f"Customer #{idx + 1}").strip()
                 item_status = item.get("status") or activity.status or "Walkin"
                 
                 try:
@@ -457,8 +464,9 @@ class AiSensyService:
                 res["status_title"] = status_title
                 res["campaign_name"] = campaign_name
                 results.append(res)
-        else:
-            # Single customer fallback mode
+
+        # Single customer fallback mode if breakdown was empty or yielded no deliveries
+        if not results:
             cust_phone = getattr(activity, "phone_number", None)
             if cust_phone and str(cust_phone).strip():
                 cust_name = getattr(activity, "customer_name", None) or "Customer"

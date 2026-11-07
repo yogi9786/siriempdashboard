@@ -500,6 +500,32 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
                 )
                 db.add(vr)
 
+        # 5. Sync to OutdoorMarketingCustomer and Duty if linked
+        if record.notes and "[Outdoor Customer #" in record.notes:
+            try:
+                m = re.search(r"\[Outdoor Customer #(\d+)\]", record.notes)
+                if m:
+                    oc_id = int(m.group(1))
+                    from backend.app.models.outdoor_marketing import OutdoorMarketingCustomer, OutdoorMarketingDuty
+                    oc = db.query(OutdoorMarketingCustomer).filter(OutdoorMarketingCustomer.id == oc_id).first()
+                    if oc:
+                        if (record.approval_status or "").upper() == "APPROVED":
+                            oc.status = "Approved"
+                            if oc.duty_id:
+                                duty = db.query(OutdoorMarketingDuty).filter(OutdoorMarketingDuty.id == oc.duty_id).first()
+                                if duty:
+                                    all_c = db.query(OutdoorMarketingCustomer).filter(OutdoorMarketingCustomer.duty_id == duty.id).all()
+                                    if all(c.status in ("Approved", "Converted", "Closed") for c in all_c):
+                                        duty.status = "Approved"
+                        elif (record.approval_status or "").upper() == "REJECTED":
+                            oc.status = "Rejected"
+                            if oc.duty_id:
+                                duty = db.query(OutdoorMarketingDuty).filter(OutdoorMarketingDuty.id == oc.duty_id).first()
+                                if duty:
+                                    duty.status = "Rejected"
+            except Exception as oc_err:
+                pass
+
         db.commit()
     except Exception as err:
         print(f"Warning: Failed to sync activity subrecords: {err}")

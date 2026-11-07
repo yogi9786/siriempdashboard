@@ -190,11 +190,24 @@ export interface CustomerEntryState {
   interested_gold: boolean;
   interested_diamond: boolean;
   interested_silver: boolean;
+  scheme_name?: string;
   is_converted?: boolean;
   notes: string;
   note_notification_date?: string;
   updated_by_manager?: boolean;
 }
+
+const isOutdoorActivity = (act: CustomerActivity): boolean => {
+  if (act.status === 'Outdoor Marketing') return true;
+  if (act.notes && act.notes.includes('[Outdoor Marketing')) return true;
+  if (act.breakdown) {
+    try {
+      const parsed = JSON.parse(act.breakdown);
+      if (Array.isArray(parsed) && parsed.some((p: any) => p.is_outdoor)) return true;
+    } catch {}
+  }
+  return false;
+};
 
 export const EmployeePortalPage: React.FC = () => {
   const { user, selectedBranch, logout } = useAuth();
@@ -621,6 +634,7 @@ export const EmployeePortalPage: React.FC = () => {
             interested_gold: intStr.includes('gold'),
             interested_diamond: intStr.includes('diamond'),
             interested_silver: intStr.includes('silver'),
+            scheme_name: c.scheme_name || '',
             is_converted: Boolean(c.is_converted),
             notes: c.notes || '',
             note_notification_date: (c as any).note_notification_date ? String((c as any).note_notification_date) : '',
@@ -659,6 +673,7 @@ export const EmployeePortalPage: React.FC = () => {
             interested_gold: false,
             interested_diamond: false,
             interested_silver: false,
+            scheme_name: '',
             is_converted: false,
             notes: '',
             note_notification_date: '',
@@ -756,6 +771,7 @@ export const EmployeePortalPage: React.FC = () => {
           interested_gold: false,
           interested_diamond: false,
           interested_silver: false,
+          scheme_name: '',
           is_converted: false,
           notes: '',
           note_notification_date: '',
@@ -901,6 +917,7 @@ export const EmployeePortalPage: React.FC = () => {
           feedback_rating: c.has_customer_feedback ? Number(c.feedback_rating) : 5,
           feedback_text: c.has_customer_feedback ? (c.feedback_text?.trim() || undefined) : undefined,
           customer_feedback_proof: c.customer_feedback_proof || undefined,
+          scheme_name: c.scheme_name?.trim() || undefined,
           interested_in: interests.join(', '),
           notes: c.notes?.trim() || undefined,
           note_notification_date: c.note_notification_date || undefined,
@@ -934,6 +951,9 @@ export const EmployeePortalPage: React.FC = () => {
       success('Outdoor customer log saved and sent to Showroom Manager for review!');
       fetchSummary();
       fetchOutdoorHistory();
+      fetchCustomerActivities();
+      // Close data sheet & switch to Customer Logs list
+      setActiveTab('CUSTOMERS');
     } catch (err: any) {
       console.error('Failed to save outdoor duty:', err);
       toastError(err.response?.data?.detail || 'Failed to save outdoor customer log.');
@@ -1586,21 +1606,31 @@ export const EmployeePortalPage: React.FC = () => {
                             <span>{act.activity_date}</span>
                             <span className="text-[10px] text-[#8A8479] font-mono">#{act.id}</span>
                           </div>
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                              act.status === 'Sold'
-                                ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
-                                : act.status === 'Exchange'
-                                  ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
-                                  : act.status === 'In Hold / Follow Up'
-                                    ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
-                                    : act.status === 'Walkin'
-                                      ? 'bg-[#F4F1EA] text-[#5E5A52] border border-[#E4DFD4]'
-                                      : 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]'
-                            }`}
-                          >
-                            {act.status}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {isOutdoorActivity(act) && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0] flex items-center gap-1">
+                                <Compass className="w-3 h-3 text-[#1B694C]" />
+                                <span>Outdoor Marketing</span>
+                              </span>
+                            )}
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                act.status === 'Sold'
+                                  ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
+                                  : act.status === 'Exchange'
+                                    ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                                    : act.status === 'In Hold / Follow Up'
+                                      ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
+                                      : act.status === 'Outdoor Marketing'
+                                        ? 'bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0]'
+                                        : act.status === 'Walkin'
+                                          ? 'bg-[#F4F1EA] text-[#5E5A52] border border-[#E4DFD4]'
+                                          : 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]'
+                              }`}
+                            >
+                              {act.status}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Customer & Product Value Details */}
@@ -1822,21 +1852,31 @@ export const EmployeePortalPage: React.FC = () => {
 
                             {/* Outcome status */}
                             <td className="px-4 py-3.5 whitespace-nowrap">
-                              <span
-                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                  act.status === 'Sold'
-                                    ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
-                                    : act.status === 'Exchange'
-                                      ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
-                                      : act.status === 'In Hold / Follow Up'
-                                        ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
-                                        : act.status === 'Walkin'
-                                          ? 'bg-[#F4F1EA] text-[#5E5A52] border border-[#E4DFD4]'
-                                          : 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]'
-                                }`}
-                              >
-                                {act.status}
-                              </span>
+                              <div className="flex flex-col gap-1 items-start">
+                                {isOutdoorActivity(act) && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F4EE] border border-[#A7F3D0] text-[#1B694C]">
+                                    <Compass className="w-3 h-3 text-[#1B694C]" />
+                                    <span>Outdoor Marketing</span>
+                                  </span>
+                                )}
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                    act.status === 'Sold'
+                                      ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
+                                      : act.status === 'Exchange'
+                                        ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                                        : act.status === 'In Hold / Follow Up'
+                                          ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
+                                          : act.status === 'Outdoor Marketing'
+                                            ? 'bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0]'
+                                            : act.status === 'Walkin'
+                                              ? 'bg-[#F4F1EA] text-[#5E5A52] border border-[#E4DFD4]'
+                                              : 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]'
+                                  }`}
+                                >
+                                  {act.status}
+                                </span>
+                              </div>
                               <div className="text-[10px] text-[#8A8479] mt-1 font-medium">
                                 {act.customers_count || 1} Person{(act.customers_count || 1) > 1 ? 's' : ''} Attended
                               </div>
@@ -3201,6 +3241,45 @@ export const EmployeePortalPage: React.FC = () => {
                               Converted to Sale / Order
                             </span>
                           </label>
+                        </div>
+
+                        {/* Promoted Scheme / Gold Scheme Selection */}
+                        <div className="pt-2 border-t border-[#EBE6DC]/80 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-bold text-[#5E5A52] uppercase flex items-center gap-1.5">
+                              <Award className="w-3.5 h-3.5 text-[#D97706]" />
+                              <span>Gold Scheme Enrollment / Interest</span>
+                            </label>
+                            {cust.scheme_name && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateOutdoorCustomer(cIdx, 'scheme_name', '')}
+                                className="text-[10px] text-red-600 hover:underline font-bold"
+                              >
+                                Clear Scheme
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {SCHEMES.map((sch) => {
+                              const isSelected = cust.scheme_name === sch;
+                              return (
+                                <button
+                                  key={sch}
+                                  type="button"
+                                  onClick={() => handleUpdateOutdoorCustomer(cIdx, 'scheme_name', isSelected ? '' : sch)}
+                                  className={`p-2 rounded-xl text-xs font-bold border transition-all text-left flex items-center gap-2 cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-[#FEF3C7] text-[#92400E] border-[#D97706] shadow-xs font-black'
+                                      : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                                  }`}
+                                >
+                                  <Award className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[#D97706]' : 'text-[#8A8479]'}`} />
+                                  <span className="truncate">{sch}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
 
                         {/* Reviews & Feedback Row */}

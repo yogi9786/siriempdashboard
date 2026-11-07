@@ -291,43 +291,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           )}
         </NavLink>
 
-        {/* 5. Outdoor Customer Leads (Teal / Mint on Dark Grey - Leads with assisting outdoor marketer & CSV export) */}
-        <NavLink
-          to="/outdoor-customers"
-          onClick={onCloseMobile}
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 relative group ${
-              isActive
-                ? 'bg-[#134E4A]/70 text-[#CCFBF1] font-bold border-l-[3px] border-l-[#2DD4BF] border border-[#14B8A6]/40 shadow-xs pl-2.5'
-                : 'text-[#D4D4D8] hover:text-white hover:bg-white/5'
-            }`
-          }
-        >
-          {({ isActive }) => (
-            <>
-              <div
-                className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                  isActive
-                    ? 'bg-[#115E59] text-[#99F6E4] border border-[#2DD4BF]/50 shadow-2xs'
-                    : 'bg-[#27272A] text-[#2DD4BF] group-hover:bg-[#3F3F46]'
-                }`}
-              >
-                <MapPin className="w-3.5 h-3.5" />
-              </div>
-              <div className="flex-1 flex items-center justify-between min-w-0">
-                <span className="truncate">Outdoor Leads</span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-[#115E59]/60 text-[#99F6E4] border border-[#14B8A6]/30 font-semibold uppercase tracking-wider ml-1 shrink-0">
-                  Field
-                </span>
-              </div>
-              {isActive && (
-                <div className="w-1.5 h-1.5 rounded-full bg-[#2DD4BF] ml-1 shrink-0" />
-              )}
-            </>
-          )}
-        </NavLink>
-
-        {/* 6. Daily Forms & Closing Sheets (Amber Terracotta on Dark Grey) */}
+        {/* 5. Daily Forms & Closing Sheets (Amber Terracotta on Dark Grey) */}
         <NavLink
           to="/gallery"
           onClick={onCloseMobile}

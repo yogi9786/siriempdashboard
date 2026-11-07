@@ -26,6 +26,8 @@ import {
   Edit2,
   Trash2,
   FileImage,
+  Compass,
+  MapPin,
 } from 'lucide-react';
 import api from '../../api/client';
 import { CustomerActivity, Employee } from '../../types';
@@ -119,6 +121,18 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
     videoScreenshot,
     productId,
   };
+};
+
+const isOutdoorActivity = (act: CustomerActivity): boolean => {
+  if (act.status === 'Outdoor Marketing') return true;
+  if (act.notes && act.notes.includes('[Outdoor Marketing')) return true;
+  if (act.breakdown) {
+    try {
+      const parsed = JSON.parse(act.breakdown);
+      if (Array.isArray(parsed) && parsed.some((p: any) => p.is_outdoor)) return true;
+    } catch {}
+  }
+  return false;
 };
 
 const hasQueuedWhatsapp = (act: CustomerActivity): boolean => {
@@ -356,6 +370,8 @@ export const PendingCustomerActivityPage: React.FC = () => {
         return 'bg-[#FAF1EC] text-[#B97855] border-[#ECCFC0]';
       case 'Lost':
         return 'bg-[#FDECEC] text-[#C24141] border-[#F9C3C3]';
+      case 'Outdoor Marketing':
+        return 'bg-[#E8F4EE] text-[#1B694C] border-[#A7F3D0]';
       case 'Walkin':
       default:
         return 'bg-[#FAF8F3] text-[#8A8479] border-[#E4DFD4]';
@@ -605,7 +621,13 @@ export const PendingCustomerActivityPage: React.FC = () => {
                         <span>{act.activity_date || 'Today'}</span>
                         <span className="text-[10px] text-[#8A8479] font-mono">#{act.id}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {isOutdoorActivity(act) && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0] flex items-center gap-1">
+                            <Compass className="w-3 h-3 text-[#1B694C]" />
+                            <span>Outdoor Marketing</span>
+                          </span>
+                        )}
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(act.status)}`}>
                           {act.status}
                         </span>
@@ -901,6 +923,12 @@ export const PendingCustomerActivityPage: React.FC = () => {
                       {/* Status & Tags */}
                       <td className="px-4 py-3.5">
                         <div className="flex flex-wrap items-center gap-1.5">
+                          {isOutdoorActivity(act) && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0] text-[10px] font-bold shadow-2xs">
+                              <Compass className="w-3 h-3 text-[#1B694C]" />
+                              <span>Outdoor Marketing</span>
+                            </span>
+                          )}
                           <span
                             className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(
                               act.status

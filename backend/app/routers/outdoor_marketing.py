@@ -12,6 +12,8 @@ from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.models.branch import User
 from backend.app.models.employee import Employee
+from backend.app.models.activity import CustomerActivity
+from backend.app.schemas.activity import CustomerApprovalAction
 from backend.app.models.outdoor_marketing import (
     OutdoorMarketingArea,
     OutdoorMarketingDuty,
@@ -242,6 +244,85 @@ async def upload_outdoor_proof(
     return {"url": rel_url, "proof_url": rel_url, "filename": filename, "file_size": file_size}
 
 
+def _sync_outdoor_customer_to_activity(customer: OutdoorMarketingCustomer, db: Session, approval_status: Optional[str] = None) -> Optional[CustomerActivity]:
+    """Syncs an OutdoorMarketingCustomer record with CustomerActivity so it flows into Pending Approval and Customer Logs."""
+    tag = f"[Outdoor Customer #{customer.id}]"
+    activity = db.query(CustomerActivity).filter(
+        CustomerActivity.branch_id == customer.branch_id,
+        CustomerActivity.notes.like(f"%{tag}%")
+    ).first()
+
+    status_val = customer.status or "Outdoor Marketing"
+    target_approval = approval_status
+    if not target_approval:
+        if activity:
+            target_approval = activity.approval_status
+        else:
+            target_approval = "APPROVED" if customer.status in ("Approved", "Converted", "Closed") and customer.updated_by_manager else "PENDING"
+
+    breakdown_data = [{
+        "id": 1,
+        "name": customer.customer_name,
+        "phone": customer.phone or "",
+        "dob": str(customer.dob) if customer.dob else "",
+        "anniversary": str(customer.anniversary_date) if customer.anniversary_date else "",
+        "status": status_val,
+        "is_outdoor": True,
+        "area_name": customer.area_name or "",
+        "has_scheme": bool(customer.scheme_name),
+        "scheme_name": customer.scheme_name or "",
+        "has_google_review": customer.has_google_review,
+        "google_review_rating": customer.google_review_rating or 5,
+        "google_review_text": customer.google_review_text or "",
+        "google_review_screenshot": getattr(customer, "google_review_screenshot", None) or "",
+        "has_video_review": getattr(customer, "has_video_review", False) or False,
+        "video_review_title": getattr(customer, "video_review_title", None) or "",
+        "video_review_url": getattr(customer, "video_review_url", None) or "",
+        "video_review_proof": getattr(customer, "video_review_proof", None) or "",
+        "has_customer_feedback": getattr(customer, "has_customer_feedback", False) or False,
+        "feedback_rating": getattr(customer, "feedback_rating", 5) or 5,
+        "feedback_text": getattr(customer, "feedback_text", None) or "",
+        "customer_feedback_proof": getattr(customer, "customer_feedback_proof", None) or "",
+        "photo_url": customer.photo_url or "",
+        "notes": customer.notes or "",
+    }]
+
+    clean_notes = (customer.notes or "").replace(tag, "").strip()
+    full_notes = f"[Outdoor Marketing - Area: {customer.area_name or 'Field'}] {tag}\n{clean_notes}".strip()
+
+    if not activity:
+        activity = CustomerActivity(
+            branch_id=customer.branch_id,
+            employee_id=customer.marketing_employee_id,
+            customer_name=customer.customer_name,
+            phone_number=customer.phone or "",
+            dob=customer.dob,
+            anniversary=customer.anniversary_date,
+            customers_count=1,
+            breakdown=json.dumps(breakdown_data),
+            activity_date=customer.date or date.today(),
+            status="Outdoor Marketing",
+            approval_status=target_approval,
+            created_by_role="EMPLOYEE" if not customer.updated_by_manager else "MANAGER",
+            created_by_id=customer.marketing_employee_id if not customer.updated_by_manager else None,
+            notes=full_notes,
+        )
+        db.add(activity)
+    else:
+        activity.employee_id = customer.marketing_employee_id
+        activity.customer_name = customer.customer_name
+        activity.phone_number = customer.phone or ""
+        activity.dob = customer.dob
+        activity.anniversary = customer.anniversary_date
+        activity.breakdown = json.dumps(breakdown_data)
+        activity.activity_date = customer.date or date.today()
+        if target_approval:
+            activity.approval_status = target_approval
+        activity.notes = full_notes
+
+    return activity
+
+
 # ----------------------------------------------------
 # 1.2 Outdoor Duties (Daily Rotation & Entry per Employee)
 # ----------------------------------------------------
@@ -468,6 +549,8 @@ def update_outdoor_duty(
                 notes=c.notes,
             )
             db.add(new_cust)
+            db.flush()
+            _sync_outdoor_customer_to_activity(new_cust, db, approval_status="APPROVED" if duty.status in ("Approved", "Completed") else "PENDING")
 
         # Collect customer photos and update duty thumbnail if not provided
         cust_photos = [c.photo_url for c in payload.customers if c.photo_url]
@@ -484,6 +567,44 @@ def update_outdoor_duty(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update outdoor duty: {str(e)}"
+        )
+
+    return format_duty_response(duty)
+
+
+@router.post("/duties/{duty_id}/review", response_model=OutdoorDutyResponse, summary="Approve or reject employee outdoor duty log")
+def review_outdoor_duty(
+    duty_id: int,
+    action_data: CustomerApprovalAction,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    duty = db.query(OutdoorMarketingDuty).filter(
+        OutdoorMarketingDuty.id == duty_id,
+        OutdoorMarketingDuty.branch_id == current_user.branch_id,
+    ).first()
+    if not duty:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outdoor duty record not found.")
+
+    is_approve = action_data.action.upper() == "APPROVE"
+    duty.status = "Approved" if is_approve else "Rejected"
+
+    for c in duty.customers:
+        c.status = "Approved" if is_approve else "Rejected"
+        _sync_outdoor_customer_to_activity(c, db, approval_status="APPROVED" if is_approve else "REJECTED")
+
+    if action_data.notes:
+        note_text = f"\n[Manager Review Note]: {action_data.notes.strip()}"
+        duty.notes = f"{(duty.notes or '').strip()}{note_text}".strip()
+
+    try:
+        db.commit()
+        db.refresh(duty)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to review outdoor duty: {str(e)}"
         )
 
     return format_duty_response(duty)
@@ -819,6 +940,8 @@ def create_outdoor_customer(
         db.add(record)
         db.commit()
         db.refresh(record)
+        _sync_outdoor_customer_to_activity(record, db, approval_status="PENDING")
+        db.commit()
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -931,6 +1054,8 @@ def update_outdoor_customer(
     try:
         db.commit()
         db.refresh(record)
+        _sync_outdoor_customer_to_activity(record, db)
+        db.commit()
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -970,6 +1095,83 @@ def update_outdoor_customer(
         updated_by_manager=record.updated_by_manager,
         created_at=record.created_at,
         updated_at=record.updated_at,
+    )
+
+
+@router.post("/customers/{customer_id}/review", response_model=OutdoorCustomerResponse, summary="Approve or reject outdoor customer lead")
+def review_outdoor_customer(
+    customer_id: int,
+    action_data: CustomerApprovalAction,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    customer = (
+        db.query(OutdoorMarketingCustomer)
+        .join(Employee, OutdoorMarketingCustomer.marketing_employee_id == Employee.id)
+        .filter(
+            OutdoorMarketingCustomer.id == customer_id,
+            OutdoorMarketingCustomer.branch_id == current_user.branch_id,
+        )
+        .first()
+    )
+    if not customer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer lead not found.")
+
+    is_approve = action_data.action.upper() == "APPROVE"
+    customer.status = "Approved" if is_approve else "Rejected"
+    if action_data.notes:
+        customer.notes = f"{(customer.notes or '').strip()}\n[Manager Review]: {action_data.notes.strip()}".strip()
+
+    _sync_outdoor_customer_to_activity(customer, db, approval_status="APPROVED" if is_approve else "REJECTED")
+
+    if customer.duty_id:
+        duty = db.query(OutdoorMarketingDuty).filter(OutdoorMarketingDuty.id == customer.duty_id).first()
+        if duty:
+            all_c = db.query(OutdoorMarketingCustomer).filter(OutdoorMarketingCustomer.duty_id == duty.id).all()
+            if is_approve and all(c.status in ("Approved", "Converted", "Closed") for c in all_c):
+                duty.status = "Approved"
+            elif not is_approve:
+                duty.status = "Rejected"
+
+    try:
+        db.commit()
+        db.refresh(customer)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to review outdoor customer: {str(e)}")
+
+    emp_name = customer.marketing_employee.full_name if customer.marketing_employee else None
+    return OutdoorCustomerResponse(
+        id=customer.id,
+        branch_id=customer.branch_id,
+        marketing_employee_id=customer.marketing_employee_id,
+        marketing_employee_name=emp_name,
+        customer_name=customer.customer_name,
+        phone=customer.phone,
+        dob=customer.dob,
+        anniversary_date=customer.anniversary_date,
+        area_name=customer.area_name,
+        scheme_name=customer.scheme_name,
+        date=customer.date,
+        has_google_review=customer.has_google_review,
+        google_review_rating=customer.google_review_rating,
+        google_review_text=customer.google_review_text,
+        google_review_screenshot=customer.google_review_screenshot,
+        has_video_review=customer.has_video_review,
+        video_review_title=customer.video_review_title,
+        video_review_url=customer.video_review_url,
+        video_review_proof=customer.video_review_proof,
+        has_customer_feedback=customer.has_customer_feedback,
+        feedback_rating=customer.feedback_rating,
+        feedback_text=customer.feedback_text,
+        customer_feedback_proof=customer.customer_feedback_proof,
+        status=customer.status,
+        interested_in=customer.interested_in,
+        notes=customer.notes,
+        note_notification_date=customer.note_notification_date,
+        updated_by_manager=customer.updated_by_manager,
+        created_at=customer.created_at,
+        updated_at=customer.updated_at,
     )
 
 

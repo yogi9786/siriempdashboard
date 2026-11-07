@@ -222,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenMobileMenu }
                         <span>Outdoor Notes Due ({notifications?.note_reminders_count || 0})</span>
                       </span>
                       <Link
-                        to="/outdoor-customers"
+                        to="/outdoor-marketing"
                         onClick={() => setShowNotificationsPopover(false)}
                         className="text-[10px] font-bold text-[#60A5FA] hover:text-[#93C5FD] flex items-center gap-0.5 hover:underline"
                       >
@@ -241,7 +241,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenMobileMenu }
                           key={note.id}
                           onClick={() => {
                             setShowNotificationsPopover(false);
-                            navigate('/outdoor-customers');
+                            navigate('/outdoor-marketing');
                           }}
                           className="p-2 rounded-xl bg-[#27272A]/70 hover:bg-[#2E2E33] transition-colors cursor-pointer space-y-0.5 text-left border border-transparent hover:border-[#3F3F46]"
                         >

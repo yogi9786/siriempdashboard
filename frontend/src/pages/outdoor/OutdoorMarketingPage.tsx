@@ -39,10 +39,14 @@ import {
   Loader2,
   Check,
 } from 'lucide-react';
+import { Modal } from '../../components/ui/Modal';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
+import { SCHEMES } from '../../constants/schemes';
 import {
   Employee,
   OutdoorDuty,
@@ -73,11 +77,13 @@ interface CustomerEntryState {
   interested_gold: boolean;
   interested_diamond: boolean;
   interested_silver: boolean;
+  scheme_name?: string;
   notes: string;
 }
 
 interface DutyFormState {
   area: string;
+  scheme_name?: string;
   customers_attended_count: number;
   converted_customers_count: number;
   google_ratings_count: number;
@@ -383,6 +389,44 @@ export const OutdoorMarketingPage: React.FC = () => {
   // Delete Assignment Confirm
   const [deleteDutyId, setDeleteDutyId] = useState<number | null>(null);
 
+  // Tab 5: Outdoor Customer Leads & Approvals
+  const [allOutdoorLeads, setAllOutdoorLeads] = useState<OutdoorMarketingCustomer[]>([]);
+  const [leadStatusFilter, setLeadStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
+  const [leadDateScope, setLeadDateScope] = useState<'all' | 'selected'>('all');
+  const [selectedCustView, setSelectedCustView] = useState<OutdoorMarketingCustomer | null>(null);
+  const [showAddLeadModal, setShowAddLeadModal] = useState<boolean>(false);
+  const [isSubmittingLead, setIsSubmittingLead] = useState<boolean>(false);
+  const [newLeadForm, setNewLeadForm] = useState({
+    customer_name: '',
+    phone: '',
+    dob: '',
+    anniversary_date: '',
+    marketing_employee_id: '',
+    area_name: '',
+    scheme_name: '',
+    status: 'Lead',
+    interested_gold: false,
+    interested_diamond: false,
+    interested_silver: false,
+    has_google_review: false,
+    google_review_rating: 5,
+    google_review_text: '',
+    has_customer_feedback: false,
+    feedback_rating: 5,
+    feedback_text: '',
+    notes: '',
+    date: new Date().toISOString().split('T')[0],
+  });
+
+  const fetchOutdoorLeads = async () => {
+    try {
+      const res = await api.get<OutdoorMarketingCustomer[]>('/api/v1/outdoor-marketing/customers');
+      setAllOutdoorLeads(res.data || []);
+    } catch (err) {
+      console.error('Failed to load outdoor customer leads:', err);
+    }
+  };
+
   // ----------------------------------------------------
   // 1. Fetch Showroom Employees & Duties for Selected Date
   // ----------------------------------------------------
@@ -396,6 +440,7 @@ export const OutdoorMarketingPage: React.FC = () => {
 
       setAllEmployees(empRes.data);
       setAssignedDuties(dutyRes.data);
+      fetchOutdoorLeads();
 
       // Pre-select employee IDs that are already assigned for this date
       const assignedIds = dutyRes.data.map((d) => d.employee_id);
@@ -431,6 +476,7 @@ export const OutdoorMarketingPage: React.FC = () => {
             interested_gold: intStr.includes('gold'),
             interested_diamond: intStr.includes('diamond'),
             interested_silver: intStr.includes('silver'),
+            scheme_name: existing?.scheme_name || duty.scheme_name || '',
             notes: existing?.notes || '',
           });
         }
@@ -653,6 +699,7 @@ export const OutdoorMarketingPage: React.FC = () => {
           interested_gold: false,
           interested_diamond: false,
           interested_silver: false,
+          scheme_name: form.scheme_name || '',
           notes: '',
         },
       ];
@@ -897,6 +944,7 @@ export const OutdoorMarketingPage: React.FC = () => {
             feedback_rating: c.has_customer_feedback ? (c.feedback_rating || 5) : 5,
             feedback_text: c.has_customer_feedback && c.feedback_text.trim() ? c.feedback_text.trim() : undefined,
             interested_in: interestedArr.length > 0 ? interestedArr.join(', ') : undefined,
+            scheme_name: c.scheme_name?.trim() || form.scheme_name?.trim() || undefined,
             notes: c.notes.trim() || undefined,
           });
         }
@@ -930,11 +978,112 @@ export const OutdoorMarketingPage: React.FC = () => {
 
       success('Employee outdoor marketing activity saved successfully!');
       await loadData(selectedDate);
+      fetchOutdoorLeads();
     } catch (err: any) {
       console.error('Error saving outdoor duty:', err);
       toastError(err.response?.data?.detail || 'Failed to save employee outdoor duty.');
     } finally {
       updateDutyFormField(dutyId, 'isSaving', false);
+    }
+  };
+
+  // ----------------------------------------------------
+  // Review Duty & Customer Actions
+  // ----------------------------------------------------
+  const handleReviewDuty = async (dutyId: number, action: 'APPROVE' | 'REJECT') => {
+    try {
+      await api.post(`/api/v1/outdoor-marketing/duties/${dutyId}/review`, { action });
+      success(`Duty successfully ${action === 'APPROVE' ? 'Approved' : 'Rejected'}!`);
+      await loadData(selectedDate);
+      fetchOutdoorLeads();
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to review outdoor duty.');
+    }
+  };
+
+  const handleReviewCustomer = async (customerId: number, action: 'APPROVE' | 'REJECT') => {
+    try {
+      await api.post(`/api/v1/outdoor-marketing/customers/${customerId}/review`, { action });
+      success(`Customer lead ${action === 'APPROVE' ? 'Approved' : 'Rejected'}!`);
+      await loadData(selectedDate);
+      fetchOutdoorLeads();
+      if (selectedCustView && selectedCustView.id === customerId) {
+        setSelectedCustView((prev) => prev ? { ...prev, status: action === 'APPROVE' ? 'Approved' : 'Rejected' } : null);
+      }
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to review customer lead.');
+    }
+  };
+
+  const handleCreateCustomerLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLeadForm.customer_name.trim()) {
+      toastError('Please enter customer full name.');
+      return;
+    }
+    const empId = newLeadForm.marketing_employee_id || (allEmployees[0]?.id?.toString() || '');
+    if (!empId) {
+      toastError('Please select an assisting staff member.');
+      return;
+    }
+
+    const interests: string[] = [];
+    if (newLeadForm.interested_gold) interests.push('Gold');
+    if (newLeadForm.interested_diamond) interests.push('Diamond');
+    if (newLeadForm.interested_silver) interests.push('Silver');
+
+    setIsSubmittingLead(true);
+    try {
+      const payload = {
+        marketing_employee_id: parseInt(empId),
+        customer_name: newLeadForm.customer_name.trim(),
+        phone: newLeadForm.phone.trim() || undefined,
+        dob: newLeadForm.dob || undefined,
+        anniversary_date: newLeadForm.anniversary_date || undefined,
+        area_name: newLeadForm.area_name.trim() || undefined,
+        scheme_name: newLeadForm.scheme_name.trim() || undefined,
+        date: newLeadForm.date || selectedDate,
+        interested_in: interests.join(', ') || undefined,
+        has_google_review: newLeadForm.has_google_review,
+        google_review_rating: newLeadForm.has_google_review ? newLeadForm.google_review_rating : 5,
+        google_review_text: newLeadForm.has_google_review ? newLeadForm.google_review_text : undefined,
+        has_customer_feedback: newLeadForm.has_customer_feedback,
+        feedback_rating: newLeadForm.has_customer_feedback ? newLeadForm.feedback_rating : 5,
+        feedback_text: newLeadForm.has_customer_feedback ? newLeadForm.feedback_text : undefined,
+        notes: newLeadForm.notes.trim() || undefined,
+        status: 'Lead',
+      };
+
+      await api.post('/api/v1/outdoor-marketing/customers', payload);
+      success('Outdoor customer lead created and added to Pending list for review & approval!');
+      setShowAddLeadModal(false);
+      setNewLeadForm({
+        customer_name: '',
+        phone: '',
+        dob: '',
+        anniversary_date: '',
+        marketing_employee_id: '',
+        area_name: '',
+        scheme_name: '',
+        status: 'Lead',
+        interested_gold: false,
+        interested_diamond: false,
+        interested_silver: false,
+        has_google_review: false,
+        google_review_rating: 5,
+        google_review_text: '',
+        has_customer_feedback: false,
+        feedback_rating: 5,
+        feedback_text: '',
+        notes: '',
+        date: selectedDate,
+      });
+      fetchOutdoorLeads();
+      loadData(selectedDate);
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to create customer lead.');
+    } finally {
+      setIsSubmittingLead(false);
     }
   };
 
@@ -955,17 +1104,10 @@ export const OutdoorMarketingPage: React.FC = () => {
   // 6. CSV Export Function
   // ----------------------------------------------------
   const handleExportCSV = () => {
-    const customers = assignedDuties.flatMap((d) =>
-      d.customers.map((c) => ({
-        ...c,
-        duty_employee_name: d.employee_name,
-        duty_employee_code: d.employee_code,
-        duty_area: d.area,
-      }))
-    );
+    const customers = displayedLeads.length > 0 ? displayedLeads : scopedLeads;
 
     if (customers.length === 0) {
-      toastError('No customer records available to export for this date.');
+      toastError('No customer records available to export.');
       return;
     }
 
@@ -975,9 +1117,9 @@ export const OutdoorMarketingPage: React.FC = () => {
       'Date of Birth (DOB)',
       'Wedding Anniversary',
       'Status',
+      'Promoted Scheme',
       'Campaign Area',
       'Staff Representative',
-      'Staff Code',
       'Google Review Given',
       'Google Rating (Stars)',
       'Google Review Feedback',
@@ -1000,9 +1142,9 @@ export const OutdoorMarketingPage: React.FC = () => {
       escapeCsv(c.dob || ''),
       escapeCsv(c.anniversary_date || ''),
       escapeCsv(c.is_converted ? 'Converted' : (c.status || 'Attended')),
-      escapeCsv(c.area_name || c.duty_area || ''),
-      escapeCsv(c.duty_employee_name || ''),
-      escapeCsv(c.duty_employee_code || ''),
+      escapeCsv(c.scheme_name || ''),
+      escapeCsv(c.area_name || ''),
+      escapeCsv(c.marketing_employee_name || ''),
       escapeCsv(c.has_google_review ? 'Yes' : 'No'),
       escapeCsv(c.has_google_review ? (c.google_review_rating || 5) : ''),
       escapeCsv(c.google_review_text || ''),
@@ -1018,7 +1160,7 @@ export const OutdoorMarketingPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `outdoor_customers_${selectedDate}.csv`);
+    link.setAttribute('download', `outdoor_customers_${leadDateScope === 'selected' ? selectedDate : 'all'}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1045,6 +1187,57 @@ export const OutdoorMarketingPage: React.FC = () => {
 
   // Aggregate Lists
   const allDutiesCustomers = assignedDuties.flatMap((d) => d.customers);
+  const baseLeadsList = allOutdoorLeads.length > 0 ? allOutdoorLeads : allDutiesCustomers;
+
+  const scopedLeads = leadDateScope === 'selected'
+    ? baseLeadsList.filter((l) => l.date === selectedDate)
+    : baseLeadsList;
+
+  const countAllLeads = scopedLeads.length;
+  const countPendingLeads = scopedLeads.filter((l) => {
+    const s = (l.status || '').toLowerCase();
+    return s.includes('pending') || s === 'lead' || s === 'contacted' || s === 'interested';
+  }).length;
+  const countApprovedLeads = scopedLeads.filter((l) => {
+    const s = (l.status || '').toLowerCase();
+    return s.includes('approved') || s === 'converted';
+  }).length;
+  const countRejectedLeads = scopedLeads.filter((l) => {
+    const s = (l.status || '').toLowerCase();
+    return s.includes('rejected');
+  }).length;
+
+  const displayedLeads = scopedLeads.filter((cust) => {
+    // 1. Status Filter
+    const s = (cust.status || '').toLowerCase();
+    if (leadStatusFilter === 'PENDING') {
+      const isPend = s.includes('pending') || s === 'lead' || s === 'contacted' || s === 'interested';
+      if (!isPend) return false;
+    } else if (leadStatusFilter === 'APPROVED') {
+      const isApp = s.includes('approved') || s === 'converted';
+      if (!isApp) return false;
+    } else if (leadStatusFilter === 'REJECTED') {
+      const isRej = s.includes('rejected');
+      if (!isRej) return false;
+    }
+
+    // 2. Search Query
+    if (customerSearch.trim()) {
+      const q = customerSearch.toLowerCase();
+      const matchName = cust.customer_name?.toLowerCase().includes(q);
+      const matchPhone = cust.phone?.includes(q);
+      const matchArea = cust.area_name?.toLowerCase().includes(q);
+      const matchStaff = cust.marketing_employee_name?.toLowerCase().includes(q);
+      const matchScheme = cust.scheme_name?.toLowerCase().includes(q);
+      const matchNotes = cust.notes?.toLowerCase().includes(q);
+      if (!matchName && !matchPhone && !matchArea && !matchStaff && !matchScheme && !matchNotes) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
   const filteredCustomers = allDutiesCustomers.filter((c) => {
     if (!customerSearch.trim()) return true;
     const q = customerSearch.toLowerCase();
@@ -1196,7 +1389,7 @@ export const OutdoorMarketingPage: React.FC = () => {
           <span>4. Field Photos ({totalPhotosCount})</span>
         </button>
 
-        {/* TAB 5: All Customers & Google Reviews (With CSV Export) */}
+        {/* TAB 5: Customer Directory & Leads (With CSV Export) */}
         <button
           onClick={() => setActiveTab('leads')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
@@ -1206,7 +1399,7 @@ export const OutdoorMarketingPage: React.FC = () => {
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>5. All Customers & Reviews ({allDutiesCustomers.length})</span>
+          <span>5. Customer Leads & Directory ({countAllLeads})</span>
         </button>
       </div>
 
@@ -1429,14 +1622,37 @@ export const OutdoorMarketingPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto">
+                      <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto flex-wrap">
+                        {form.status === 'Pending Review' && (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleReviewDuty(duty.id, 'APPROVE')}
+                              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+                              title="Approve this staff outdoor duty"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Approve Duty</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleReviewDuty(duty.id, 'REJECT')}
+                              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+                              title="Reject this staff outdoor duty"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              <span>Reject Duty</span>
+                            </button>
+                          </div>
+                        )}
+
                         <button
                           onClick={() => handleSaveDuty(duty.id)}
                           disabled={form.isSaving}
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-linear-to-r from-[#23815F] to-[#1B694C] hover:from-[#1B694C] hover:to-[#14533C] text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer hover:scale-[1.02] disabled:opacity-50"
                         >
                           <Save className="w-3.5 h-3.5" />
-                          <span>{form.isSaving ? 'Saving...' : form.status === 'Pending Review' ? '✓ Approve & Save Log' : 'Save Employee Log'}</span>
+                          <span>{form.isSaving ? 'Saving...' : form.status === 'Pending Review' ? '✓ Save Changes' : 'Save Employee Log'}</span>
                         </button>
 
                         <button
@@ -1673,6 +1889,49 @@ export const OutdoorMarketingPage: React.FC = () => {
                                       onChange={(e) => updateAttendedCustomer(duty.id, cIdx, 'follow_up_date', e.target.value)}
                                       className="w-full px-3 py-2 bg-[#EFF6FF] border border-[#93C5FD] rounded-xl text-xs text-[#1E3A8A] focus:border-[#2563EB] focus:outline-hidden font-medium cursor-pointer"
                                     />
+                                  </div>
+                                </div>
+
+                                {/* Promoted Gold Scheme */}
+                                <div className="space-y-1 pt-2 border-t border-[#EBE6DC]/80">
+                                  <label className="block text-[11px] font-bold text-[#5E5A52] uppercase flex items-center gap-1">
+                                    <Award className="w-3 h-3 text-[#B45309]" />
+                                    <span>Promoted Gold Scheme / Savings Plan</span>
+                                  </label>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {SCHEMES.map((scheme) => {
+                                      const isSelected = cust.scheme_name === scheme;
+                                      return (
+                                        <button
+                                          key={scheme}
+                                          type="button"
+                                          onClick={() =>
+                                            updateAttendedCustomer(
+                                              duty.id,
+                                              cIdx,
+                                              'scheme_name',
+                                              isSelected ? '' : scheme
+                                            )
+                                          }
+                                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                                            isSelected
+                                              ? 'bg-[#FEF9C3] text-[#854D0E] border-[#CA8A04] shadow-xs ring-1 ring-[#CA8A04]'
+                                              : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                                          }`}
+                                        >
+                                          {scheme}
+                                        </button>
+                                      );
+                                    })}
+                                    {cust.scheme_name && (
+                                      <button
+                                        type="button"
+                                        onClick={() => updateAttendedCustomer(duty.id, cIdx, 'scheme_name', '')}
+                                        className="px-2 py-1 rounded-lg text-[10px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 cursor-pointer"
+                                      >
+                                        Clear Scheme
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
 
@@ -2178,134 +2437,302 @@ export const OutdoorMarketingPage: React.FC = () => {
       )}
 
       {/* ----------------------------------------------------
-          TAB 5: ALL CUSTOMERS & REVIEWS (WITH CSV EXPORT)
+          TAB 5: CUSTOMER DIRECTORY & LEADS (WITH APPROVE/REJECT, VIEW MODAL & FILTERS)
       ---------------------------------------------------- */}
       {activeTab === 'leads' && (
-        <div className="space-y-4">
-          <div className="p-4 sm:p-5 bg-white border border-[#C5E3D5] rounded-3xl shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-extrabold text-[#1D1D1B] flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#23815F]" />
-                <span>Customer Leads & Google Reviews on {selectedDate} ({allDutiesCustomers.length})</span>
-              </h3>
-              <p className="text-xs text-[#5E5A52]">
-                Detailed contact breakdown, birthday & anniversary dates, scheme selections, and Google 5-star ratings.
-              </p>
+        <div className="space-y-5">
+          {/* Top Control Bar */}
+          <div className="p-4 sm:p-5 bg-white border border-[#C5E3D5] rounded-3xl shadow-xs space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h3 className="text-sm sm:text-base font-extrabold text-[#1D1D1B] flex items-center gap-2">
+                  <Compass className="w-5 h-5 text-[#23815F]" />
+                  <span>Outdoor Customer Leads & Field Directory</span>
+                </h3>
+                <p className="text-xs text-[#5E5A52]">
+                  Ledger of outdoor prospects, contact details, jewelry schemes promoted, reviews collected, and approval status.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Date Scope Toggle */}
+                <div className="inline-flex items-center bg-[#FAF8F3] border border-[#C5E3D5] rounded-xl p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setLeadDateScope('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      leadDateScope === 'all'
+                        ? 'bg-[#23815F] text-white shadow-2xs'
+                        : 'text-[#5E5A52] hover:text-[#1D1D1B]'
+                    }`}
+                  >
+                    All Dates
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLeadDateScope('selected')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      leadDateScope === 'selected'
+                        ? 'bg-[#23815F] text-white shadow-2xs'
+                        : 'text-[#5E5A52] hover:text-[#1D1D1B]'
+                    }`}
+                  >
+                    {selectedDate} Only
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAddLeadModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#23815F] hover:bg-[#1B694C] text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer hover:scale-[1.02]"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Add Customer Lead</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportCSV}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-[#F0F7F4] text-[#23815F] border border-[#C5E3D5] text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Export CSV</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            {/* Filter Pills & Search */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#E8E6E1]">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-bold text-[#8A8479] uppercase mr-1">Filter:</span>
+                <button
+                  type="button"
+                  onClick={() => setLeadStatusFilter('ALL')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    leadStatusFilter === 'ALL'
+                      ? 'bg-[#1D1D1B] text-white shadow-xs'
+                      : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#E8E6E1]'
+                  }`}
+                >
+                  <span>All Leads</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${leadStatusFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                    {countAllLeads}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLeadStatusFilter('PENDING')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    leadStatusFilter === 'PENDING'
+                      ? 'bg-[#CA8A04] text-white shadow-xs'
+                      : 'bg-[#FEFCE8] text-[#854D0E] border border-[#CA8A04]/40 hover:bg-[#FEF08A]'
+                  }`}
+                >
+                  <span>⏳ Pending Review</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${leadStatusFilter === 'PENDING' ? 'bg-white/20 text-white' : 'bg-[#FEF08A] text-[#854D0E]'}`}>
+                    {countPendingLeads}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLeadStatusFilter('APPROVED')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    leadStatusFilter === 'APPROVED'
+                      ? 'bg-[#23815F] text-white shadow-xs'
+                      : 'bg-[#E8F4EE] text-[#21845F] border border-[#A7F3D0] hover:bg-[#D1FAE5]'
+                  }`}
+                >
+                  <span>✓ Approved</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${leadStatusFilter === 'APPROVED' ? 'bg-white/20 text-white' : 'bg-[#D1FAE5] text-[#21845F]'}`}>
+                    {countApprovedLeads}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLeadStatusFilter('REJECTED')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    leadStatusFilter === 'REJECTED'
+                      ? 'bg-[#C24141] text-white shadow-xs'
+                      : 'bg-[#FDECEC] text-[#C24141] border border-[#FCA5A5] hover:bg-[#FEE2E2]'
+                  }`}
+                >
+                  <span>✕ Rejected</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${leadStatusFilter === 'REJECTED' ? 'bg-white/20 text-white' : 'bg-[#FEE2E2] text-[#C24141]'}`}>
+                    {countRejectedLeads}
+                  </span>
+                </button>
+              </div>
+
               <div className="relative w-full sm:w-64">
-                <Search className="w-4 h-4 text-[#8A8479] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-[#8A8479] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={customerSearch}
                   onChange={(e) => setCustomerSearch(e.target.value)}
-                  placeholder="Search customer name, phone, area..."
+                  placeholder="Search customer, phone, area..."
                   className="w-full pl-8 pr-3 py-1.5 input-luxury-beige rounded-xl text-xs"
                 />
               </div>
-
-              <button
-                onClick={handleExportCSV}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-[#23815F] to-[#1B694C] hover:from-[#1B694C] hover:to-[#14533C] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer hover:scale-[1.02]"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export to CSV</span>
-              </button>
             </div>
           </div>
 
+          {/* Leads Table */}
           <div className="bg-white border border-[#C5E3D5] rounded-3xl overflow-hidden shadow-xs text-[#1D1D1B]">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-[#FAF8F3]/60 border-b border-[#C5E3D5] text-[#5E5A52] uppercase tracking-wider font-bold text-[11px]">
+                <thead className="bg-[#FAF8F3]/70 border-b border-[#C5E3D5] text-[#5E5A52] uppercase tracking-wider font-bold text-[11px]">
                   <tr>
-                    <th className="px-5 py-3.5">Customer Name</th>
-                    <th className="px-5 py-3.5">Phone Number</th>
-                    <th className="px-5 py-3.5">DOB & Anniversary</th>
-                    <th className="px-5 py-3.5">Google Review</th>
-                    <th className="px-5 py-3.5">Staff Rep</th>
-                    <th className="px-5 py-3.5">Interested In</th>
-                    <th className="px-5 py-3.5">Notes</th>
+                    <th className="px-5 py-3.5">Customer Name & Phone</th>
+                    <th className="px-5 py-3.5">Area & Date</th>
+                    <th className="px-5 py-3.5">Assisting Staff</th>
+                    <th className="px-5 py-3.5">Promoted Scheme</th>
+                    <th className="px-5 py-3.5">Reviews & Feedback</th>
+                    <th className="px-5 py-3.5 text-center">Status</th>
+                    <th className="px-5 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#EBF3EE] font-medium">
-                  {filteredCustomers.length === 0 ? (
+                  {displayedLeads.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-8 text-center text-[#8A8479]">
-                        No customer details recorded for {selectedDate} matching search.
+                      <td colSpan={7} className="px-5 py-12 text-center text-[#8A8479]">
+                        <Compass className="w-10 h-10 text-[#23815F] mx-auto opacity-40 mb-2" />
+                        <p className="font-bold text-sm text-[#1D1D1B]">No outdoor customer leads found</p>
+                        <p className="text-xs text-[#8A8479] mt-0.5">Try clearing filters or change the date scope.</p>
                       </td>
                     </tr>
                   ) : (
-                    filteredCustomers.map((cust) => (
-                      <tr key={cust.id} className="hover:bg-[#F0F7F4] transition-colors">
-                        <td className="px-5 py-3.5 font-bold text-[#1D1D1B]">{cust.customer_name}</td>
-                        <td className="px-5 py-3.5 font-mono text-[#5E5A52]">
-                          {cust.phone ? (
-                            <span className="flex items-center gap-1.5">
-                              <Phone className="w-3 h-3 text-[#23815F]" />
-                              {cust.phone}
-                            </span>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-                        <td className="px-5 py-3.5 text-[#5E5A52]">
-                          <div className="space-y-0.5">
-                            {cust.dob && <div>🎂 {cust.dob}</div>}
-                            {cust.anniversary_date && <div>💍 {cust.anniversary_date}</div>}
-                            {!cust.dob && !cust.anniversary_date && <span>—</span>}
-                          </div>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          {cust.has_google_review ? (
-                            <div className="space-y-0.5">
-                              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-600">
-                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-                                {cust.google_review_rating || 5} Stars
+                    displayedLeads.map((cust) => {
+                      const st = (cust.status || '').toLowerCase();
+                      const isPending = st.includes('pending') || st === 'lead' || st === 'contacted' || st === 'interested';
+                      const isApproved = st.includes('approved') || st === 'converted';
+                      const isRejected = st.includes('rejected');
+
+                      return (
+                        <tr key={cust.id} className="hover:bg-[#F0F7F4] transition-colors">
+                          <td className="px-5 py-3.5">
+                            <div className="font-extrabold text-[#1D1D1B] text-xs">
+                              {cust.customer_name}
+                            </div>
+                            {cust.phone ? (
+                              <a
+                                href={`tel:${cust.phone}`}
+                                className="inline-flex items-center gap-1 text-[11px] font-mono text-[#23815F] hover:underline mt-0.5"
+                              >
+                                <Phone className="w-3 h-3 text-[#23815F]" />
+                                <span>{cust.phone}</span>
+                              </a>
+                            ) : (
+                              <span className="text-[10px] text-[#8A8479]">No phone</span>
+                            )}
+                          </td>
+
+                          <td className="px-5 py-3.5 text-[#5E5A52]">
+                            <div className="text-xs font-semibold text-[#1D1D1B] flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-[#23815F]" />
+                              <span>{cust.area_name || 'Field Area'}</span>
+                            </div>
+                            <div className="text-[10px] text-[#8A8479] mt-0.5">
+                              📅 {cust.date || selectedDate}
+                            </div>
+                          </td>
+
+                          <td className="px-5 py-3.5 text-[#5E5A52]">
+                            <div className="flex items-center gap-1.5">
+                              <User className="w-3.5 h-3.5 text-[#23815F]" />
+                              <span className="font-semibold text-xs text-[#1D1D1B]">
+                                {cust.marketing_employee_name || 'Staff'}
                               </span>
-                              {cust.google_review_text && (
-                                <p className="text-[10px] text-[#5E5A52] italic max-w-xs truncate">
-                                  "{cust.google_review_text}"
-                                </p>
+                            </div>
+                          </td>
+
+                          <td className="px-5 py-3.5">
+                            {cust.scheme_name ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[#FEF9C3] text-[#854D0E] border border-[#CA8A04]/40 shadow-2xs">
+                                <Award className="w-3 h-3 text-[#B45309]" />
+                                <span>{cust.scheme_name}</span>
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-[#8A8479]">—</span>
+                            )}
+                          </td>
+
+                          <td className="px-5 py-3.5">
+                            {cust.has_google_review ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                                <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+                                <span>{cust.google_review_rating || 5}★ Review</span>
+                              </span>
+                            ) : cust.has_customer_feedback ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                <MessageSquareHeart className="w-3 h-3 text-emerald-600" />
+                                <span>{cust.feedback_rating || 5}★ Feedback</span>
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-[#8A8479]">No review</span>
+                            )}
+                          </td>
+
+                          <td className="px-5 py-3.5 text-center">
+                            {isApproved ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#E8F4EE] text-[#21845F] border border-[#A7F3D0]">
+                                <Check className="w-3 h-3 text-[#21845F]" />
+                                <span>Approved</span>
+                              </span>
+                            ) : isRejected ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#FDECEC] text-[#C24141] border border-[#FCA5A5]">
+                                <X className="w-3 h-3 text-[#C24141]" />
+                                <span>Rejected</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#FEFCE8] text-[#854D0E] border border-[#EAB308]">
+                                <Clock className="w-3 h-3 text-[#854D0E]" />
+                                <span>Pending</span>
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedCustView(cust)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white hover:bg-[#F0F7F4] text-[#23815F] font-bold text-xs border border-[#C5E3D5] hover:border-[#23815F] shadow-2xs transition-all cursor-pointer"
+                                title="View customer details"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-[#23815F]" />
+                                <span>View</span>
+                              </button>
+
+                              {isPending && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReviewCustomer(cust.id, 'APPROVE')}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#23815F] hover:bg-[#1B694C] text-white font-bold text-xs shadow-2xs transition-all cursor-pointer"
+                                    title="Approve lead"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>Approve</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReviewCustomer(cust.id, 'REJECT')}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer"
+                                    title="Reject lead"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>Reject</span>
+                                  </button>
+                                </>
                               )}
                             </div>
-                          ) : cust.has_customer_feedback ? (
-                            <div className="space-y-0.5">
-                              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700">
-                                <MessageSquareHeart className="w-3.5 h-3.5 text-emerald-600" />
-                                {cust.feedback_rating || 5}★ Feedback
-                              </span>
-                              {cust.feedback_text && (
-                                <p className="text-[10px] text-[#5E5A52] italic max-w-xs truncate">
-                                  "{cust.feedback_text}"
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-[#8A8479] text-[11px]">No review</span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3.5 text-[#5E5A52]">{cust.marketing_employee_name || 'Staff'}</td>
-                        <td className="px-5 py-3.5">
-                          {cust.interested_in ? (
-                            <div className="flex flex-wrap gap-1">
-                              {cust.interested_in.split(',').map((item, idx) => (
-                                <span
-                                  key={idx}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF6EB] text-[#9A782F] border border-[#C6A45C]/30"
-                                >
-                                  {item.trim() === 'Gold' ? '🟡 Gold' : item.trim() === 'Diamond' ? '💎 Diamond' : item.trim() === 'Silver' ? '⚪ Silver' : item.trim()}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-[#8A8479] text-[11px]">—</span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3.5 text-[#5E5A52] text-[11px] max-w-xs">{cust.notes || '—'}</td>
-                      </tr>
-                    ))
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -2584,6 +3011,448 @@ export const OutdoorMarketingPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ----------------------------------------------------
+          CUSTOMER FULL VIEW MODAL (ACCESSIBLE ANYTIME / AFTER APPROVAL)
+      ---------------------------------------------------- */}
+      {selectedCustView && (
+        <Modal
+          isOpen={!!selectedCustView}
+          onClose={() => setSelectedCustView(null)}
+          title={`Outdoor Customer Details: ${selectedCustView.customer_name}`}
+        >
+          <div className="space-y-5 text-[#1D1D1B]">
+            {/* Header / Overview */}
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-[#FAF8F3] border border-[#E8E6E1]">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-[#E8F4EE] text-[#23815F] border border-[#C5E3D5] flex items-center justify-center font-black text-base shadow-2xs">
+                  {selectedCustView.customer_name.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="text-sm font-extrabold text-[#1D1D1B]">
+                    {selectedCustView.customer_name}
+                  </h4>
+                  {selectedCustView.phone ? (
+                    <a
+                      href={`tel:${selectedCustView.phone}`}
+                      className="inline-flex items-center gap-1 text-xs font-mono text-[#23815F] hover:underline"
+                    >
+                      <Phone className="w-3 h-3 text-[#23815F]" />
+                      <span>{selectedCustView.phone}</span>
+                    </a>
+                  ) : (
+                    <span className="text-xs text-[#8A8479]">No phone provided</span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                {(() => {
+                  const s = (selectedCustView.status || '').toLowerCase();
+                  if (s.includes('approved') || s === 'converted') {
+                    return (
+                      <span className="px-3 py-1 rounded-full text-xs font-black bg-[#E8F4EE] text-[#21845F] border border-[#A7F3D0]">
+                        ✓ Approved
+                      </span>
+                    );
+                  }
+                  if (s.includes('rejected')) {
+                    return (
+                      <span className="px-3 py-1 rounded-full text-xs font-black bg-[#FDECEC] text-[#C24141] border border-[#FCA5A5]">
+                        ✕ Rejected
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="px-3 py-1 rounded-full text-xs font-black bg-[#FEFCE8] text-[#854D0E] border border-[#EAB308]">
+                      ⏳ Pending Review
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Details Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-white border border-[#E8E6E1]">
+                <span className="text-[10px] font-bold text-[#8A8479] uppercase block mb-1">Assisting Staff Rep</span>
+                <span className="font-bold text-[#1D1D1B] flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-[#23815F]" />
+                  {selectedCustView.marketing_employee_name || 'Showroom Staff'}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-[#E8E6E1]">
+                <span className="text-[10px] font-bold text-[#8A8479] uppercase block mb-1">Campaign Location / Area</span>
+                <span className="font-bold text-[#1D1D1B] flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[#23815F]" />
+                  {selectedCustView.area_name || 'Market Area'}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-[#E8E6E1]">
+                <span className="text-[10px] font-bold text-[#8A8479] uppercase block mb-1">Promoted Gold Scheme</span>
+                {selectedCustView.scheme_name ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-[#FEF9C3] text-[#854D0E] border border-[#CA8A04]/40">
+                    <Award className="w-3.5 h-3.5 text-[#B45309]" />
+                    {selectedCustView.scheme_name}
+                  </span>
+                ) : (
+                  <span className="text-[#8A8479]">No scheme assigned</span>
+                )}
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-[#E8E6E1]">
+                <span className="text-[10px] font-bold text-[#8A8479] uppercase block mb-1">Date Logged</span>
+                <span className="font-bold text-[#1D1D1B]">
+                  📅 {selectedCustView.date || 'Today'}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-[#E8E6E1]">
+                <span className="text-[10px] font-bold text-[#8A8479] uppercase block mb-1">Date of Birth (DOB)</span>
+                <span className="font-semibold text-[#1D1D1B]">
+                  {selectedCustView.dob ? `🎂 ${selectedCustView.dob}` : 'Not provided'}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-[#E8E6E1]">
+                <span className="text-[10px] font-bold text-[#8A8479] uppercase block mb-1">Wedding Anniversary</span>
+                <span className="font-semibold text-[#1D1D1B]">
+                  {selectedCustView.anniversary_date ? `💍 ${selectedCustView.anniversary_date}` : 'Not provided'}
+                </span>
+              </div>
+            </div>
+
+            {/* Jewelry Interests */}
+            {selectedCustView.interested_in && (
+              <div className="p-3 rounded-xl bg-[#FAF8F3] border border-[#E8E6E1] text-xs">
+                <span className="text-[10px] font-bold text-[#8A8479] uppercase block mb-1.5">Jewelry Interests</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedCustView.interested_in.split(',').map((it, idx) => (
+                    <span key={idx} className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FEF9C3] text-[#854D0E] border border-[#CA8A04]/30">
+                      {it.trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Reviews Section */}
+            {(selectedCustView.has_google_review || selectedCustView.has_customer_feedback) && (
+              <div className="space-y-2 text-xs">
+                {selectedCustView.has_google_review && (
+                  <div className="p-3 rounded-xl bg-[#FEFCE8] border border-[#CA8A04] space-y-1">
+                    <div className="flex items-center gap-1 font-extrabold text-[#854D0E]">
+                      <Star className="w-4 h-4 fill-[#F59E0B] text-[#F59E0B]" />
+                      <span>Google 5-Star Review: {selectedCustView.google_review_rating || 5} Stars</span>
+                    </div>
+                    {selectedCustView.google_review_text && (
+                      <p className="text-xs text-[#5E5A52] italic pl-5">
+                        "{selectedCustView.google_review_text}"
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {selectedCustView.has_customer_feedback && (
+                  <div className="p-3 rounded-xl bg-[#FAF5FF] border border-[#A855F7] space-y-1">
+                    <div className="flex items-center gap-1 font-extrabold text-[#7E22CE]">
+                      <MessageSquareHeart className="w-4 h-4 text-[#7E22CE]" />
+                      <span>Customer Feedback: {selectedCustView.feedback_rating || 5} Stars</span>
+                    </div>
+                    {selectedCustView.feedback_text && (
+                      <p className="text-xs text-[#5E5A52] italic pl-5">
+                        "{selectedCustView.feedback_text}"
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Photo Proof */}
+            {selectedCustView.photo_url && (
+              <div className="p-3 rounded-xl bg-white border border-[#E8E6E1] space-y-2">
+                <span className="text-[10px] font-bold text-[#8A8479] uppercase block">Field Photo Proof</span>
+                <div
+                  onClick={() =>
+                    handleOpenLightbox(
+                      [selectedCustView.photo_url!],
+                      0,
+                      selectedCustView.customer_name,
+                      `Area: ${selectedCustView.area_name || ''} • Date: ${selectedCustView.date || ''}`
+                    )
+                  }
+                  className="relative w-28 h-28 rounded-xl overflow-hidden border border-[#C5E3D5] cursor-pointer group shadow-2xs"
+                >
+                  <img
+                    src={selectedCustView.photo_url.startsWith('http') ? selectedCustView.photo_url : `/api/media/${selectedCustView.photo_url.replace(/^uploads\//, '')}`}
+                    alt="Proof"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <ZoomIn className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            {selectedCustView.notes && (
+              <div className="p-3 rounded-xl bg-[#FAF8F3] border border-[#E8E6E1] text-xs space-y-1">
+                <span className="text-[10px] font-bold text-[#8A8479] uppercase block">Field Observations / Notes</span>
+                <p className="text-xs text-[#1D1D1B] italic">"{selectedCustView.notes}"</p>
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-[#E8E6E1] gap-2 flex-wrap">
+              {(() => {
+                const s = (selectedCustView.status || '').toLowerCase();
+                const isPending = s.includes('pending') || s === 'lead' || s === 'contacted' || s === 'interested';
+                if (!isPending) return <div />;
+                return (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleReviewCustomer(selectedCustView.id, 'APPROVE')}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#23815F] hover:bg-[#1B694C] text-white font-bold text-xs shadow-xs cursor-pointer"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Approve Lead</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleReviewCustomer(selectedCustView.id, 'REJECT')}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>Reject Lead</span>
+                    </button>
+                  </div>
+                );
+              })()}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedCustView(null)}
+              >
+                Close View
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ----------------------------------------------------
+          ADD CUSTOMER LEAD MODAL
+      ---------------------------------------------------- */}
+      {showAddLeadModal && (
+        <Modal
+          isOpen={showAddLeadModal}
+          onClose={() => setShowAddLeadModal(false)}
+          title="Add Outdoor Customer Lead"
+        >
+          <form onSubmit={handleCreateCustomerLead} className="space-y-4 text-xs text-[#1D1D1B]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                  Customer Full Name <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  value={newLeadForm.customer_name}
+                  onChange={(e) => setNewLeadForm((prev) => ({ ...prev, customer_name: e.target.value }))}
+                  placeholder="e.g. Ramesh Kumar"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                  Phone Number
+                </label>
+                <Input
+                  value={newLeadForm.phone}
+                  onChange={(e) => setNewLeadForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  placeholder="e.g. 9876543210"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                  Assisting Field Marketer (Staff) <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  value={newLeadForm.marketing_employee_id}
+                  onChange={(e) => setNewLeadForm((prev) => ({ ...prev, marketing_employee_id: e.target.value }))}
+                  options={[
+                    { value: '', label: 'Select Employee' },
+                    ...allEmployees.map((e) => ({
+                      value: e.id.toString(),
+                      label: `${e.full_name} (${e.employee_code})`,
+                    })),
+                  ]}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                  Campaign Area / Location
+                </label>
+                <Input
+                  value={newLeadForm.area_name}
+                  onChange={(e) => setNewLeadForm((prev) => ({ ...prev, area_name: e.target.value }))}
+                  placeholder="e.g. Market Booth, Yelahanka 4th Cross"
+                />
+              </div>
+            </div>
+
+            {/* Scheme Selection */}
+            <div>
+              <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1.5 flex items-center gap-1">
+                <Award className="w-3.5 h-3.5 text-[#B45309]" />
+                <span>Promoted Gold Scheme</span>
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {SCHEMES.map((scheme) => {
+                  const isSelected = newLeadForm.scheme_name === scheme;
+                  return (
+                    <button
+                      key={scheme}
+                      type="button"
+                      onClick={() =>
+                        setNewLeadForm((prev) => ({
+                          ...prev,
+                          scheme_name: isSelected ? '' : scheme,
+                        }))
+                      }
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#FEF9C3] text-[#854D0E] border-[#CA8A04] shadow-xs ring-1 ring-[#CA8A04]'
+                          : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
+                      }`}
+                    >
+                      {scheme}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                  Date of Birth (DOB)
+                </label>
+                <input
+                  type="date"
+                  value={newLeadForm.dob}
+                  onChange={(e) => setNewLeadForm((prev) => ({ ...prev, dob: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                  Anniversary Date
+                </label>
+                <input
+                  type="date"
+                  value={newLeadForm.anniversary_date}
+                  onChange={(e) => setNewLeadForm((prev) => ({ ...prev, anniversary_date: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                  Field Date
+                </label>
+                <input
+                  type="date"
+                  value={newLeadForm.date}
+                  onChange={(e) => setNewLeadForm((prev) => ({ ...prev, date: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Interests Checkboxes */}
+            <div>
+              <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1.5">
+                Customer Interested In
+              </label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newLeadForm.interested_gold}
+                    onChange={(e) => setNewLeadForm((prev) => ({ ...prev, interested_gold: e.target.checked }))}
+                    className="w-4 h-4 text-[#23815F] rounded"
+                  />
+                  <span className="text-xs font-semibold">🪙 Gold</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newLeadForm.interested_diamond}
+                    onChange={(e) => setNewLeadForm((prev) => ({ ...prev, interested_diamond: e.target.checked }))}
+                    className="w-4 h-4 text-[#23815F] rounded"
+                  />
+                  <span className="text-xs font-semibold">💎 Diamond</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newLeadForm.interested_silver}
+                    onChange={(e) => setNewLeadForm((prev) => ({ ...prev, interested_silver: e.target.checked }))}
+                    className="w-4 h-4 text-[#23815F] rounded"
+                  />
+                  <span className="text-xs font-semibold">🥈 Silver</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-[11px] font-bold text-[#5E5A52] uppercase mb-1">
+                Notes / Requirements
+              </label>
+              <textarea
+                rows={2}
+                value={newLeadForm.notes}
+                onChange={(e) => setNewLeadForm((prev) => ({ ...prev, notes: e.target.value }))}
+                placeholder="Customer preferences, discussion summary..."
+                className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs resize-none font-medium"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E8E6E1]">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddLeadModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                disabled={isSubmittingLead}
+              >
+                {isSubmittingLead ? 'Saving...' : 'Save Customer Lead'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* ----------------------------------------------------

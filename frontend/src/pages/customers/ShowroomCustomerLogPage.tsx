@@ -25,6 +25,7 @@ import {
   ChevronRight,
   ShieldCheck,
   Building2,
+  Compass,
 } from 'lucide-react';
 import { CustomerActivity, Employee, CustomerDetailItem } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -71,6 +72,7 @@ export interface FlattenedCustomerRow {
   feedbackText: string;
   // Notes
   notes: string;
+  isOutdoor?: boolean;
   parentActivity: CustomerActivity;
 }
 
@@ -183,6 +185,7 @@ export const ShowroomCustomerLogPage: React.FC = () => {
           feedbackRating: cFeedbackRating,
           feedbackText: cFeedbackText,
           notes: cNotes,
+          isOutdoor: Boolean((item as any).is_outdoor) || act.status === 'Outdoor Marketing' || (act.notes || '').includes('[Outdoor Marketing'),
           parentActivity: act,
         });
       });
@@ -747,17 +750,25 @@ export const ShowroomCustomerLogPage: React.FC = () => {
 
                     {/* 3. Outcome & Product Value */}
                     <td className="px-4 py-3.5 align-top">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                          row.status.toLowerCase().includes('converted') || row.status.toLowerCase().includes('billing')
-                            ? 'bg-[#E8F4EE] border-[#C5E3D5] text-[#21845F]'
-                            : row.status.toLowerCase().includes('interested')
-                            ? 'bg-[#E0F2FE] border-[#BAE6FD] text-[#0284C7]'
-                            : 'bg-[#F2EEE9] border-[#E4DFD4] text-[#5E5A52]'
-                        }`}
-                      >
-                        {row.status}
-                      </span>
+                      <div className="flex flex-col gap-1 items-start">
+                        {row.isOutdoor && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F4EE] border border-[#A7F3D0] text-[#1B694C]">
+                            <Compass className="w-3 h-3 text-[#1B694C]" />
+                            <span>Outdoor Marketing</span>
+                          </span>
+                        )}
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                            row.status.toLowerCase().includes('converted') || row.status.toLowerCase().includes('billing')
+                              ? 'bg-[#E8F4EE] border-[#C5E3D5] text-[#21845F]'
+                              : row.status.toLowerCase().includes('interested')
+                              ? 'bg-[#E0F2FE] border-[#BAE6FD] text-[#0284C7]'
+                              : 'bg-[#F2EEE9] border-[#E4DFD4] text-[#5E5A52]'
+                          }`}
+                        >
+                          {row.status}
+                        </span>
+                      </div>
                       {row.productValue ? (
                         <div className="mt-1 font-bold text-sm text-[#1D1D1B] flex items-center gap-0.5">
                           <span className="text-xs text-[#8A8479]">₹</span>

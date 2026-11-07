@@ -81,8 +81,8 @@ export const AppRoutes: React.FC = () => {
           <Route path="/google-reviews" element={<GoogleReviewsPage />} />
           <Route path="/outdoor-marketing" element={<OutdoorMarketingPage />} />
           <Route path="/outdoor-marketing/daily" element={<OutdoorMarketingPage />} />
-          <Route path="/outdoor-customers" element={<OutdoorCustomerLeadsPage />} />
-          <Route path="/outdoor" element={<Navigate to="/outdoor-customers" replace />} />
+          <Route path="/outdoor-customers" element={<Navigate to="/outdoor-marketing" replace />} />
+          <Route path="/outdoor" element={<Navigate to="/outdoor-marketing" replace />} />
           <Route path="/account" element={<AccountSettingsPage />} />
 
           <Route path="/profile" element={<Navigate to="/account" replace />} />

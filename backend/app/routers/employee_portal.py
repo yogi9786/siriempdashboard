@@ -9,7 +9,7 @@ import json
 from sqlalchemy import or_, func, case
 from backend.app.models.outdoor_marketing import OutdoorMarketingDuty, OutdoorMarketingCustomer
 from backend.app.schemas.outdoor_marketing import OutdoorDutyResponse, OutdoorDutyUpdate
-from backend.app.routers.outdoor_marketing import format_duty_response
+from backend.app.routers.outdoor_marketing import format_duty_response, _sync_outdoor_customer_to_activity
 
 
 from backend.app.core.config import settings
@@ -1327,6 +1327,7 @@ def save_employee_outdoor_duty(
                 follow_up_date=c.follow_up_date,
                 photo_url=c.photo_url,
                 area_name=c.area_name or duty.area or "Field Marketing",
+                scheme_name=getattr(c, "scheme_name", None) or duty.scheme_name,
                 date=duty.date,
                 is_converted=c.is_converted,
                 has_google_review=c.has_google_review,
@@ -1348,6 +1349,8 @@ def save_employee_outdoor_duty(
                 updated_by_manager=getattr(c, "updated_by_manager", False) or False,
             )
             db.add(new_cust)
+            db.flush()
+            _sync_outdoor_customer_to_activity(new_cust, db, approval_status="PENDING")
 
         if cust_photos and not duty.photo_url:
             duty.photo_url = cust_photos[0]

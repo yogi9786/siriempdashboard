@@ -15,6 +15,7 @@ import {
   Clock,
   Sparkles,
   Award,
+  Eye,
   Star,
   MessageSquareHeart,
   RotateCcw,
@@ -33,6 +34,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { CustomerActivityModal } from '../../components/customers/CustomerActivityModal';
+import { CustomerActivityViewModal } from '../../components/customers/CustomerActivityViewModal';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
@@ -97,6 +99,7 @@ export const ShowroomCustomerLogPage: React.FC = () => {
   // Modals & Actions
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [editingActivity, setEditingActivity] = useState<CustomerActivity | null>(null);
+  const [viewingActivity, setViewingActivity] = useState<CustomerActivity | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomerActivity | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
@@ -202,8 +205,14 @@ export const ShowroomCustomerLogPage: React.FC = () => {
       }
 
       // 2. Status
-      if (selectedStatusFilter !== 'all' && r.status.toLowerCase() !== selectedStatusFilter.toLowerCase()) {
-        return false;
+      if (selectedStatusFilter !== 'all') {
+        const filterLow = selectedStatusFilter.toLowerCase();
+        const rStatusLow = (r.status || '').toLowerCase();
+        if (filterLow === 'window shopping' || filterLow === 'walkin') {
+          if (rStatusLow !== 'window shopping' && rStatusLow !== 'walkin' && rStatusLow !== 'walk-in') return false;
+        } else if (rStatusLow !== filterLow) {
+          return false;
+        }
       }
 
       // 3. Scheme
@@ -528,7 +537,7 @@ export const ShowroomCustomerLogPage: React.FC = () => {
               className="w-full lg:w-36 px-3 py-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs font-bold text-[#1D1D1B] focus:outline-none cursor-pointer"
             >
               <option value="all">All Statuses</option>
-              <option value="Walkin">Walk-in</option>
+              <option value="Window Shopping">Window Shopping</option>
               <option value="Interested">Interested</option>
               <option value="Converted">Converted</option>
               <option value="Billed">Billed</option>
@@ -839,6 +848,13 @@ export const ShowroomCustomerLogPage: React.FC = () => {
                     {/* 7. Row Actions */}
                     <td className="px-4 py-3.5 align-top text-right shrink-0">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => setViewingActivity(row.parentActivity)}
+                          title="View Customer Details"
+                          className="p-1.5 text-[#8A8479] hover:text-[#7E22CE] hover:bg-[#F3E8FF] rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => setEditingActivity(row.parentActivity)}
                           title="Edit Customer Log Activity"

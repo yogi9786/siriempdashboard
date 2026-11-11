@@ -53,6 +53,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { SCHEMES, DEFAULT_SCHEME, SchemeName } from '../../constants/schemes';
 import { CustomerActivityModal } from '../../components/customers/CustomerActivityModal';
+import { CustomerActivityViewModal } from '../../components/customers/CustomerActivityViewModal';
 import logoImg from '../../assets/siri samruddhi logo.png';
 
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
@@ -306,7 +307,7 @@ export const EmployeePortalPage: React.FC = () => {
   const [isLoadingCustomers, setIsLoadingCustomers] = useState<boolean>(true);
   const [customerSearch, setCustomerSearch] = useState<string>('');
   const [customerApprovalFilter, setCustomerApprovalFilter] = useState<string>('ALL');
-  const [customerStatusFilter, setCustomerStatusFilter] = useState<'ALL' | 'Sold' | 'Exchange' | 'In Hold' | 'Interested' | 'Lost'>('ALL');
+  const [customerStatusFilter, setCustomerStatusFilter] = useState<'ALL' | 'Sold' | 'Exchange' | 'In Hold' | 'Interested' | 'Lost' | 'Window Shopping'>('ALL');
   const [showCustomerModal, setShowCustomerModal] = useState<boolean>(false);
 
   // Notification states (Attire checks & Review approvals)
@@ -316,6 +317,7 @@ export const EmployeePortalPage: React.FC = () => {
   const [isLoadingNotifications, setIsLoadingNotifications] = useState<boolean>(false);
   const [notificationTab, setNotificationTab] = useState<'all' | 'attire' | 'reviews'>('all');
   const [editingActivity, setEditingActivity] = useState<CustomerActivity | null>(null);
+  const [viewingActivity, setViewingActivity] = useState<CustomerActivity | null>(null);
 
   // Call logs state
   const [callLogs, setCallLogs] = useState<EmployeeCallLog[]>([]);
@@ -1721,6 +1723,12 @@ export const EmployeePortalPage: React.FC = () => {
                     activeCls: 'bg-[#C24141] text-white border-[#C24141] shadow-sm shadow-red-500/20',
                     inactiveCls: 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA] hover:bg-[#FEE2E2]',
                   },
+                  {
+                    id: 'Window Shopping',
+                    label: 'Window Shopping',
+                    activeCls: 'bg-[#5E5A52] text-white border-[#5E5A52] shadow-xs',
+                    inactiveCls: 'bg-[#F4F1EA] text-[#5E5A52] border-[#E4DFD4] hover:bg-[#EBE6DC]',
+                  },
                 ].map((sTab) => {
                   const isSelected = customerStatusFilter === sTab.id;
                   return (
@@ -1834,7 +1842,7 @@ export const EmployeePortalPage: React.FC = () => {
                                       ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
                                       : act.status === 'Outdoor Marketing'
                                         ? 'bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0]'
-                                        : act.status === 'Walkin'
+                                        : act.status === 'Walkin' || act.status === 'Window Shopping'
                                           ? 'bg-[#F4F1EA] text-[#5E5A52] border border-[#E4DFD4]'
                                           : 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]'
                               }`}
@@ -1965,12 +1973,22 @@ export const EmployeePortalPage: React.FC = () => {
                             )}
                           </div>
 
-                          {/* Tier 2: Update & Delete Action Buttons in Clean Grid */}
-                          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#F0ECE1]/80">
+                          {/* Tier 2: View, Update & Delete Action Buttons in Clean Grid */}
+                          <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-[#F0ECE1]/80">
+                            <button
+                              type="button"
+                              onClick={() => setViewingActivity(act)}
+                              className="w-full py-2 px-2 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#FAF8F5] text-[#5E5A52] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 active:scale-[0.98]"
+                              title="View details"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>View</span>
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => handleOpenEditCustomer(act)}
-                              className="w-full py-2 px-3 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#F3E8FF] hover:border-[#D8B4FE] text-[#7E22CE] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                              className="w-full py-2 px-2 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#F3E8FF] hover:border-[#D8B4FE] text-[#7E22CE] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 active:scale-[0.98]"
                               title="Update customer log"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -1980,7 +1998,7 @@ export const EmployeePortalPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleDeleteCustomerActivity(act.id)}
-                              className="w-full py-2 px-3 rounded-xl bg-white border border-red-200 hover:bg-red-50 text-[#C24141] hover:text-red-700 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                              className="w-full py-2 px-2 rounded-xl bg-white border border-red-200 hover:bg-red-50 text-[#C24141] hover:text-red-700 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 active:scale-[0.98]"
                               title="Delete customer log"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -2080,7 +2098,7 @@ export const EmployeePortalPage: React.FC = () => {
                                           ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
                                           : act.status === 'Outdoor Marketing'
                                             ? 'bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0]'
-                                            : act.status === 'Walkin'
+                                            : act.status === 'Walkin' || act.status === 'Window Shopping'
                                               ? 'bg-[#F4F1EA] text-[#5E5A52] border border-[#E4DFD4]'
                                               : 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]'
                                   }`}
@@ -2143,7 +2161,7 @@ export const EmployeePortalPage: React.FC = () => {
                                   !subrecords.hasReview &&
                                   !subrecords.hasFeedback && (
                                     <span className="text-[11px] text-[#8A8479]">
-                                      Standard Walkin
+                                      Standard Window Shopping
                                     </span>
                                   )}
                               </div>
@@ -2192,6 +2210,16 @@ export const EmployeePortalPage: React.FC = () => {
                             {/* Actions Column: Edit / Update, WhatsApp, Delete */}
                             <td className="px-4 py-3.5 text-right whitespace-nowrap">
                               <div className="inline-flex items-center gap-1">
+                                {/* View / Inspect Button */}
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingActivity(act)}
+                                  title="View Customer Details"
+                                  className="p-1.5 rounded-lg bg-white border border-[#E6E1D6] hover:bg-[#FAF8F3] hover:border-[#CBD5E1] text-[#5E5A52] hover:text-[#1D1D1B] transition-all cursor-pointer shadow-2xs"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+
                                 {/* Update Button */}
                                 <button
                                   type="button"
@@ -2704,7 +2732,7 @@ export const EmployeePortalPage: React.FC = () => {
                     customer_name: r.customer_name || 'Customer',
                     phone_number: '',
                     product_value: 0,
-                    status: 'Walkin',
+                    status: 'Window Shopping',
                     approval_status: (r.status || 'PENDING').toUpperCase() as any,
                     rejection_reason: r.rejection_reason,
                     notes: r.notes,
@@ -2717,7 +2745,7 @@ export const EmployeePortalPage: React.FC = () => {
                     phoneNumber: '',
                     productId: '',
                     productValue: 0,
-                    customerStatus: 'Walkin',
+                    customerStatus: 'Window Shopping',
                     reviewType: 'GOOGLE',
                     rating: r.rating || 5,
                     reviewText: r.review_text || '',
@@ -2745,7 +2773,7 @@ export const EmployeePortalPage: React.FC = () => {
                     customer_name: v.customer_name || 'Customer',
                     phone_number: '',
                     product_value: 0,
-                    status: 'Walkin',
+                    status: 'Window Shopping',
                     approval_status: (v.status || 'PENDING').toUpperCase() as any,
                     rejection_reason: v.rejection_reason,
                     notes: v.notes,
@@ -2759,7 +2787,7 @@ export const EmployeePortalPage: React.FC = () => {
                     phoneNumber: '',
                     productId: '',
                     productValue: 0,
-                    customerStatus: 'Walkin',
+                    customerStatus: 'Window Shopping',
                     reviewType: 'VIDEO',
                     videosCount: vCount,
                     videoTitle: v.video_title || '',
@@ -3113,6 +3141,12 @@ export const EmployeePortalPage: React.FC = () => {
                     label: 'Lost',
                     activeCls: 'bg-[#C24141] text-white border-[#C24141] shadow-sm shadow-red-500/20',
                     inactiveCls: 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA] hover:bg-[#FEE2E2]',
+                  },
+                  {
+                    id: 'Window Shopping',
+                    label: 'Window Shopping',
+                    activeCls: 'bg-[#5E5A52] text-white border-[#5E5A52] shadow-xs',
+                    inactiveCls: 'bg-[#F4F1EA] text-[#5E5A52] border-[#E4DFD4] hover:bg-[#EBE6DC]',
                   },
                 ].map((sTab) => {
                   const isSelected = outdoorStatusFilter === sTab.id;
@@ -4647,6 +4681,15 @@ export const EmployeePortalPage: React.FC = () => {
       {/* ------------------------------------------------------------------- */}
       {/* MODAL: SIGN OUT CONFIRMATION                                        */}
       {/* ------------------------------------------------------------------- */}
+            {/* View Customer Details Modal */}
+      {viewingActivity && (
+        <CustomerActivityViewModal
+          isOpen={Boolean(viewingActivity)}
+          onClose={() => setViewingActivity(null)}
+          activity={viewingActivity}
+        />
+      )}
+
       {showLogoutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white border border-[#E4DFD4] rounded-3xl w-full max-w-sm p-6 shadow-2xl relative text-[#1D1D1B]">

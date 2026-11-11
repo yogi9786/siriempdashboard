@@ -1,10 +1,10 @@
-from datetime import date
-from fastapi import APIRouter, Depends
+from datetime import date, timedelta
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from backend.app.core.database import get_db
 from backend.app.models.branch import User, Branch
 from backend.app.models.employee import Employee
-from backend.app.models.activity import CustomerActivity
+from backend.app.models.activity import CustomerActivity, SchemePaymentReminder
 from backend.app.models.outdoor_marketing import OutdoorMarketingCustomer
 from backend.app.schemas.dashboard import DashboardOverviewResponse
 from backend.app.dependencies.auth import get_current_manager
@@ -49,7 +49,7 @@ def get_dashboard_overview(
     )
 
 
-@router.get("/notifications", summary="Get manager header notifications for pending customer activities and outdoor customer notes")
+@router.get("/notifications", summary="Get manager header notifications for pending customer activities, outdoor notes, and gold scheme payment reminders")
 def get_manager_notifications(
     current_user: User = Depends(get_current_manager),
     db: Session = Depends(get_db),
@@ -71,11 +71,11 @@ def get_manager_notifications(
     pending_items = [
         {
             "id": a.id,
-            "customer_name": a.customer_name or "Walk-in Customer",
+            "customer_name": (a.customer_name or "").strip() or "Window Shopping Customer",
             "phone_number": a.phone_number or "",
             "employee_id": a.employee_id,
             "employee_name": a.employee.full_name if a.employee else "Assigned Staff",
-            "status": a.status or "Walkin",
+            "status": "Window Shopping" if (a.status or "").lower() == "walkin" else (a.status or "Window Shopping"),
             "activity_date": a.activity_date.strftime("%d %b %Y") if hasattr(a.activity_date, "strftime") else str(a.activity_date),
             "notes": a.notes or "",
             "created_at": a.created_at.isoformat() if a.created_at else "",
@@ -112,12 +112,66 @@ def get_manager_notifications(
         for c in notes_records
     ]
 
-    total_count = pending_count + notes_count
+    # 3. Gold Scheme Payment Reminders (due on or before today, or upcoming within next 5 days)
+    scheme_query = (
+        db.query(SchemePaymentReminder)
+        .join(Employee, SchemePaymentReminder.employee_id == Employee.id, isouter=True)
+        .filter(
+            SchemePaymentReminder.branch_id == current_user.branch_id,
+            SchemePaymentReminder.status == "Pending",
+            SchemePaymentReminder.due_date <= today + timedelta(days=5),
+        )
+    )
+    scheme_count = scheme_query.count()
+    scheme_records = scheme_query.order_by(SchemePaymentReminder.due_date.asc(), SchemePaymentReminder.id.asc()).limit(20).all()
+
+    scheme_items = [
+        {
+            "id": r.id,
+            "customer_name": r.customer_name or "Scheme Customer",
+            "phone": r.phone or "",
+            "scheme_name": r.scheme_name,
+            "installment_no": r.installment_no,
+            "total_installments": r.total_installments,
+            "amount": r.amount or 0.0,
+            "due_date": r.due_date.strftime("%d %b %Y") if hasattr(r.due_date, "strftime") else str(r.due_date),
+            "due_date_raw": str(r.due_date),
+            "is_due_today": r.due_date <= today,
+            "price_notes": r.price_notes or "",
+            "status": r.status,
+            "employee_name": r.employee.full_name if r.employee else "Showroom Staff",
+        }
+        for r in scheme_records
+    ]
+
+    total_count = pending_count + notes_count + scheme_count
 
     return {
         "total_count": total_count,
         "pending_activities_count": pending_count,
         "note_reminders_count": notes_count,
+        "scheme_reminders_count": scheme_count,
         "pending_activities": pending_items,
         "note_reminders": note_items,
+        "scheme_reminders": scheme_items,
     }
+
+
+@router.post("/notifications/scheme-reminder/{reminder_id}/status", summary="Update gold scheme payment reminder status (e.g. Paid, Dismissed)")
+def update_scheme_reminder_status(
+    reminder_id: int,
+    payload: dict = Body(...),
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    r = db.query(SchemePaymentReminder).filter(
+        SchemePaymentReminder.id == reminder_id,
+        SchemePaymentReminder.branch_id == current_user.branch_id,
+    ).first()
+    if not r:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scheme payment reminder not found.")
+
+    new_status = payload.get("status", "Paid")
+    r.status = new_status
+    db.commit()
+    return {"success": True, "message": f"Scheme payment reminder marked as {new_status}."}

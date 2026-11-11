@@ -47,6 +47,8 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
   let hasScheme = false;
   let schemePlan = '';
   let schemeMonthly: string | number = '';
+  let schemeReminderDate = '';
+  let schemeNotes = '';
   let hasReview = false;
   let reviewRating = 5;
   let reviewText = '';
@@ -58,6 +60,9 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
   let videosCount = 1;
   let videoTitle = '';
   let videoScreenshot = '';
+  let videoUrl = '';
+  let soldImageUrl = '';
+  let exchangeType = '';
   let productId = '';
 
   if (breakdownStr) {
@@ -66,10 +71,14 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
       if (Array.isArray(parsed) && parsed.length > 0) {
         for (const item of parsed) {
           if (!productId && item.product_id) productId = item.product_id;
+          if (!soldImageUrl && item.sold_image_url) soldImageUrl = item.sold_image_url;
+          if (!exchangeType && item.exchange_type) exchangeType = item.exchange_type;
           if (!hasScheme && (item.has_scheme || item.scheme_name)) {
             hasScheme = true;
             schemePlan = item.scheme_name || '';
             schemeMonthly = item.scheme_amount || '';
+            schemeReminderDate = item.scheme_reminder_date || '';
+            schemeNotes = item.scheme_notes || '';
           }
           if (!hasReview && (item.has_google_review || item.google_review_text || item.google_review_screenshot)) {
             hasReview = true;
@@ -82,11 +91,12 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
             feedbackRating = item.feedback_rating || 5;
             feedbackText = item.feedback_text || '';
           }
-          if (!hasVideoReview && (item.has_video_review || item.video_title || item.video_screenshot)) {
+          if (!hasVideoReview && (item.has_video_review || item.video_title || item.video_screenshot || item.video_url)) {
             hasVideoReview = true;
             videosCount = item.videos_count ? Number(item.videos_count) : 1;
             videoTitle = item.video_title || '';
             videoScreenshot = item.video_screenshot || item.screenshot_url || '';
+            videoUrl = item.video_url || '';
           }
         }
       } else if (typeof parsed === 'object') {
@@ -108,6 +118,8 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
     hasScheme,
     schemePlan,
     schemeMonthly,
+    schemeReminderDate,
+    schemeNotes,
     hasReview,
     reviewRating,
     reviewText,
@@ -119,6 +131,9 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
     videosCount,
     videoTitle,
     videoScreenshot,
+    videoUrl,
+    soldImageUrl,
+    exchangeType,
     productId,
   };
 };
@@ -372,6 +387,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
         return 'bg-[#FDECEC] text-[#C24141] border-[#F9C3C3]';
       case 'Outdoor Marketing':
         return 'bg-[#E8F4EE] text-[#1B694C] border-[#A7F3D0]';
+      case 'Window Shopping':
       case 'Walkin':
       default:
         return 'bg-[#FAF8F3] text-[#8A8479] border-[#E4DFD4]';
@@ -1248,54 +1264,145 @@ export const PendingCustomerActivityPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Customer Info */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4]">
-                  <span className="text-[10px] uppercase text-[#8A8479] font-bold">Customer Name</span>
-                  <div className="text-[#1D1D1B] font-bold mt-0.5">{inspectActivity.customer_name}</div>
-                </div>
-                <div className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4]">
-                  <span className="text-[10px] uppercase text-[#8A8479] font-bold">Phone Number</span>
-                  <div className="text-[#536B8A] font-mono font-bold mt-0.5">{inspectActivity.phone_number || 'N/A'}</div>
-                </div>
-                <div className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4]">
-                  <span className="text-[10px] uppercase text-[#8A8479] font-bold">Purchase Status</span>
-                  <div className="text-[#1D1D1B] font-bold mt-0.5">{inspectActivity.status}</div>
-                </div>
-                <div className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4]">
-                  <span className="text-[10px] uppercase text-[#8A8479] font-bold">Product Value</span>
-                  <div className="text-[#23815F] font-bold mt-0.5">
-                    ₹{(inspectActivity.product_value || 0).toLocaleString('en-IN')}
-                  </div>
-                </div>
-              </div>
-
-              {/* WhatsApp Queued indicator */}
-              {hasQueuedWhatsapp(inspectActivity) && (
-                <div className="p-3 rounded-2xl bg-[#E8F8EE] border border-[#A6E7B9] flex items-center gap-2 text-xs font-bold text-[#1E7E34]">
-                  <WhatsAppIcon className="w-4 h-4 text-[#25D366]" />
-                  <span>WhatsApp message requested on manager approval</span>
-                </div>
-              )}
-
               {/* Additional breakdown metadata if available */}
               {(() => {
                 const b = getSubrecordDetails(inspectActivity.breakdown);
+                const displayStatus = inspectActivity.status === 'Walkin' ? 'Window Shopping' : inspectActivity.status;
+
                 return (
-                  <div className="space-y-3">
-                    {b.hasScheme && (
-                      <div className="p-3.5 rounded-2xl bg-[#FDF6E2] border border-[#DFCFA6]">
-                        <span className="text-xs font-bold text-[#9A782F] flex items-center gap-1.5">
-                          <Award className="w-4 h-4" />
-                          Gold Scheme Enrollment
-                        </span>
-                        <div className="text-xs text-[#1D1D1B] mt-1 space-y-0.5">
-                          <div>Plan: <strong>{b.schemePlan || 'Standard'}</strong></div>
-                          <div>Monthly: <strong>₹{b.schemeMonthly || 0}</strong></div>
+                  <div className="space-y-3.5">
+                    {/* Customer Info */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4]">
+                        <span className="text-[10px] uppercase text-[#8A8479] font-bold">Customer Name</span>
+                        <div className="text-[#1D1D1B] font-bold mt-0.5">{inspectActivity.customer_name}</div>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4]">
+                        <span className="text-[10px] uppercase text-[#8A8479] font-bold">Phone Number</span>
+                        <div className="text-[#536B8A] font-mono font-bold mt-0.5">{inspectActivity.phone_number || 'N/A'}</div>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4]">
+                        <span className="text-[10px] uppercase text-[#8A8479] font-bold">Outcome / Status</span>
+                        <div className="text-[#1D1D1B] font-bold mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <span>{displayStatus}</span>
+                          {b.exchangeType && inspectActivity.status === 'Exchange' && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
+                              {b.exchangeType}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4]">
+                        <span className="text-[10px] uppercase text-[#8A8479] font-bold">Product Value</span>
+                        <div className="text-[#23815F] font-bold mt-0.5">
+                          ₹{(inspectActivity.product_value || 0).toLocaleString('en-IN')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* WhatsApp Queued indicator */}
+                    {hasQueuedWhatsapp(inspectActivity) && (
+                      <div className="p-3 rounded-2xl bg-[#E8F8EE] border border-[#A6E7B9] flex items-center gap-2 text-xs font-bold text-[#1E7E34]">
+                        <WhatsAppIcon className="w-4 h-4 text-[#25D366]" />
+                        <span>WhatsApp message requested on manager approval</span>
+                      </div>
+                    )}
+
+                    {/* Sold Item Image Card */}
+                    {b.soldImageUrl && (
+                      <div className="p-3.5 rounded-2xl bg-[#E8F4EE] border border-[#A7F3D0]">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-[#166534] flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 text-[#21845F]" />
+                            Sold Ornament / Item Photo
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            Closed Sale
+                          </span>
+                        </div>
+                        <div className="w-full max-w-xs rounded-xl overflow-hidden border border-[#86EFAC] bg-white p-1">
+                          <img
+                            src={getMediaUrl(b.soldImageUrl)}
+                            alt="Sold Item"
+                            onClick={() => setViewProofUrl(getMediaUrl(b.soldImageUrl))}
+                            className="w-full max-h-52 object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                            title="Click to view full image"
+                          />
                         </div>
                       </div>
                     )}
 
+                    {/* Video Review Card */}
+                    {b.hasVideoReview && (
+                      <div className="p-3.5 rounded-2xl bg-[#FAF5FF] border border-[#E9D5FF] space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#7E22CE] flex items-center gap-1.5">
+                            <Video className="w-4 h-4 text-[#A855F7]" />
+                            Customer Video Review ({b.videosCount || 1} Video{b.videosCount > 1 ? 's' : ''})
+                          </span>
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                            +{(b.videosCount || 1) * 5} Points on Approval
+                          </span>
+                        </div>
+                        {b.videoTitle && (
+                          <p className="text-xs font-bold text-[#1D1D1B]">
+                            "{b.videoTitle}"
+                          </p>
+                        )}
+                        {b.videoUrl && (
+                          <div className="text-xs">
+                            <a
+                              href={b.videoUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#7E22CE] font-bold hover:underline inline-flex items-center gap-1"
+                            >
+                              <span>Watch Customer Video URL</span>
+                              <Eye className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        )}
+                        {b.videoScreenshot && (
+                          <div className="pt-2 border-t border-purple-200">
+                            <span className="text-[10px] uppercase font-bold text-purple-700 block mb-1.5">
+                              Video Proof Thumbnail (16:9 Ratio):
+                            </span>
+                            <div className="w-full max-w-md aspect-video rounded-xl overflow-hidden border border-purple-300 bg-black shadow-sm flex items-center justify-center">
+                              <img
+                                src={getMediaUrl(b.videoScreenshot)}
+                                alt="Video Proof Thumbnail"
+                                onClick={() => setViewProofUrl(getMediaUrl(b.videoScreenshot))}
+                                className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                                title="Click to view full image"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Gold Scheme Enrollment Card */}
+                    {b.hasScheme && (
+                      <div className="p-3.5 rounded-2xl bg-[#FDF6E2] border border-[#DFCFA6]">
+                        <span className="text-xs font-bold text-[#9A782F] flex items-center gap-1.5">
+                          <Award className="w-4 h-4 text-[#D97706]" />
+                          Gold Scheme Enrollment
+                        </span>
+                        <div className="text-xs text-[#1D1D1B] mt-2 space-y-1">
+                          <div>Plan: <strong>{b.schemePlan || 'Standard Scheme'}</strong></div>
+                          {b.schemeMonthly && <div>Monthly Installment: <strong>₹{b.schemeMonthly}</strong></div>}
+                          {b.schemeNotes && <div>Price Notes: <strong>{b.schemeNotes}</strong></div>}
+                          {b.schemeReminderDate && (
+                            <div className="flex items-center gap-1 text-[#7E22CE] font-bold pt-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              <span>First Reminder Due: {b.schemeReminderDate}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Google Review Card */}
                     {b.hasReview && (
                       <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE]">
                         <div className="flex items-center justify-between">
@@ -1314,30 +1421,28 @@ export const PendingCustomerActivityPage: React.FC = () => {
                         )}
                         {b.reviewScreenshot && (
                           <div className="mt-2.5 pt-2 border-t border-blue-200">
-                            <span className="text-[10px] uppercase font-bold text-blue-700 block mb-1">
-                              Photo Proof Attached:
+                            <span className="text-[10px] uppercase font-bold text-blue-700 block mb-1.5">
+                              Google Review Photo Proof:
                             </span>
-                            <a
-                              href={b.reviewScreenshot}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-block"
-                            >
+                            <div className="w-full max-w-sm rounded-xl overflow-hidden border border-blue-200 bg-white p-1">
                               <img
-                                src={b.reviewScreenshot}
+                                src={getMediaUrl(b.reviewScreenshot)}
                                 alt="Photo Proof"
-                                className="max-h-36 rounded-xl border border-blue-200 object-contain hover:opacity-90"
+                                onClick={() => setViewProofUrl(getMediaUrl(b.reviewScreenshot))}
+                                className="w-full max-h-52 object-contain rounded-lg cursor-pointer hover:opacity-90"
+                                title="Click to view full image"
                               />
-                            </a>
+                            </div>
                           </div>
                         )}
                       </div>
                     )}
 
+                    {/* Direct Customer Feedback */}
                     {b.hasFeedback && (
                       <div className="p-3.5 rounded-2xl bg-[#F5EDF1] border border-[#E5CFDB]">
                         <span className="text-xs font-bold text-[#6B4657] flex items-center gap-1.5">
-                          <MessageSquareHeart className="w-4 h-4" />
+                          <MessageSquareHeart className="w-4 h-4 text-[#BE185D]" />
                           Direct Customer Feedback ({b.feedbackRating || 5}★)
                         </span>
                         {b.feedbackText && (

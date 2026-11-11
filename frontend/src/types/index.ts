@@ -121,7 +121,9 @@ export interface CustomerDetailItem {
   phone?: string;
   dob?: string;
   anniversary?: string;
-  status: 'Sold' | 'Exchange' | 'Lost' | 'Walkin' | 'In Hold / Follow Up' | 'In Hold' | 'Follow Up' | string;
+  status: 'Sold' | 'Exchange' | 'Lost' | 'Walkin' | 'Window Shopping' | 'In Hold / Follow Up' | 'In Hold' | 'Follow Up' | string;
+  exchange_type?: 'Gold' | 'Diamond' | 'Silver' | 'Cashback' | string;
+  sold_image_url?: string;
   product_id?: string;
   product_value?: number | string;
   notes?: string;
@@ -129,6 +131,8 @@ export interface CustomerDetailItem {
   has_scheme?: boolean;
   scheme_name?: string;
   scheme_amount?: number | string;
+  scheme_reminder_date?: string;
+  scheme_notes?: string;
   // Google Reviews
   has_google_review?: boolean;
   google_review_rating?: number;
@@ -443,12 +447,30 @@ export interface ManagerNotificationItemNote {
   updated_by_manager: boolean;
 }
 
+export interface SchemeReminderNotificationItem {
+  id: number;
+  customer_name: string;
+  phone: string;
+  scheme_name: string;
+  installment_no: number;
+  total_installments: number;
+  amount: number;
+  due_date: string;
+  due_date_raw?: string;
+  is_due_today?: boolean;
+  price_notes?: string;
+  status: string;
+  employee_name?: string;
+}
+
 export interface ManagerNotificationsResponse {
   total_count: number;
   pending_activities_count: number;
   note_reminders_count: number;
+  scheme_reminders_count?: number;
   pending_activities: ManagerNotificationItemActivity[];
   note_reminders: ManagerNotificationItemNote[];
+  scheme_reminders?: SchemeReminderNotificationItem[];
 }
 
 export interface OutdoorDuty {

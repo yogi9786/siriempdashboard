@@ -27,6 +27,7 @@ import {
   MessageSquareHeart,
   MessageSquare,
   Send,
+  Eye,
 } from 'lucide-react';
 import { CustomerActivity, Employee, WhatsAppCustomerRecipient } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -34,6 +35,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { CustomerActivityModal } from '../../components/customers/CustomerActivityModal';
+import { CustomerActivityViewModal } from '../../components/customers/CustomerActivityViewModal';
 import { SendWhatsAppModal } from '../../components/whatsapp/SendWhatsAppModal';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
@@ -62,6 +64,7 @@ export const CustomerActivityPage: React.FC = () => {
   // Modals
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [editingActivity, setEditingActivity] = useState<CustomerActivity | null>(null);
+  const [viewingActivity, setViewingActivity] = useState<CustomerActivity | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomerActivity | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
@@ -329,12 +332,13 @@ export const CustomerActivityPage: React.FC = () => {
             <span>Lost</span>
           </span>
         );
+      case 'Window Shopping':
       case 'Walkin':
       default:
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FAF8F3] text-[#8A8479] border border-[#E4DFD4]">
             <Users className="w-3 h-3 text-[#8A8479]" />
-            <span>Walkin</span>
+            <span>Window Shopping</span>
           </span>
         );
     }
@@ -771,6 +775,13 @@ export const CustomerActivityPage: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0 ml-auto">
+                      <button
+                        onClick={() => setViewingActivity(act)}
+                        className="p-1.5 rounded-lg text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FAF8F3] transition-colors cursor-pointer border border-[#E4DFD4]"
+                        title="View Customer Details"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
                       {getStatusBadge(act.status)}
                       {act.approval_status === 'PENDING' && (
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
@@ -1156,6 +1167,14 @@ export const CustomerActivityPage: React.FC = () => {
                       <td className="px-5 py-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
+                            onClick={() => setViewingActivity(act)}
+                            className="p-2 rounded-xl text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FAF8F3] transition-colors cursor-pointer border border-transparent hover:border-[#E4DFD4]"
+                            title="View Customer Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+
+                          <button
                             onClick={() => handleOpenSingleWhatsApp(act)}
                             disabled={!act.phone_number || act.phone_number.trim().length < 10}
                             className="p-2 rounded-xl text-[#16A34A] hover:text-[#15803D] hover:bg-[#DCFCE7] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
@@ -1198,6 +1217,15 @@ export const CustomerActivityPage: React.FC = () => {
       )}
 
       {/* Add / Edit Customer Activity Modal */}
+            {/* Customer Activity View Details Modal */}
+      {viewingActivity && (
+        <CustomerActivityViewModal
+          isOpen={Boolean(viewingActivity)}
+          onClose={() => setViewingActivity(null)}
+          activity={viewingActivity}
+        />
+      )}
+
       {showAddModal && (
         <CustomerActivityModal
           isOpen={showAddModal}

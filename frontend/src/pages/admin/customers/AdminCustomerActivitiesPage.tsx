@@ -160,12 +160,13 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
             <span>Lost</span>
           </span>
         );
+      case 'Window Shopping':
       case 'Walkin':
       default:
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F4F4F5] text-[#52525B] border border-[#E4E4E7]">
             <Users className="w-3 h-3 text-[#71717A]" />
-            <span>Walkin</span>
+            <span>Window Shopping</span>
           </span>
         );
     }

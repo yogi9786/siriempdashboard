@@ -210,3 +210,30 @@ class EmployeeCallLog(Base):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
+
+class SchemePaymentReminder(Base):
+    """Tracks monthly customer scheme payment reminders for managers."""
+    __tablename__ = "scheme_payment_reminders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    branch_id = Column(Integer, ForeignKey("branches.id"), index=True, nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.id"), index=True, nullable=True)
+    customer_activity_id = Column(Integer, ForeignKey("customer_activities.id"), index=True, nullable=True)
+    customer_name = Column(String(150), nullable=False)
+    phone = Column(String(50), nullable=True)
+    scheme_name = Column(String(150), nullable=False)
+    installment_no = Column(Integer, default=1, nullable=False)
+    total_installments = Column(Integer, default=10, nullable=False)
+    amount = Column(Float, default=0.0, nullable=False)
+    due_date = Column(Date, index=True, nullable=False)
+    price_notes = Column(Text, nullable=True)
+    status = Column(String(50), default="Pending", nullable=False)  # Pending, Paid, Dismissed
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    # Relationships
+    branch = relationship("Branch")
+    employee = relationship("Employee")
+    customer_activity = relationship("CustomerActivity")
+
+

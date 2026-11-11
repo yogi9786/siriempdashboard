@@ -1,15 +1,19 @@
 import re
+import os
+import uuid
 import json
+import calendar
 from typing import List, Optional, Dict, Any
 from datetime import date, datetime, timezone
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.models.branch import User
 from backend.app.models.employee import Employee
-from backend.app.models.activity import CustomerActivity, SchemeRecord, GoogleReview, VideoReview
+from backend.app.models.activity import CustomerActivity, SchemeRecord, GoogleReview, VideoReview, SchemePaymentReminder
 from backend.app.models.feedback import CustomerFeedback
 from backend.app.schemas.activity import (
     CustomerActivityCreate,
@@ -324,8 +328,17 @@ def create_customer_activity(
     return _build_activity_response(record)
 
 
+def _add_months(orig_date: date, months: int) -> date:
+    """Safely adds months to a date, preserving day of month or clapping to month end."""
+    year = orig_date.year + (orig_date.month + months - 1) // 12
+    month = (orig_date.month + months - 1) % 12 + 1
+    max_day = calendar.monthrange(year, month)[1]
+    day = min(orig_date.day, max_day)
+    return date(year, month, day)
+
+
 def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
-    """Sync individual customer scheme records, google reviews, and direct feedbacks from breakdown."""
+    """Sync individual customer scheme records, google reviews, direct feedbacks, and scheme payment reminders from breakdown."""
     if not record.breakdown:
         return
     try:
@@ -359,6 +372,10 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
             SchemeRecord.notes.like(f"%{tag}%")
         ).delete(synchronize_session=False)
 
+        db.query(SchemePaymentReminder).filter(
+            SchemePaymentReminder.customer_activity_id == record.id
+        ).delete(synchronize_session=False)
+
         db.query(GoogleReview).filter(
             GoogleReview.branch_id == record.branch_id,
             GoogleReview.notes.like(f"%{tag}%")
@@ -374,6 +391,9 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
             VideoReview.notes.like(f"%{tag}%")
         ).delete(synchronize_session=False)
 
+        is_act_approved = (record.approval_status or "").upper() == "APPROVED"
+        is_act_rejected = (record.approval_status or "").upper() == "REJECTED"
+
         for item in items:
             c_name = (item.get("name") or record.customer_name or "Customer").strip()
             c_phone = (item.get("phone") or record.phone_number or "").strip()
@@ -385,25 +405,62 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
                 except Exception:
                     act_date = date.today()
 
-            # 1. Schemes Closed (only created when activity is approved)
-            if is_act_approved and (item.get("has_scheme") or item.get("scheme_name")):
+            # 1. Schemes Closed & Payment Reminders
+            if item.get("has_scheme") or item.get("scheme_name"):
                 s_name = (item.get("scheme_name") or "SIRISAMRUDDHI GOLDEN DREAMS").strip()
                 try:
                     s_amt = float(item.get("scheme_amount") or 0.0)
                 except (ValueError, TypeError):
                     s_amt = 0.0
 
-                sr = SchemeRecord(
-                    branch_id=record.branch_id,
-                    employee_id=record.employee_id,
-                    customer_name=c_name,
-                    customers_count=1,
-                    scheme_name=s_name,
-                    amount=s_amt,
-                    record_date=act_date,
-                    notes=f"Enrolled in {s_name} with Customer #{item.get('id', 1)}. Linked to {tag}",
-                )
-                db.add(sr)
+                s_notes = (item.get("scheme_notes") or item.get("price_notes") or "").strip()
+
+                if is_act_approved:
+                    sr = SchemeRecord(
+                        branch_id=record.branch_id,
+                        employee_id=record.employee_id,
+                        customer_name=c_name,
+                        customers_count=1,
+                        scheme_name=s_name,
+                        amount=s_amt,
+                        record_date=act_date,
+                        notes=f"Enrolled in {s_name} with Customer #{item.get('id', 1)}. {s_notes} Linked to {tag}".strip(),
+                    )
+                    db.add(sr)
+
+                # Scheme Payment Reminders: Auto-added when saved
+                # Nidhi scheme is exactly 10 months; other 2 schemes are 11 months
+                rem_date_str = item.get("scheme_reminder_date") or item.get("reminder_date")
+                if rem_date_str:
+                    try:
+                        start_due = date.fromisoformat(str(rem_date_str).split("T")[0])
+                    except Exception:
+                        start_due = _add_months(act_date, 1)
+                else:
+                    start_due = _add_months(act_date, 1)
+
+                if "NIDHI" in s_name.upper():
+                    total_inst = 10
+                else:
+                    total_inst = 11
+
+                for inst_no in range(1, total_inst + 1):
+                    inst_due = _add_months(start_due, inst_no - 1)
+                    spr = SchemePaymentReminder(
+                        branch_id=record.branch_id,
+                        employee_id=record.employee_id,
+                        customer_activity_id=record.id,
+                        customer_name=c_name,
+                        phone=c_phone,
+                        scheme_name=s_name,
+                        installment_no=inst_no,
+                        total_installments=total_inst,
+                        amount=s_amt,
+                        due_date=inst_due,
+                        price_notes=s_notes or None,
+                        status="Pending",
+                    )
+                    db.add(spr)
 
             # 2. Google Review
             if item.get("has_google_review") or item.get("google_review_text"):
@@ -766,6 +823,10 @@ def delete_customer_activity(
             CustomerFeedback.employee_id == record.employee_id,
             CustomerFeedback.notes.like(f"%{tag}%")
         ).delete(synchronize_session=False)
+
+        db.query(SchemePaymentReminder).filter(
+            SchemePaymentReminder.customer_activity_id == record.id
+        ).delete(synchronize_session=False)
     except Exception as cleanup_err:
         print(f"Warning cleaning subrecords for activity #{record.id}: {cleanup_err}")
 
@@ -779,3 +840,34 @@ def delete_customer_activity(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete customer activity: {str(e)}",
         )
+
+
+@router.post("/upload-photo", status_code=status.HTTP_201_CREATED, summary="Upload photo for sold customer activity item or invoice")
+async def upload_customer_item_photo(
+    file: UploadFile = File(...),
+):
+    """Uploads sold item or customer activity photo proof. Accepts JPEG, PNG, or WebP up to 10MB."""
+    content_type = file.content_type.lower() if file.content_type else ""
+    allowed_mimes = {
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+    }
+    if content_type not in allowed_mimes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid image format. Please upload JPEG, PNG, or WebP photo.",
+        )
+    os.makedirs(settings.MEDIA_DIR, exist_ok=True)
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image file size exceeds 10MB limit.")
+    ext = allowed_mimes.get(content_type, ".jpg")
+    filename = f"sold_photo_{uuid.uuid4().hex[:12]}{ext}"
+    file_path = os.path.join(settings.MEDIA_DIR, filename)
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    rel_url = f"/uploads/{filename}"
+    return {"url": rel_url, "photo_url": rel_url, "message": "Photo uploaded successfully"}
+

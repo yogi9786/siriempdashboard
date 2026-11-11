@@ -13,12 +13,19 @@ import {
   RotateCcw,
   UserCheck,
   Calendar,
+  Award,
   MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SignOutConfirmModal } from '../auth/SignOutConfirmModal';
 import { ManagerNotificationsResponse } from '../../types';
 import api from '../../api/client';
+
+const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-3 h-3' }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.97.53 1.83.812 2.796.813 3.179 0 5.767-2.587 5.768-5.766.001-3.181-2.587-5.766-5.768-5.766zm3.376 8.212c-.144.405-.837.774-1.17.824-.312.045-.717.067-1.168-.08-.288-.094-.658-.236-1.144-.45-2.072-.913-3.414-3.033-3.518-3.173-.104-.14-1.01-1.344-1.01-2.564 0-1.22.637-1.82.863-2.066.226-.246.495-.308.66-.308.165 0 .33.003.475.01.153.008.358-.058.56.427.207.497.708 1.724.77 1.849.062.125.104.271.021.437-.083.165-.124.27-.247.416-.124.145-.262.325-.374.436-.125.124-.255.26-.11.51.145.249.645 1.062 1.385 1.722.953.849 1.756 1.112 2.004 1.237.248.125.394.104.539-.063.145-.166.621-.726.786-.975.166-.249.331-.208.558-.125.228.083 1.446.682 1.694.807.248.124.414.186.475.29.063.104.063.602-.081 1.007zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.98-1.306A9.957 9.957 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" />
+  </svg>
+);
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -259,6 +266,82 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, onOpenMobileMenu }
                           <p className="text-[9px] text-[#A1A1AA]">
                             Marketer: {note.employee_name} ({note.area_name || 'Field'})
                           </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Section 3: Gold Scheme Payment Reminders */}
+                  <div className="space-y-1.5 pt-2 border-t border-[#27272A]">
+                    <div className="flex items-center justify-between px-2 pt-1 pb-0.5">
+                      <span className="text-[11px] font-bold text-[#F59E0B] uppercase tracking-wider flex items-center gap-1.5">
+                        <Award className="w-3 h-3 text-[#F59E0B]" />
+                        <span>Gold Scheme Dues ({notifications?.scheme_reminders_count || 0})</span>
+                      </span>
+                    </div>
+
+                    {(notifications?.scheme_reminders || []).length === 0 ? (
+                      <p className="text-[11px] text-[#71717A] italic px-2 py-1">
+                        No customer scheme payments due today.
+                      </p>
+                    ) : (
+                      notifications?.scheme_reminders.slice(0, 4).map((sch) => (
+                        <div
+                          key={sch.id}
+                          className="p-2.5 rounded-xl bg-[#27272A]/70 hover:bg-[#2E2E33] transition-colors space-y-1 text-left border border-amber-900/40"
+                        >
+                          <div className="flex items-center justify-between text-xs font-bold text-white">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="truncate">{sch.customer_name}</span>
+                              {sch.phone && (
+                                <a
+                                  href={`https://wa.me/91${sch.phone.replace(/[^0-9]/g, '').slice(-10)}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[#25D366] hover:opacity-80"
+                                  title="WhatsApp customer"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <WhatsAppIcon className="w-3 h-3 inline" />
+                                </a>
+                              )}
+                            </div>
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-[#FEF3C7] text-[#92400E]">
+                              ₹{sch.amount ? Number(sch.amount).toLocaleString('en-IN') : 0}
+                            </span>
+                          </div>
+
+                          <p className="text-[10px] text-[#E5C378] font-semibold flex items-center justify-between">
+                            <span className="truncate">{sch.scheme_name} (Inst. {sch.installment_no}/{sch.total_installments})</span>
+                            <span className="text-[#A1A1AA] shrink-0 ml-1">Due: {sch.due_date}</span>
+                          </p>
+
+                          {sch.price_notes && (
+                            <p className="text-[9.5px] text-[#D4D4D8] italic line-clamp-1">
+                              Note: {sch.price_notes}
+                            </p>
+                          )}
+
+                          <div className="flex items-center justify-between pt-1">
+                            <span className="text-[9px] text-[#A1A1AA]">Staff: {sch.employee_name || 'Showroom'}</span>
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await api.post(`/api/v1/dashboard/notifications/scheme-reminder/${sch.id}/status`, null, {
+                                    params: { status: 'Paid' },
+                                  });
+                                  fetchNotifications();
+                                } catch (err) {
+                                  console.error(err);
+                                }
+                              }}
+                              className="px-2 py-0.5 rounded text-[9.5px] font-bold bg-[#16A34A] hover:bg-[#15803D] text-white cursor-pointer shadow-xs"
+                            >
+                              ✓ Mark Paid
+                            </button>
+                          </div>
                         </div>
                       ))
                     )}

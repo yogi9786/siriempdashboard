@@ -30,6 +30,7 @@ import { Button } from '../ui/Button';
 import { useToast } from '../../context/ToastContext';
 import { CustomerActivity, CustomerDetailItem, Employee } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
+import { getMediaUrl } from '../../utils/media';
 import { SCHEMES, DEFAULT_SCHEME } from '../../constants/schemes';
 import api from '../../api/client';
 
@@ -77,6 +78,38 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
   const [uploadingGoogleProofIdx, setUploadingGoogleProofIdx] = useState<number | null>(null);
   const [previewProofUrl, setPreviewProofUrl] = useState<string | null>(null);
   const [uploadingVideoProofIdx, setUploadingVideoProofIdx] = useState<number | null>(null);
+  const [uploadingSoldPhotoIdx, setUploadingSoldPhotoIdx] = useState<number | null>(null);
+
+  
+  const handleSoldPhotoUpload = async (idx: number, file: File) => {
+    if (!file) return;
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type.toLowerCase())) {
+      toastError('Please upload a valid image (PNG, JPG, or WebP).');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toastError('Image file size must be less than 10MB.');
+      return;
+    }
+
+    try {
+      setUploadingSoldPhotoIdx(idx);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post('/api/v1/customers/upload-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url = res.data.photo_url || res.data.url;
+      handleCustomerFieldChange(idx, 'sold_image_url', url);
+      success('Sold item photo attached.');
+    } catch (err: any) {
+      console.error('Failed to upload sold item photo:', err);
+      toastError(err.response?.data?.detail || 'Failed to upload photo.');
+    } finally {
+      setUploadingSoldPhotoIdx(null);
+    }
+  };
 
   const handleDeleteCustomerColumn = (idx: number) => {
     setCustomerItems((prev) => {
@@ -159,7 +192,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
             phone: '',
             dob: '',
             anniversary: '',
-            status: 'Walkin',
+            status: 'Window Shopping', exchange_type: 'Gold', sold_image_url: '', scheme_reminder_date: '', scheme_notes: '',
             product_id: '',
             product_value: '',
             notes: '',
@@ -205,7 +238,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
             phone: '',
             dob: '',
             anniversary: '',
-            status: 'Walkin',
+            status: 'Window Shopping', exchange_type: 'Gold', sold_image_url: '', scheme_reminder_date: '', scheme_notes: '',
             product_id: '',
             product_value: '',
             notes: '',
@@ -287,6 +320,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
         return 'bg-[#FAF1EC] text-[#B97855] border-[#ECCFC0]';
       case 'Lost':
         return 'bg-[#FDECEC] text-[#C24141] border-[#F9C3C3]';
+      case 'Window Shopping':
       case 'Walkin':
       default:
         return 'bg-[#FAF8F3] text-[#8A8479] border-[#E4DFD4]';
@@ -367,7 +401,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
       anniversary: annivClean,
       product_value: typeof totalVal === 'number' && !isNaN(totalVal) ? totalVal : 0,
       activity_date: activityDate && activityDate.trim() ? activityDate.trim() : new Date().toISOString().split('T')[0],
-      status: primaryStatus || 'Walkin',
+      status: primaryStatus || 'Window Shopping',
       breakdown: JSON.stringify(itemsToUse),
       notes: notesToUse && notesToUse.trim() ? notesToUse.trim() : null,
     };
@@ -412,7 +446,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
     try {
       setIsSendingWhatsappAll(true);
 
-      let primaryStatus = 'Walkin';
+      let primaryStatus = 'Window Shopping';
       let totalProductVal = 0;
 
       if (customerCount > 0 && customerItems.length > 0) {
@@ -525,7 +559,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
       setIsSubmitting(true);
 
       // Determine primary status and total product value
-      let primaryStatus = 'Walkin';
+      let primaryStatus = 'Window Shopping';
       let totalProductVal = 0;
 
       if (customerCount > 0 && customerItems.length > 0) {
@@ -880,68 +914,142 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Outcome Status, Product ID & Product Value */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-0.5">
-                    {/* Status Dropdown: Sold, Exchange, Lost, Walkin, In Hold / Follow Up */}
-                    <div>
-                      <label className="text-[11px] font-bold text-[#1D1D1B] mb-1 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-[#536B8A]" />
-                        <span>Outcome / Status *</span>
-                      </label>
-                      <select
-                        value={item.status || 'Walkin'}
-                        onChange={(e) =>
-                          handleCustomerFieldChange(idx, 'status', e.target.value)
-                        }
-                        className="w-full text-xs font-bold select-luxury-slate rounded-xl px-2.5 py-2 cursor-pointer"
-                      >
-                        <option value="Sold">Sold (Purchased / Closed)</option>
-                        <option value="Interested">Interested (Interested / In Hold / Callback)</option>
-                        <option value="Lost">Lost (Not Interested / Left)</option>
-                        <option value="Exchange">Exchange (Gold / Diamond / Silver Exchange)</option>
-                        <option value="In Hold / Follow Up">In Hold / Follow Up</option>
-                        <option value="Walkin">Walkin (General Inquiry / Browsing)</option>
-                      </select>
-                    </div>
+                  {/* Outcome Status, Exchange Option, Sold Photo, Product ID & Product Value */}
+                  <div className="space-y-2.5 pt-0.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {/* Status Dropdown: Sold, Exchange, Lost, Window Shopping, In Hold / Follow Up */}
+                      <div>
+                        <label className="text-[11px] font-bold text-[#1D1D1B] mb-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-[#536B8A]" />
+                          <span>Outcome / Status *</span>
+                        </label>
+                        <select
+                          value={item.status || 'Window Shopping'}
+                          onChange={(e) =>
+                            handleCustomerFieldChange(idx, 'status', e.target.value)
+                          }
+                          className="w-full text-xs font-bold select-luxury-slate rounded-xl px-2.5 py-2 cursor-pointer"
+                        >
+                          <option value="Sold">Sold (Purchased / Closed)</option>
+                          <option value="Interested">Interested (Interested / In Hold / Callback)</option>
+                          <option value="Lost">Lost (Not Interested / Left)</option>
+                          <option value="Exchange">Exchange (Gold / Diamond / Silver / Cashback)</option>
+                          <option value="In Hold / Follow Up">In Hold / Follow Up</option>
+                          <option value="Window Shopping">Window Shopping (General Inquiry / Browsing)</option>
+                        </select>
+                      </div>
 
-                    {/* Product ID / Tag */}
-                    <div>
-                      <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-[#D97706]" />
-                        <span>Product ID / Code (Optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={item.product_id || ''}
-                        onChange={(e) =>
-                          handleCustomerFieldChange(idx, 'product_id', e.target.value)
-                        }
-                        placeholder="e.g. 22KT-NK-101"
-                        className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2 font-mono uppercase"
-                      />
-                    </div>
+                      {/* Beside Outcome: If Exchange, show dropdown Gold / Diamond / Silver / Cashback */}
+                      {item.status === 'Exchange' && (
+                        <div>
+                          <label className="text-[11px] font-bold text-[#2563EB] mb-1 flex items-center gap-1">
+                            <ArrowUpDown className="w-3 h-3 text-[#2563EB]" />
+                            <span>Exchange Type *</span>
+                          </label>
+                          <select
+                            value={item.exchange_type || 'Gold'}
+                            onChange={(e) =>
+                              handleCustomerFieldChange(idx, 'exchange_type', e.target.value)
+                            }
+                            className="w-full text-xs font-bold select-luxury-slate rounded-xl px-2.5 py-2 cursor-pointer bg-[#EFF6FF] border-[#93C5FD]"
+                          >
+                            <option value="Gold">Gold</option>
+                            <option value="Diamond">Diamond</option>
+                            <option value="Silver">Silver</option>
+                            <option value="Cashback">Cashback</option>
+                          </select>
+                        </div>
+                      )}
 
-                    {/* Product Value (₹) */}
-                    <div>
-                      <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
-                        <IndianRupee className="w-3 h-3 text-[#21845F]" />
-                        <span>Value of Product (₹, Optional)</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={item.product_value || ''}
-                        onChange={(e) =>
-                          handleCustomerFieldChange(
-                            idx,
-                            'product_value',
-                            e.target.value
-                          )
-                        }
-                        placeholder="e.g. 45000"
-                        className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2 font-mono"
-                      />
+                      {/* Beside Outcome: If Sold, show Add Image button beside/with sold option */}
+                      {item.status === 'Sold' && (
+                        <div>
+                          <label className="text-[11px] font-bold text-[#166534] mb-1 flex items-center gap-1">
+                            <UploadCloud className="w-3 h-3 text-[#166534]" />
+                            <span>Sold Item Photo</span>
+                          </label>
+                          {item.sold_image_url ? (
+                            <div className="flex items-center gap-2 p-1.5 rounded-xl bg-[#E8F4EE] border border-[#A7F3D0]">
+                              <img
+                                src={getMediaUrl(item.sold_image_url)}
+                                alt="Sold Item"
+                                onClick={() => setPreviewProofUrl(getMediaUrl(item.sold_image_url))}
+                                className="w-8 h-8 rounded-lg object-cover cursor-pointer border border-[#86EFAC] hover:opacity-80"
+                                title="Click to enlarge"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[10px] font-bold text-[#166534] block truncate">Photo Attached</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCustomerFieldChange(idx, 'sold_image_url', '')}
+                                  className="text-[9px] font-bold text-[#DC2626] hover:underline cursor-pointer"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl bg-[#E8F4EE] hover:bg-[#D1FAE5] border border-[#A7F3D0] text-[#166534] text-[11px] font-bold cursor-pointer transition-colors shadow-2xs">
+                              {uploadingSoldPhotoIdx === idx ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#166534]" />
+                              ) : (
+                                <UploadCloud className="w-3.5 h-3.5 text-[#166534]" />
+                              )}
+                              <span>{uploadingSoldPhotoIdx === idx ? 'Uploading...' : '+ Add Sold Photo'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingSoldPhotoIdx === idx}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) handleSoldPhotoUpload(idx, f);
+                                }}
+                              />
+                            </label>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Product ID / Tag */}
+                      <div>
+                        <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-[#D97706]" />
+                          <span>Product ID / Code (Optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={item.product_id || ''}
+                          onChange={(e) =>
+                            handleCustomerFieldChange(idx, 'product_id', e.target.value)
+                          }
+                          placeholder="e.g. 22KT-NK-101"
+                          className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2 font-mono uppercase"
+                        />
+                      </div>
+
+                      {/* Product Value (₹) */}
+                      <div>
+                        <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
+                          <IndianRupee className="w-3 h-3 text-[#21845F]" />
+                          <span>Value of Product (₹, Optional)</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={item.product_value || ''}
+                          onChange={(e) =>
+                            handleCustomerFieldChange(
+                              idx,
+                              'product_value',
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g. 45000"
+                          className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2 font-mono"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1042,26 +1150,65 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                     </select>
 
                     {item.scheme_name && (
-                      <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <div className="flex-1">
-                          <label className="text-[11px] font-bold text-[#536B8A] mb-1 block">
-                            Monthly Contribution Amount (₹, Optional)
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={item.scheme_amount || ''}
-                            onChange={(e) =>
-                              handleCustomerFieldChange(idx, 'scheme_amount', e.target.value)
-                            }
-                            placeholder="e.g. 5000"
-                            className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-1.5 font-mono"
-                          />
+                      <div className="pt-2.5 space-y-2.5 border-t border-[#E8E4D9]">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          <div>
+                            <label className="text-[11px] font-bold text-[#536B8A] mb-1 block">
+                              Monthly Contribution (₹)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={item.scheme_amount || ''}
+                              onChange={(e) =>
+                                handleCustomerFieldChange(idx, 'scheme_amount', e.target.value)
+                              }
+                              placeholder="e.g. 5000"
+                              className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2 font-mono"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-bold text-[#536B8A] mb-1 block">
+                              Price Notes (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={item.scheme_notes || ''}
+                              onChange={(e) =>
+                                handleCustomerFieldChange(idx, 'scheme_notes', e.target.value)
+                              }
+                              placeholder="e.g. ₹5,000/mo lock rate"
+                              className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-bold text-[#7E22CE] mb-1 flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-[#7E22CE]" />
+                              <span>Calendar Reminder Date *</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={item.scheme_reminder_date || ''}
+                              onChange={(e) =>
+                                handleCustomerFieldChange(idx, 'scheme_reminder_date', e.target.value)
+                              }
+                              className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2 font-medium"
+                            />
+                          </div>
                         </div>
-                        <span className="self-start sm:self-end text-[10px] font-bold px-2.5 py-1.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
-                          ✨ {item.scheme_name} Enrolled
-                        </span>
+
+                        {/* Reminder Schedule Info Banner */}
+                        <div className="p-2.5 rounded-xl bg-[#FFFBEB] border border-[#FDE68A] flex items-center gap-2 text-[11px] text-[#92400E]">
+                          <Award className="w-4 h-4 text-[#D97706] shrink-0" />
+                          <span>
+                            {item.scheme_name.toUpperCase().includes('NIDHI')
+                              ? 'Nidhi Scheme Auto-Alert: Exactly 10 monthly reminders will be auto-scheduled for manager notification starting on this date.'
+                              : 'Gold Scheme Auto-Alert: Monthly payment reminders (11 installments) will be auto-scheduled for manager notification.'}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>

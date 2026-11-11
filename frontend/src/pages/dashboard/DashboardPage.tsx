@@ -829,7 +829,8 @@ export const DashboardPage: React.FC = () => {
                     ? customerNames.slice(0, 2).join(', ') + (customerNames.length > 2 ? ` (+${customerNames.length - 2} more)` : '')
                     : 'Customer Attended';
 
-                  const primaryStatus = statuses.length > 0 ? statuses[0] : (act.status || 'Walkin');
+                  const rawSt = statuses.length > 0 ? statuses[0] : (act.status || 'Window Shopping');
+                  const primaryStatus = rawSt === 'Walkin' || rawSt === 'Walk-in' ? 'Window Shopping' : rawSt;
 
                   const parts: string[] = [primaryName];
                   if (primaryStatus) parts.push(primaryStatus);

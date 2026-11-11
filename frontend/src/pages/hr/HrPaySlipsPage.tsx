@@ -623,3 +623,4 @@ export const HrPaySlipsPage: React.FC = () => {
     </div>
   );
 };
+

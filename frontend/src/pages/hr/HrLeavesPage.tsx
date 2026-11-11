@@ -407,3 +407,4 @@ export const HrLeavesPage: React.FC = () => {
     </div>
   );
 };
+

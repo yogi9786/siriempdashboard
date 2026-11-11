@@ -673,3 +673,4 @@ export const BranchRevenuePage: React.FC = () => {
     </div>
   );
 };
+

@@ -82,3 +82,4 @@ export const HrLayout: React.FC = () => {
     </div>
   );
 };
+

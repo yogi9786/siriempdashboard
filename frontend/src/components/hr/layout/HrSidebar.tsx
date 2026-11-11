@@ -404,3 +404,4 @@ export const HrSidebar: React.FC<HrSidebarProps> = ({ onCloseMobile }) => {
     </aside>
   );
 };
+

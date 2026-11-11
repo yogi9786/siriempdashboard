@@ -543,3 +543,4 @@ def review_hr_leave(
         "rejection_reason": req.rejection_reason,
         "message": f"Leave request #{req.id} marked as {decision}.",
     }
+

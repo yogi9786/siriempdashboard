@@ -318,3 +318,4 @@ export const HrCustomersPage: React.FC = () => {
     </div>
   );
 };
+

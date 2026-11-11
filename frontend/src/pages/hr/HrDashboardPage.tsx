@@ -323,3 +323,4 @@ export const HrDashboardPage: React.FC = () => {
     </div>
   );
 };
+

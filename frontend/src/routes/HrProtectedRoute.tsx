@@ -22,3 +22,4 @@ export const HrProtectedRoute: React.FC = () => {
 
   return <Outlet />;
 };
+

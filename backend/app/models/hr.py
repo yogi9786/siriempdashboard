@@ -51,3 +51,4 @@ class EmployeeLeaveRequest(Base):
     # Relationships
     branch = relationship("Branch")
     employee = relationship("Employee")
+

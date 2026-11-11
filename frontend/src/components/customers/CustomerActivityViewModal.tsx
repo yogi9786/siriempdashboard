@@ -36,12 +36,16 @@ interface CustomerActivityViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   activity: CustomerActivity | null;
+  onApprove?: (activity: CustomerActivity) => void;
+  onReject?: (activity: CustomerActivity) => void;
 }
 
 export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps> = ({
   isOpen,
   onClose,
   activity,
+  onApprove,
+  onReject,
 }) => {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
@@ -412,7 +416,7 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 border-t border-[#EBE6DC] bg-[#FAF8F3] flex justify-end">
+        <div className="px-6 py-3.5 border-t border-[#EBE6DC] bg-[#FAF8F3] flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5">
           <Button
             variant="outline"
             size="sm"
@@ -421,6 +425,31 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
           >
             Close
           </Button>
+
+          {activity.approval_status === 'PENDING' && (onApprove || onReject) && (
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              {onReject && (
+                <button
+                  type="button"
+                  onClick={() => onReject(activity)}
+                  className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-white border border-[#FECACA] hover:bg-[#FEF2F2] text-[#DC2626] text-xs font-bold shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98"
+                >
+                  <XCircle className="w-3.5 h-3.5 text-[#DC2626]" />
+                  <span>Reject Entry</span>
+                </button>
+              )}
+              {onApprove && (
+                <button
+                  type="button"
+                  onClick={() => onApprove(activity)}
+                  className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#23815F] hover:bg-[#1B694C] text-white text-xs font-extrabold shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98 hover:scale-[1.02]"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span>Approve Customer Entry</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

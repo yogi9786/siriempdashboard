@@ -3724,7 +3724,7 @@ export const EmployeePortalPage: React.FC = () => {
         employeeName={dashboardSummary?.employee_name || user?.full_name}
         initialData={editingActivity}
         apiBaseUrl="/api/v1/employee/customers"
-        defaultCustomerCount={1}
+        defaultCustomerCount={0}
       />
 
       {/* ------------------------------------------------------------------- */}

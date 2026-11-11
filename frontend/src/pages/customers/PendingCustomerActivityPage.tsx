@@ -1479,15 +1479,45 @@ export const PendingCustomerActivityPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex justify-end pt-3 border-t border-[#E4DFD4]">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-3.5 border-t border-[#E4DFD4]">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setInspectActivity(null)}
-                className="bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#6B6559] border-[#D5CFC4] text-xs font-semibold px-4 py-2 rounded-xl"
+                className="bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#6B6559] border-[#D5CFC4] text-xs font-semibold px-4 py-2 rounded-xl justify-center cursor-pointer"
               >
                 Close
               </Button>
+
+              {inspectActivity.approval_status === 'PENDING' && (
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const act = inspectActivity;
+                      setInspectActivity(null);
+                      handleOpenReview(act, 'REJECT');
+                    }}
+                    className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-white border border-[#FECACA] hover:bg-[#FEF2F2] text-[#DC2626] text-xs font-bold shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98"
+                  >
+                    <XCircle className="w-3.5 h-3.5 text-[#DC2626]" />
+                    <span>Reject Entry</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const act = inspectActivity;
+                      setInspectActivity(null);
+                      handleOpenReview(act, 'APPROVE');
+                    }}
+                    className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#23815F] hover:bg-[#1B694C] text-white text-xs font-extrabold shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98 hover:scale-[1.02]"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>Approve Customer Entry</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -66,7 +66,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
   const { success, error: toastError } = useToast();
 
   const [selectedEmpId, setSelectedEmpId] = useState<number>(0);
-  const [customerCount, setCustomerCount] = useState<number>(0);
+  const [customerCount, setCustomerCount] = useState<number>(defaultCustomerCount !== undefined ? defaultCustomerCount : 0);
   const [customerItems, setCustomerItems] = useState<CustomerDetailItem[]>([]);
   const [activityDate, setActivityDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -272,7 +272,59 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
     value: any
   ) => {
     setCustomerItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+      prev.map((item, i) => {
+        if (i !== index) return item;
+        const updated = { ...item, [field]: value };
+
+        // 1. When outcome / status changes away from Sold or Exchange, wipe associated state cleanly
+        if (field === 'status') {
+          if (value !== 'Sold') {
+            updated.sold_image_url = '';
+          }
+          if (value !== 'Exchange') {
+            updated.exchange_type = undefined;
+          } else if (!updated.exchange_type) {
+            updated.exchange_type = 'Gold';
+          }
+        }
+
+        // 2. When Jewellery Savings Scheme is deselected or cleared
+        if (field === 'has_scheme' && !value) {
+          updated.scheme_name = '';
+          updated.scheme_amount = '';
+          updated.scheme_notes = '';
+          updated.scheme_reminder_date = '';
+        }
+        if (field === 'scheme_name' && !value) {
+          updated.has_scheme = false;
+          updated.scheme_amount = '';
+          updated.scheme_notes = '';
+          updated.scheme_reminder_date = '';
+        }
+
+        // 3. When Google Review is unchecked or cleared
+        if (field === 'has_google_review' && !value) {
+          updated.google_review_screenshot = '';
+          updated.google_review_text = '';
+          updated.google_review_rating = 5;
+        }
+
+        // 4. When Video Review is unchecked or cleared
+        if (field === 'has_video_review' && !value) {
+          updated.video_screenshot = '';
+          updated.video_title = '';
+          updated.video_url = '';
+          updated.videos_count = 1;
+        }
+
+        // 5. When Customer Feedback is unchecked or cleared
+        if (field === 'has_customer_feedback' && !value) {
+          updated.feedback_text = '';
+          updated.feedback_rating = 5;
+        }
+
+        return updated;
+      })
     );
   };
 
@@ -419,7 +471,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
     }
 
     if (customerCount <= 0 || customerItems.length === 0) {
-      toastError('Please select at least 1 customer to send WhatsApp messages.');
+      toastError('Please select at least 1 customer before saving.');
       return;
     }
 
@@ -433,15 +485,16 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
         toastError(`Please upload photo proof for customer ${item.name ? `"${item.name}"` : `#${i + 1}`} Video review.`);
         return;
       }
+      const rawPhone = (item.phone || '').trim().replace(/\D/g, '');
+      if (rawPhone.length > 0 && rawPhone.length < 10) {
+        toastError(`Please enter a valid 10-digit mobile number for customer ${item.name ? `"${item.name}"` : `#${i + 1}`}.`);
+        return;
+      }
     }
 
     const hasValidPhone = customerItems.some(
-      (c) => c.phone && c.phone.trim().replace(/\D/g, '').length >= 10
+      (c) => (c.phone || '').trim().replace(/\D/g, '').length >= 10
     );
-    if (!hasValidPhone) {
-      toastError('Please enter at least one 10-digit mobile number to send WhatsApp message.');
-      return;
-    }
 
     try {
       setIsSendingWhatsappAll(true);
@@ -531,7 +584,12 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSaveAndSendWhatsapp();
+  };
+
+  const _legacySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const empIdToUse =
       selectedEmpId ||
@@ -664,24 +722,14 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
           >
             Cancel
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSubmit}
-            isLoading={isSubmitting}
-            disabled={isSendingWhatsappAll}
-            className="w-full sm:w-auto px-4 py-2 text-xs font-bold border-[#CBD5E1] text-[#334155] hover:bg-[#F1F5F9] whitespace-nowrap justify-center"
-          >
-            {initialData ? 'Save Changes' : 'Save'}
-          </Button>
           <button
             type="button"
             onClick={() => handleSaveAndSendWhatsapp()}
             disabled={isSubmitting || isSendingWhatsappAll}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] active:scale-98 text-white text-xs font-bold shadow-md shadow-[#25D366]/20 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] active:scale-98 text-white text-xs font-extrabold shadow-md shadow-[#25D366]/20 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
             <WhatsAppIcon className={`w-4 h-4 text-white shrink-0 ${isSendingWhatsappAll ? 'animate-spin' : ''}`} />
-            <span className="whitespace-nowrap">{isSendingWhatsappAll ? 'Sending WhatsApp...' : 'Save & Send WhatsApp'}</span>
+            <span className="whitespace-nowrap">{isSendingWhatsappAll ? 'Saving & Queuing WhatsApp...' : 'Save & Send WhatsApp'}</span>
           </button>
         </div>
       }

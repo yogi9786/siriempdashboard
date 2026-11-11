@@ -207,6 +207,61 @@ export const PendingCustomerActivityPage: React.FC = () => {
   const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
   const [inspectActivity, setInspectActivity] = useState<CustomerActivity | null>(null);
 
+  // Section Mode: Customer Activity vs Employee Leaves
+  const [sectionMode, setSectionMode] = useState<'ACTIVITIES' | 'LEAVES'>('ACTIVITIES');
+  const [pendingLeaves, setPendingLeaves] = useState<any[]>([]);
+  const [isLoadingLeaves, setIsLoadingLeaves] = useState<boolean>(false);
+  const [leaveRejectTarget, setLeaveRejectTarget] = useState<any | null>(null);
+  const [leaveRejectReason, setLeaveRejectReason] = useState<string>('');
+  const [isProcessingLeave, setIsProcessingLeave] = useState<boolean>(false);
+
+  const fetchPendingLeaves = async () => {
+    try {
+      setIsLoadingLeaves(true);
+      const res = await api.get('/api/v1/customers/leaves/pending');
+      setPendingLeaves(res.data || []);
+    } catch (err) {
+      console.error('Failed to load pending leaves:', err);
+    } finally {
+      setIsLoadingLeaves(false);
+    }
+  };
+
+  const handleApproveLeave = async (leaveId: number) => {
+    try {
+      setIsProcessingLeave(true);
+      await api.post(`/api/v1/customers/leaves/${leaveId}/review`, {
+        status: 'APPROVED',
+      });
+      success('Leave request approved successfully.');
+      fetchPendingLeaves();
+    } catch (err: any) {
+      toastError('Failed to approve leave request.');
+    } finally {
+      setIsProcessingLeave(false);
+    }
+  };
+
+  const handleRejectLeave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leaveRejectTarget) return;
+    try {
+      setIsProcessingLeave(true);
+      await api.post(`/api/v1/customers/leaves/${leaveRejectTarget.id}/review`, {
+        status: 'REJECTED',
+        rejection_reason: leaveRejectReason.trim() || 'Declined by branch manager.',
+      });
+      success('Leave request declined.');
+      setLeaveRejectTarget(null);
+      setLeaveRejectReason('');
+      fetchPendingLeaves();
+    } catch (err: any) {
+      toastError('Failed to decline leave request.');
+    } finally {
+      setIsProcessingLeave(false);
+    }
+  };
+
   const fetchActivities = async () => {
     try {
       setIsLoading(true);
@@ -261,6 +316,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
         initialAutoSwitchDone.current = true;
         setStatusFilter('APPROVED');
       }
+      fetchPendingLeaves();
     } catch (err: any) {
       console.error('Failed to load pending customer activities:', err);
       toastError(err.response?.data?.detail || 'Failed to fetch customer activities for review.');
@@ -509,6 +565,45 @@ export const PendingCustomerActivityPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Verification Queue Section Toggle: Customer Logs vs Employee Leaves */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setSectionMode('ACTIVITIES')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            sectionMode === 'ACTIVITIES'
+              ? 'bg-[#18181B] text-white shadow-2xs'
+              : 'bg-white hover:bg-[#FAF8F3] text-[#5E5A52] border border-[#E4DFD4]'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Customer Log Activities ({counts.pending})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSectionMode('LEAVES');
+            fetchPendingLeaves();
+          }}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            sectionMode === 'LEAVES'
+              ? 'bg-[#D97706] text-white shadow-2xs'
+              : 'bg-white hover:bg-[#FAF8F3] text-[#5E5A52] border border-[#E4DFD4]'
+          }`}
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Employee Leave Requests ({pendingLeaves.length})</span>
+          {pendingLeaves.length > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full bg-[#EF4444] text-white text-[9px] font-black">
+              {pendingLeaves.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {sectionMode === 'ACTIVITIES' ? (
+        <>
       {/* Customer Status Quick Filters (Requirement 6: Lost, Interested, Sold, All) */}
       <div className="bg-[#FAF8F3] border border-[#E4DFD4] p-2.5 sm:p-3 rounded-2xl shadow-2xs">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
@@ -1095,6 +1190,108 @@ export const PendingCustomerActivityPage: React.FC = () => {
         </>
       )}
       </div>
+      </>
+      ) : (
+        /* LEAVES SECTION */
+        <div className="bg-white border border-[#E4DFD4] rounded-3xl overflow-hidden shadow-[0_4px_18px_rgba(40,35,25,0.045)]">
+          <div className="p-6 border-b border-[#EBE6DC] flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-extrabold text-[#1D1D1B]">Employee Leave Requests Queue</h2>
+              <p className="text-xs text-[#6B6559]">Upcoming leaves submitted by {selectedBranch?.name || 'showroom'} staff</p>
+            </div>
+            <button
+              onClick={fetchPendingLeaves}
+              className="p-2 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoadingLeaves ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-[#FAF8F3] border-b border-[#EBE6DC] text-[#6B6559] uppercase font-bold text-[10px] tracking-wider">
+                  <th className="px-5 py-3.5">Employee</th>
+                  <th className="px-5 py-3.5">Leave Type & Subject</th>
+                  <th className="px-5 py-3.5">Dates & Duration</th>
+                  <th className="px-5 py-3.5">Reason / Message</th>
+                  <th className="px-5 py-3.5">Submitted Date</th>
+                  <th className="px-5 py-3.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F0ECE1]">
+                {isLoadingLeaves ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-10 text-center text-[#8A8479]">
+                      <RefreshCw className="w-5 h-5 animate-spin mx-auto text-[#D97706]" />
+                      <span className="block mt-2 font-semibold">Loading leave requests...</span>
+                    </td>
+                  </tr>
+                ) : pendingLeaves.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-10 text-center text-[#8A8479]">
+                      <CheckCircle2 className="w-8 h-8 text-[#21845F] mx-auto mb-2 opacity-80" />
+                      <p className="font-bold text-sm text-[#1D1D1B]">All Leave Requests Clear!</p>
+                      <p className="text-xs mt-1">There are no pending employee leave applications for this showroom branch.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  pendingLeaves.map((req) => (
+                    <tr key={req.id} className="hover:bg-[#FAF9F5] transition-colors">
+                      <td className="px-5 py-3.5">
+                        <div className="font-extrabold text-[#1D1D1B] text-sm">{req.employee_name}</div>
+                        <div className="text-[10.5px] font-mono text-[#536B8A]">{req.employee_code}</div>
+                        <div className="text-[10px] text-[#8A8479]">{req.employee_designation || 'Staff'}</div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8]">
+                          {req.leave_type}
+                        </span>
+                        <div className="font-bold text-[#1D1D1B] mt-1 text-xs">{req.subject}</div>
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-xs">
+                        <div className="font-bold text-[#1D1D1B]">
+                          {req.from_date} {req.to_date && req.to_date !== req.from_date ? `to ${req.to_date}` : ''}
+                        </div>
+                        <span className="text-[11px] text-[#21845F] font-bold">
+                          {req.days_count} {req.days_count === 1 ? 'Day' : 'Days'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 max-w-xs">
+                        <p className="text-xs text-[#5E5A52] line-clamp-2" title={req.message}>
+                          {req.message}
+                        </p>
+                      </td>
+                      <td className="px-5 py-3.5 text-[#8A8479] font-mono text-[11px]">
+                        {req.created_at?.slice(0, 10)}
+                      </td>
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleApproveLeave(req.id)}
+                            disabled={isProcessingLeave}
+                            className="px-3 py-1.5 rounded-lg bg-[#21845F] hover:bg-[#1A6B4C] text-white text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => setLeaveRejectTarget(req)}
+                            disabled={isProcessingLeave}
+                            className="px-3 py-1.5 rounded-lg bg-white border border-[#FECACA] hover:bg-[#FEE2E2] text-[#DC2626] text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Review Action Confirmation Modal */}
       {selectedForReview && reviewAction && (
@@ -1564,6 +1761,56 @@ export const PendingCustomerActivityPage: React.FC = () => {
                 className="max-h-[80vh] w-auto max-w-full object-contain"
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Decline Leave Request Modal */}
+      {leaveRejectTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                <XCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-[#1D1D1B]">Decline Leave Request</h3>
+                <p className="text-xs text-[#6B6559]">For {leaveRejectTarget.employee_name} ({leaveRejectTarget.leave_type})</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleRejectLeave} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1">
+                  Reason for Declining *
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={leaveRejectReason}
+                  onChange={(e) => setLeaveRejectReason(e.target.value)}
+                  placeholder="e.g. Critical showroom event, insufficient staff on selected dates"
+                  className="w-full p-3 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs focus:outline-none focus:border-red-500 focus:bg-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setLeaveRejectTarget(null)}
+                  className="px-4 py-2 rounded-xl bg-white border border-[#E4DFD4] text-xs font-bold text-[#5E5A52]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessingLeave}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold shadow-sm"
+                >
+                  Confirm Decline
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

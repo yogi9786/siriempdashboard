@@ -9,6 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isSuperAdmin: boolean;
   isEmployee: boolean;
+  isHR: boolean;
   isLoading: boolean;
   login: (username: string, password: string, branchCode?: string, rememberMe?: boolean) => Promise<boolean>;
   loginEmployee: (username: string, password: string, branchCode?: string, rememberMe?: boolean) => Promise<boolean>;
@@ -335,6 +336,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthenticated: !!token && !!user,
         isSuperAdmin: user?.role === 'SUPER_ADMIN',
         isEmployee: user?.role === 'EMPLOYEE',
+        isHR: (user?.role || '').toUpperCase() === 'HR',
         isLoading,
         login,
         loginEmployee,

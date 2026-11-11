@@ -288,6 +288,51 @@ def sync_managers_from_env(db: Session):
                 existing_mgr.is_active = True
                 db.commit()
 
+    # 3. Sync Human Resources (HR) Account from .env
+    try:
+        hr_user_clean = (settings.HR_USERNAME or "hr_admin").strip()
+        hr_pwd = (settings.HR_PASSWORD or "hr_siri_2026").strip()
+        hr_name_clean = (settings.HR_NAME or "HR Manager").strip()
+        hr_email_val = f"{hr_user_clean.lower()}@sirisamruddhigold.com"
+
+        default_branch = db.query(Branch).filter(Branch.code == "YELAHANKA").first()
+        default_branch_id = default_branch.id if default_branch else 1
+
+        existing_hr = (
+            db.query(User)
+            .filter(
+                (func.lower(User.username) == hr_user_clean.lower())
+                | (func.lower(User.email) == hr_email_val.lower())
+                | (User.role == "HR")
+            )
+            .first()
+        )
+        hashed_hr_pwd = get_password_hash(hr_pwd)
+        if not existing_hr:
+            new_hr = User(
+                branch_id=default_branch_id,
+                full_name=hr_name_clean,
+                username=hr_user_clean,
+                email=hr_email_val,
+                hashed_password=hashed_hr_pwd,
+                role="HR",
+                is_active=True,
+            )
+            db.add(new_hr)
+            db.commit()
+        else:
+            existing_hr.branch_id = default_branch_id
+            existing_hr.full_name = hr_name_clean
+            existing_hr.username = hr_user_clean
+            existing_hr.email = hr_email_val
+            existing_hr.hashed_password = hashed_hr_pwd
+            existing_hr.role = "HR"
+            existing_hr.is_active = True
+            db.commit()
+    except Exception as e:
+        logger.warning(f"HR sync note: {e}")
+        db.rollback()
+
 
 class AuthService:
     def __init__(self, db: Session):
@@ -335,31 +380,49 @@ class AuthService:
         )
 
         is_valid = False
+        is_hr_login = False
         branch_code = "YELAHANKA"
         branch_name = "Yelahanka"
         full_name = username_cleaned
+        target_role = "MANAGER"
         mgr_code = getattr(db_user, "manager_code", None) if db_user else None
         email_val = f"{username_cleaned.lower()}@sirisamruddhigold.com"
 
-        if db_user and db_user.hashed_password and verify_password(password_cleaned, db_user.hashed_password):
-            is_valid = True
-            full_name = db_user.full_name
-            email_val = db_user.email or email_val
-            mgr_code = getattr(db_user, "manager_code", None)
-            branch = self.db.query(Branch).filter(Branch.id == db_user.branch_id).first()
-            if branch:
-                branch_code = branch.code
-                branch_name = branch.name
-        else:
-            # Fallback to .env initial configuration
-            env_mgr = get_env_manager_by_username(username_cleaned)
-            if env_mgr:
-                expected_pwd = env_mgr["password"]
-                if expected_pwd and hmac.compare_digest(password_cleaned.encode("utf-8"), expected_pwd.encode("utf-8")):
-                    is_valid = True
-                    branch_code = env_mgr["branch_code"]
-                    branch_name = env_mgr["branch_name"]
-                    full_name = env_mgr["full_name"]
+        # Check for HR Login (from .env or User DB record)
+        hr_env_user = (live_settings.HR_USERNAME or "hr_admin").strip().lower()
+        hr_env_pwd = (live_settings.HR_PASSWORD or "hr_siri_2026").strip()
+        if username_cleaned.lower() == hr_env_user or (db_user and db_user.role == "HR"):
+            is_hr_login = True
+            target_role = "HR"
+            full_name = db_user.full_name if db_user else (live_settings.HR_NAME or "HR Manager")
+            email_val = (db_user.email if db_user else None) or f"{hr_env_user}@sirisamruddhigold.com"
+            if hmac.compare_digest(password_cleaned.encode("utf-8"), hr_env_pwd.encode("utf-8")):
+                is_valid = True
+            elif db_user and db_user.hashed_password and verify_password(password_cleaned, db_user.hashed_password):
+                is_valid = True
+
+        if not is_valid:
+            if db_user and db_user.hashed_password and verify_password(password_cleaned, db_user.hashed_password):
+                is_valid = True
+                full_name = db_user.full_name
+                email_val = db_user.email or email_val
+                target_role = db_user.role or "MANAGER"
+                mgr_code = getattr(db_user, "manager_code", None)
+                branch = self.db.query(Branch).filter(Branch.id == db_user.branch_id).first()
+                if branch:
+                    branch_code = branch.code
+                    branch_name = branch.name
+            else:
+                # Fallback to .env initial configuration
+                env_mgr = get_env_manager_by_username(username_cleaned)
+                if env_mgr:
+                    expected_pwd = env_mgr["password"]
+                    if expected_pwd and hmac.compare_digest(password_cleaned.encode("utf-8"), expected_pwd.encode("utf-8")):
+                        is_valid = True
+                        branch_code = env_mgr["branch_code"]
+                        branch_name = env_mgr["branch_name"]
+                        full_name = env_mgr["full_name"]
+                        target_role = "MANAGER"
 
         if not is_valid:
             record_failed_login(client_key)
@@ -384,8 +447,8 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # 4. Strict Branch Boundary Check (selected branch must match assigned branch)
-        if login_data.branch_code:
+        # 4. Strict Branch Boundary Check (selected branch must match assigned branch, HR can access all branches)
+        if login_data.branch_code and not is_hr_login and target_role != "HR":
             if branch_code.upper() != login_data.branch_code.strip().upper():
                 record_failed_login(client_key)
                 record_failed_login(user_key)
@@ -430,7 +493,7 @@ class AuthService:
                 username=username_cleaned,
                 email=email_val,
                 hashed_password=hashed_pwd,
-                role="MANAGER",
+                role=target_role,
                 is_active=True,
             )
             self.db.add(user)
@@ -442,7 +505,7 @@ class AuthService:
             user.full_name = full_name
             user.username = username_cleaned
             user.email = email_val
-            user.role = "MANAGER"
+            user.role = target_role
             user.is_active = True
             user.last_login = datetime.now(timezone.utc)
             self.db.commit()
@@ -460,8 +523,8 @@ class AuthService:
             subject=user.id,
             branch_id=branch.id,
             branch_code=branch.code,
-            role="MANAGER",
-            user_type="db_user",
+            role=user.role,
+            user_type="hr_user" if user.role == "HR" else "db_user",
             expires_delta=expires_delta,
             extra_claims={
                 "branch_name": branch.name,
@@ -469,7 +532,7 @@ class AuthService:
                 "full_name": user.full_name,
                 "username": user.username,
                 "email": user.email,
-                "role": "MANAGER",
+                "role": user.role,
             },
         )
 
@@ -498,8 +561,8 @@ class AuthService:
             full_name=user.full_name,
             manager_code=getattr(user, "manager_code", None),
             email=user.email,
-            role="MANAGER",
-            user_type="db_user",
+            role=user.role,
+            user_type="hr_user" if user.role == "HR" else "db_user",
             branch_id=branch.id,
             branch_code=branch.code,
             branch_name=f"{branch.name} Showroom",

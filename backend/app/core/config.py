@@ -162,6 +162,11 @@ class Settings(BaseSettings):
     UDUPI_MANAGER_2_USERNAME: str = "PRITHVIRAJ1234"
     UDUPI_MANAGER_2_PASSWORD: str = "PRITHVIRAJ@siri1234"
 
+    # HR Account Credentials
+    HR_NAME: str = "HR Manager"
+    HR_USERNAME: str = "hr_admin"
+    HR_PASSWORD: str = "hr_siri_2026"
+
     # Default Employee Password for Showroom Sales Staff
 
 

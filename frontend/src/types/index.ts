@@ -175,6 +175,8 @@ export interface CustomerActivity {
   reviewed_by_id?: number;
   reviewed_at?: string;
   reviewed_by_name?: string | null;
+  product_id?: string;
+  sold_image_url?: string;
   notes?: string;
   created_at?: string;
   updated_at?: string;
@@ -1071,5 +1073,47 @@ export interface WhatsAppStats {
   total_failed: number;
   by_campaign: Record<string, number>;
   by_category: Record<string, number>;
+}
+
+export interface EmployeePaySlip {
+  id: number;
+  branch_id: number;
+  branch_name?: string;
+  branch_code?: string;
+  employee_id: number;
+  employee_name?: string;
+  employee_code?: string;
+  employee_designation?: string;
+  month: string;
+  year: number;
+  pay_period: string;
+  amount: number;
+  notes?: string;
+  file_url: string;
+  issued_date: string;
+  created_at?: string;
+}
+
+export interface EmployeeLeaveRequest {
+  id: number;
+  branch_id: number;
+  branch_name?: string;
+  branch_code?: string;
+  employee_id: number;
+  employee_name?: string;
+  employee_code?: string;
+  employee_designation?: string;
+  leave_type: string;
+  subject: string;
+  message: string;
+  from_date: string;
+  to_date: string;
+  days_count: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewed_by_id?: number | null;
+  reviewed_by_name?: string | null;
+  rejection_reason?: string | null;
+  created_at: string;
+  updated_at?: string;
 }
 

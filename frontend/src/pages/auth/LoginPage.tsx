@@ -93,13 +93,14 @@ const SHOWROOM_EMPLOYEES_FALLBACK: Record<string, EmployeePublicOption[]> = {
 };
 
 export const LoginPage: React.FC = () => {
-  const { login, loginEmployee, isAuthenticated, isEmployee } = useAuth();
+  const { login, loginEmployee, isAuthenticated, isEmployee, isHR } = useAuth();
   const { success, error: toastError } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   // Portal Mode: 'manager' vs 'employee'
-  const [portalMode, setPortalMode] = useState<'manager' | 'employee'>('manager');
+  const [portalMode, setPortalMode] = useState<'manager' | 'employee' | 'hr'>('manager');
+  const [hrUsername, setHrUsername] = useState<string>('hr_admin');
 
   // Branch, Manager, and Employee states from Backend
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -134,11 +135,13 @@ export const LoginPage: React.FC = () => {
     if (isAuthenticated) {
       if (isEmployee) {
         navigate('/employee/activity');
+      } else if (isHR) {
+        navigate('/hr/dashboard');
       } else {
         navigate('/dashboard');
       }
     }
-  }, [isAuthenticated, isEmployee, navigate]);
+  }, [isAuthenticated, isEmployee, isHR, navigate]);
 
   // Fetch branches and autofetch managers & employees directly from backend API
   const fetchBranches = async () => {
@@ -279,9 +282,14 @@ export const LoginPage: React.FC = () => {
         setErrorMessage('Please select a manager and enter your password.');
         return;
       }
-    } else {
+    } else if (portalMode === 'employee') {
       if (!selectedEmployeeUsername.trim() || !password.trim()) {
         setErrorMessage('Please select an employee and enter your password.');
+        return;
+      }
+    } else {
+      if (!hrUsername.trim() || !password.trim()) {
+        setErrorMessage('Please enter HR username and password.');
         return;
       }
     }
@@ -297,17 +305,23 @@ export const LoginPage: React.FC = () => {
         await login(selectedManagerUsername.trim(), password.trim(), selectedBranchCode, rememberMe);
         success(`Welcome to ${branchName} Showroom Portal`);
         navigate('/dashboard');
-      } else {
+      } else if (portalMode === 'employee') {
         await loginEmployee(selectedEmployeeUsername.trim(), password.trim(), selectedBranchCode, rememberMe);
         success(`Welcome to ${branchName} Employee Portal`);
         navigate('/employee/activity');
+      } else {
+        await login(hrUsername.trim(), password.trim(), 'YELAHANKA', rememberMe);
+        success('Welcome to HR Administration Portal');
+        navigate('/hr/dashboard');
       }
     } catch (err: any) {
       const msg =
         err.response?.data?.detail ||
         (portalMode === 'manager'
           ? 'Invalid manager credentials. Please verify your password.'
-          : 'Invalid employee credentials. Please check your password.');
+          : portalMode === 'employee'
+          ? 'Invalid employee credentials. Please check your password.'
+          : 'Invalid HR administrator credentials.');
       setErrorMessage(msg);
       toastError(msg);
     } finally {
@@ -363,11 +377,13 @@ export const LoginPage: React.FC = () => {
           <div className={`mt-2 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full shadow-2xs transition-colors ${
             portalMode === 'manager'
               ? 'bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE]'
-              : 'bg-[#EFF6FF] border border-[#BFDBFE] text-[#2563EB]'
+              : portalMode === 'employee'
+              ? 'bg-[#EFF6FF] border border-[#BFDBFE] text-[#2563EB]'
+              : 'bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F]'
           }`}>
             <Sparkles className="w-3.5 h-3.5" />
             <span className="text-[11px] font-bold uppercase tracking-wider">
-              {portalMode === 'manager' ? 'Showroom Manager Portal' : 'Showroom Employee Portal'}
+              {portalMode === 'manager' ? 'Showroom Manager Portal' : portalMode === 'employee' ? 'Showroom Employee Portal' : 'HR Management Portal'}
             </span>
           </div>
         </div>
@@ -375,7 +391,7 @@ export const LoginPage: React.FC = () => {
         {/* -------------------------------------------------------------
             PORTAL ROLE TOGGLE: MANAGER vs EMPLOYEE
         ------------------------------------------------------------- */}
-        <div className="grid grid-cols-2 p-1.5 rounded-2xl bg-[#F4F1EA] border border-[#E6E1D6] gap-1.5 shadow-inner">
+        <div className="grid grid-cols-3 p-1.5 rounded-2xl bg-[#F4F1EA] border border-[#E6E1D6] gap-1.5 shadow-inner">
           <button
             type="button"
             onClick={() => {
@@ -383,14 +399,14 @@ export const LoginPage: React.FC = () => {
               setErrorMessage('');
               setPassword('');
             }}
-            className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               portalMode === 'manager'
                 ? 'bg-white text-[#7E22CE] shadow-sm border border-[#E4DFD4] scale-[1.02]'
                 : 'text-[#6B6559] hover:text-[#1D1D1B] hover:bg-white/40'
             }`}
           >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Showroom Manager</span>
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span className="truncate">Manager</span>
           </button>
           <button
             type="button"
@@ -400,20 +416,45 @@ export const LoginPage: React.FC = () => {
               setPassword('');
               fetchEmployees(selectedBranchCode);
             }}
-            className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               portalMode === 'employee'
                 ? 'bg-white text-[#2563EB] shadow-sm border border-[#E4DFD4] scale-[1.02]'
                 : 'text-[#6B6559] hover:text-[#1D1D1B] hover:bg-white/40'
             }`}
           >
-            <UserIcon className="w-4 h-4" />
-            <span>Showroom Employee</span>
+            <UserIcon className="w-3.5 h-3.5" />
+            <span className="truncate">Employee</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPortalMode('hr');
+              setErrorMessage('');
+              setPassword('');
+            }}
+            className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              portalMode === 'hr'
+                ? 'bg-white text-[#21845F] shadow-sm border border-[#E4DFD4] scale-[1.02]'
+                : 'text-[#6B6559] hover:text-[#1D1D1B] hover:bg-white/40'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="truncate">HR Portal</span>
           </button>
         </div>
 
         {/* -------------------------------------------------------------
             STEP 1: SHOWROOM BRANCH SELECTOR (SOLID MULTI-COLORS)
         ------------------------------------------------------------- */}
+        {portalMode === 'hr' ? (
+          <div className="p-3.5 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] text-xs font-semibold flex items-center gap-2.5">
+            <Building2 className="w-5 h-5 text-[#21845F] shrink-0" />
+            <div>
+              <p className="font-bold text-[#166534]">Enterprise HR Administration Portal</p>
+              <p className="text-[10.5px] text-[#21845F]">Unified cross-branch visibility across Yelahanka, Kolar & Udupi</p>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <label className="text-xs font-semibold text-[#5E5A52] tracking-wide flex items-center gap-2">
@@ -502,6 +543,7 @@ export const LoginPage: React.FC = () => {
             })}
           </div>
         </div>
+        )}
 
         {/* Error Alert */}
         {errorMessage && (
@@ -523,10 +565,28 @@ export const LoginPage: React.FC = () => {
             }`}>
               2
             </span>
-            <span>{portalMode === 'manager' ? 'Manager Credentials' : 'Employee Credentials'}</span>
+            <span>{portalMode === 'manager' ? 'Manager Credentials' : portalMode === 'employee' ? 'Employee Credentials' : 'HR Administrator Credentials'}</span>
           </label>
 
-          {portalMode === 'manager' ? (
+          {portalMode === 'hr' ? (
+            /* HR Username Field */
+            <div>
+              <label className="text-xs font-medium text-[#5E5A52] block mb-1.5">
+                HR Username *
+              </label>
+              <div className="relative flex items-center">
+                <UserIcon className="absolute left-3.5 w-4 h-4 text-[#21845F] pointer-events-none" />
+                <input
+                  type="text"
+                  required
+                  value={hrUsername}
+                  onChange={(e) => setHrUsername(e.target.value)}
+                  placeholder="hr_admin"
+                  className="w-full rounded-2xl pl-9 pr-4 py-2.5 bg-white border border-[#C5E3D5] text-xs sm:text-sm font-semibold text-[#1D1D1B] focus:outline-none focus:border-[#21845F]"
+                />
+              </div>
+            </div>
+          ) : portalMode === 'manager' ? (
             /* Manager Dropdown */
             <div>
               <label className="text-xs font-medium text-[#5E5A52] block mb-1.5">
@@ -643,7 +703,9 @@ export const LoginPage: React.FC = () => {
               className={`w-full py-3.5 rounded-2xl text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
                 portalMode === 'manager'
                   ? 'bg-linear-to-r from-[#7E22CE] via-[#6B21A8] to-[#581C87] hover:from-[#6B21A8] hover:to-[#4C1D95] btn-login-purple'
-                  : 'bg-linear-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E40AF] hover:from-[#1D4ED8] hover:to-[#1E3A8A]'
+                  : portalMode === 'employee'
+                  ? 'bg-linear-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E40AF] hover:from-[#1D4ED8] hover:to-[#1E3A8A]'
+                  : 'bg-linear-to-r from-[#21845F] via-[#1A6B4C] to-[#14532D] hover:from-[#1A6B4C] hover:to-[#0F3B20]'
               }`}
             >
               {isLoading ? (
@@ -656,7 +718,9 @@ export const LoginPage: React.FC = () => {
                   <span>
                     {portalMode === 'manager'
                       ? `Sign In to ${currentBranch?.name || 'Showroom'} Manager Portal`
-                      : `Sign In to ${currentBranch?.name || 'Showroom'} Employee Portal`}
+                      : portalMode === 'employee'
+                      ? `Sign In to ${currentBranch?.name || 'Showroom'} Employee Portal`
+                      : 'Sign In to HR Administration'}
                   </span>
                   <ArrowRight className="w-4 h-4 text-white/80" />
                 </>

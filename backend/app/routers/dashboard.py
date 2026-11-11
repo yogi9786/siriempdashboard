@@ -6,6 +6,7 @@ from backend.app.models.branch import User, Branch
 from backend.app.models.employee import Employee
 from backend.app.models.activity import CustomerActivity, SchemePaymentReminder
 from backend.app.models.outdoor_marketing import OutdoorMarketingCustomer
+from backend.app.models.hr import EmployeeLeaveRequest
 from backend.app.schemas.dashboard import DashboardOverviewResponse
 from backend.app.dependencies.auth import get_current_manager
 
@@ -144,13 +145,24 @@ def get_manager_notifications(
         for r in scheme_records
     ]
 
-    total_count = pending_count + notes_count + scheme_count
+    # 4. Pending Employee Leave Requests
+    leaves_query = (
+        db.query(EmployeeLeaveRequest)
+        .filter(
+            EmployeeLeaveRequest.branch_id == current_user.branch_id,
+            EmployeeLeaveRequest.status == "PENDING",
+        )
+    )
+    pending_leaves_count = leaves_query.count()
+
+    total_count = pending_count + notes_count + scheme_count + pending_leaves_count
 
     return {
         "total_count": total_count,
         "pending_activities_count": pending_count,
         "note_reminders_count": notes_count,
         "scheme_reminders_count": scheme_count,
+        "pending_leaves_count": pending_leaves_count,
         "pending_activities": pending_items,
         "note_reminders": note_items,
         "scheme_reminders": scheme_items,

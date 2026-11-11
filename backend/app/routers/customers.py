@@ -15,6 +15,7 @@ from backend.app.models.branch import User
 from backend.app.models.employee import Employee
 from backend.app.models.activity import CustomerActivity, SchemeRecord, GoogleReview, VideoReview, SchemePaymentReminder
 from backend.app.models.feedback import CustomerFeedback
+from backend.app.models.hr import EmployeeLeaveRequest
 from backend.app.schemas.activity import (
     CustomerActivityCreate,
     CustomerActivityUpdate,
@@ -870,4 +871,87 @@ async def upload_customer_item_photo(
         f.write(contents)
     rel_url = f"/uploads/{filename}"
     return {"url": rel_url, "photo_url": rel_url, "message": "Photo uploaded successfully"}
+
+
+# -------------------------------------------------------------------------
+# Branch Manager Pending Leaves Review
+# -------------------------------------------------------------------------
+@router.get("/leaves/pending", summary="List pending employee leave requests for manager's branch")
+def get_branch_pending_leaves(
+    current_manager: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    reqs = (
+        db.query(EmployeeLeaveRequest)
+        .filter(
+            EmployeeLeaveRequest.branch_id == current_manager.branch_id,
+            EmployeeLeaveRequest.status == "PENDING",
+        )
+        .order_by(EmployeeLeaveRequest.created_at.desc())
+        .all()
+    )
+
+    employees_map = {e.id: e for e in db.query(Employee).filter(Employee.branch_id == current_manager.branch_id).all()}
+    return [
+        {
+            "id": r.id,
+            "branch_id": r.branch_id,
+            "employee_id": r.employee_id,
+            "employee_name": employees_map.get(r.employee_id).full_name if employees_map.get(r.employee_id) else "Staff Member",
+            "employee_code": employees_map.get(r.employee_id).employee_code if employees_map.get(r.employee_id) else "",
+            "employee_designation": employees_map.get(r.employee_id).designation if employees_map.get(r.employee_id) else "Sales Executive",
+            "leave_type": r.leave_type,
+            "subject": r.subject,
+            "message": r.message,
+            "from_date": r.from_date.isoformat() if r.from_date else "",
+            "to_date": r.to_date.isoformat() if r.to_date else "",
+            "days_count": r.days_count,
+            "status": r.status,
+            "created_at": r.created_at.isoformat() if r.created_at else "",
+        }
+        for r in reqs
+    ]
+
+
+@router.post("/leaves/{leave_id}/review", summary="Branch manager approve or reject employee leave")
+def review_branch_leave(
+    leave_id: int,
+    action: CustomerApprovalAction,
+    current_manager: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    req = (
+        db.query(EmployeeLeaveRequest)
+        .filter(
+            EmployeeLeaveRequest.id == leave_id,
+            EmployeeLeaveRequest.branch_id == current_manager.branch_id,
+        )
+        .first()
+    )
+    if not req:
+        raise HTTPException(status_code=404, detail="Leave request not found for this branch.")
+
+    decision = (action.status or "").strip().upper()
+    if decision not in ["APPROVED", "REJECTED"]:
+        raise HTTPException(status_code=400, detail="Status must be either 'APPROVED' or 'REJECTED'.")
+
+    req.status = decision
+    req.reviewed_by_id = current_manager.id
+    req.reviewed_by_name = f"Manager ({current_manager.full_name})"
+    if decision == "REJECTED":
+        req.rejection_reason = action.rejection_reason or "Leave request declined by branch manager."
+    else:
+        req.rejection_reason = None
+    req.updated_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(req)
+
+    return {
+        "id": req.id,
+        "status": req.status,
+        "reviewed_by_name": req.reviewed_by_name,
+        "rejection_reason": req.rejection_reason,
+        "message": f"Leave request #{req.id} {decision.lower()} successfully.",
+    }
 

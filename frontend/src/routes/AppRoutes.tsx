@@ -24,6 +24,16 @@ import { ShowroomCustomerLogPage } from '../pages/customers/ShowroomCustomerLogP
 import { OutdoorCustomerLeadsPage } from '../pages/outdoor/OutdoorCustomerLeadsPage';
 import { PendingCustomerActivityPage } from '../pages/customers/PendingCustomerActivityPage';
 import { WhatsAppTemplatesPage } from '../pages/whatsapp/WhatsAppTemplatesPage';
+import { BranchRevenuePage } from '../pages/revenue/BranchRevenuePage';
+
+// HR Management Portal Pages & Guard
+import { HrProtectedRoute } from './HrProtectedRoute';
+import { HrLayout } from '../components/hr/layout/HrLayout';
+import { HrDashboardPage } from '../pages/hr/HrDashboardPage';
+import { HrEmployeesPage } from '../pages/hr/HrEmployeesPage';
+import { HrPaySlipsPage } from '../pages/hr/HrPaySlipsPage';
+import { HrCustomersPage } from '../pages/hr/HrCustomersPage';
+import { HrLeavesPage } from '../pages/hr/HrLeavesPage';
 
 // Employee Module Pages & Guard
 import { EmployeeProtectedRoute } from './EmployeeProtectedRoute';
@@ -83,9 +93,23 @@ export const AppRoutes: React.FC = () => {
           <Route path="/outdoor-marketing/daily" element={<OutdoorMarketingPage />} />
           <Route path="/outdoor-customers" element={<Navigate to="/outdoor-marketing" replace />} />
           <Route path="/outdoor" element={<Navigate to="/outdoor-marketing" replace />} />
+          <Route path="/revenue" element={<BranchRevenuePage />} />
           <Route path="/account" element={<AccountSettingsPage />} />
 
           <Route path="/profile" element={<Navigate to="/account" replace />} />
+        </Route>
+      </Route>
+
+      {/* Protected HR Management Portal Routes */}
+      <Route element={<HrProtectedRoute />}>
+        <Route element={<HrLayout />}>
+          <Route path="/hr" element={<Navigate to="/hr/dashboard" replace />} />
+          <Route path="/hr/dashboard" element={<HrDashboardPage />} />
+          <Route path="/hr/employees" element={<HrEmployeesPage />} />
+          <Route path="/hr/employees/add" element={<HrEmployeesPage />} />
+          <Route path="/hr/payslips" element={<HrPaySlipsPage />} />
+          <Route path="/hr/customers" element={<HrCustomersPage />} />
+          <Route path="/hr/leaves" element={<HrLeavesPage />} />
         </Route>
       </Route>
 

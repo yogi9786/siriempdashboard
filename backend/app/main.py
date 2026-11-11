@@ -40,6 +40,7 @@ from backend.app.routers import (
     employee_portal,
     video_reviews,
     whatsapp,
+    hr,
 )
 
 # Setup structured logging
@@ -204,4 +205,5 @@ app.include_router(attendance.router)
 app.include_router(feedback.router)
 app.include_router(employee_portal.router)
 app.include_router(whatsapp.router)
+app.include_router(hr.router)
 

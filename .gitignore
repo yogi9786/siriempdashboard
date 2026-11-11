@@ -51,7 +51,10 @@ frontend/build/
 .eslintcache
 *.tsbuildinfo
 
-# IDEs and OS
+# Uploads
+backend/uploads/**
+!backend/uploads/.gitkeep
+
 .idea/
 .vscode/
 *.swp

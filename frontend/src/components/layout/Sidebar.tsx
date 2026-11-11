@@ -17,6 +17,7 @@ import {
   Clock,
   Star,
   MessageSquare,
+  IndianRupee,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SignOutConfirmModal } from '../auth/SignOutConfirmModal';
@@ -89,6 +90,42 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
               <span>Dashboard</span>
               {isActive && (
                 <div className="w-1.5 h-1.5 rounded-full bg-[#C084FC] ml-auto" />
+              )}
+            </>
+          )}
+        </NavLink>
+
+        {/* 1b. Branch Revenue (Emerald & Gold Theme on Dark Grey) */}
+        <NavLink
+          to="/revenue"
+          onClick={onCloseMobile}
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 relative group ${
+              isActive
+                ? 'bg-[#064E3B]/70 text-[#D1FAE5] font-bold border-l-[3px] border-l-[#10B981] border border-[#059669]/40 shadow-xs pl-2.5'
+                : 'text-[#D4D4D8] hover:text-white hover:bg-white/5'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <div
+                className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                  isActive
+                    ? 'bg-[#065F46] text-[#A7F3D0] border border-[#10B981]/50 shadow-2xs'
+                    : 'bg-[#27272A] text-[#34D399] group-hover:bg-[#3F3F46]'
+                }`}
+              >
+                <IndianRupee className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 flex items-center justify-between min-w-0">
+                <span className="truncate">Revenue</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-[#059669]/40 text-[#A7F3D0] border border-[#10B981]/40 font-bold uppercase tracking-wider ml-1 shrink-0">
+                  Sales
+                </span>
+              </div>
+              {isActive && (
+                <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] ml-1 shrink-0" />
               )}
             </>
           )}

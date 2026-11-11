@@ -18,6 +18,7 @@ from backend.app.models.branch import Branch, User
 from backend.app.models.employee import Employee
 from backend.app.models.activity import CustomerActivity, EmployeeCallLog, GoogleReview, VideoReview, SchemeRecord, AttireRecord
 from backend.app.models.feedback import CustomerFeedback
+from backend.app.models.hr import EmployeePaySlip, EmployeeLeaveRequest
 from backend.app.schemas.activity import (
     CustomerActivityCreate,
     CustomerActivityResponse,
@@ -1718,3 +1719,150 @@ def delete_individual_outdoor_customer(
 
     db.commit()
     return {"message": "Outdoor customer deleted successfully"}
+
+
+# -------------------------------------------------------------------------
+# Employee Self-Service: Pay Slips
+# -------------------------------------------------------------------------
+@router.get("/payslips", summary="Get issued pay slips for current employee")
+def get_my_payslips(
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    slips = (
+        db.query(EmployeePaySlip)
+        .filter(EmployeePaySlip.employee_id == current_emp.id)
+        .order_by(EmployeePaySlip.year.desc(), EmployeePaySlip.id.desc())
+        .all()
+    )
+    branch = db.query(Branch).filter(Branch.id == current_emp.branch_id).first()
+
+    return [
+        {
+            "id": s.id,
+            "branch_id": s.branch_id,
+            "branch_name": branch.name if branch else "Showroom",
+            "employee_id": s.employee_id,
+            "employee_name": current_emp.full_name,
+            "employee_code": current_emp.employee_code,
+            "month": s.month,
+            "year": s.year,
+            "pay_period": s.pay_period or f"{s.month} {s.year}",
+            "amount": s.amount or 0.0,
+            "notes": s.notes or "",
+            "file_url": s.file_url,
+            "issued_date": s.issued_date.isoformat() if s.issued_date else "",
+            "created_at": s.created_at.isoformat() if s.created_at else "",
+        }
+        for s in slips
+    ]
+
+
+# -------------------------------------------------------------------------
+# Employee Self-Service: Leave Requests
+# -------------------------------------------------------------------------
+@router.get("/leaves", summary="Get leave requests submitted by current employee")
+def get_my_leaves(
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    reqs = (
+        db.query(EmployeeLeaveRequest)
+        .filter(EmployeeLeaveRequest.employee_id == current_emp.id)
+        .order_by(EmployeeLeaveRequest.created_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "id": r.id,
+            "branch_id": r.branch_id,
+            "employee_id": r.employee_id,
+            "employee_name": current_emp.full_name,
+            "employee_code": current_emp.employee_code,
+            "leave_type": r.leave_type,
+            "subject": r.subject,
+            "message": r.message,
+            "from_date": r.from_date.isoformat() if r.from_date else "",
+            "to_date": r.to_date.isoformat() if r.to_date else "",
+            "days_count": r.days_count,
+            "status": r.status,
+            "reviewed_by_name": r.reviewed_by_name,
+            "rejection_reason": r.rejection_reason,
+            "created_at": r.created_at.isoformat() if r.created_at else "",
+            "updated_at": r.updated_at.isoformat() if r.updated_at else "",
+        }
+        for r in reqs
+    ]
+
+
+@router.post("/leaves", status_code=status.HTTP_201_CREATED, summary="Submit a new leave request")
+def submit_my_leave_request(
+    payload: dict = Body(...),
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    subject = (payload.get("subject") or "").strip()
+    message = (payload.get("message") or "").strip()
+    leave_type = (payload.get("leave_type") or "Casual Leave").strip()
+    from_date_str = (payload.get("from_date") or "").strip()
+    to_date_str = (payload.get("to_date") or "").strip()
+
+    if not subject:
+        raise HTTPException(status_code=400, detail="Leave subject is required.")
+    if not message:
+        raise HTTPException(status_code=400, detail="Leave reason / message is required.")
+    if not from_date_str:
+        raise HTTPException(status_code=400, detail="Leave start date (From Date) is required.")
+
+    try:
+        from_d = datetime.strptime(from_date_str[:10], "%Y-%m-%d").date()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid from_date format. Use YYYY-MM-DD.")
+
+    if to_date_str:
+        try:
+            to_d = datetime.strptime(to_date_str[:10], "%Y-%m-%d").date()
+        except Exception:
+            to_d = from_d
+    else:
+        to_d = from_d
+
+    if to_d < from_d:
+        raise HTTPException(status_code=400, detail="End date cannot be earlier than start date.")
+
+    # Calculate days count (inclusive)
+    days_count = max(1, (to_d - from_d).days + 1)
+    if payload.get("days_count"):
+        try:
+            days_count = int(payload.get("days_count"))
+        except Exception:
+            pass
+
+    leave_req = EmployeeLeaveRequest(
+        branch_id=current_emp.branch_id,
+        employee_id=current_emp.id,
+        leave_type=leave_type,
+        subject=subject,
+        message=message,
+        from_date=from_d,
+        to_date=to_d,
+        days_count=days_count,
+        status="PENDING",
+    )
+    db.add(leave_req)
+    db.commit()
+    db.refresh(leave_req)
+
+    return {
+        "id": leave_req.id,
+        "employee_id": current_emp.id,
+        "employee_name": current_emp.full_name,
+        "leave_type": leave_req.leave_type,
+        "subject": leave_req.subject,
+        "from_date": leave_req.from_date.isoformat(),
+        "to_date": leave_req.to_date.isoformat(),
+        "days_count": leave_req.days_count,
+        "status": leave_req.status,
+        "message": "Leave request submitted successfully. It will be reviewed by your Branch Manager and HR.",
+    }

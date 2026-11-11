@@ -278,3 +278,105 @@ def get_current_employee(
 
     return emp
 
+
+def get_current_hr(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    Authenticate request via JWT and enforce HR role.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate HR credentials or session has expired.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if not token:
+        raise credentials_exception
+
+    payload = decode_access_token(token)
+    if payload is None:
+        raise credentials_exception
+
+    role = (payload.get("role") or "").upper()
+    if role not in ["HR", "SUPER_ADMIN"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Human Resources (HR) privileges required.",
+        )
+
+    user_id_raw = payload.get("sub")
+    token_username = payload.get("username")
+
+    user = None
+    if user_id_raw:
+        try:
+            user = db.query(User).filter(User.id == int(user_id_raw)).first()
+        except (ValueError, TypeError):
+            user = None
+
+    if user is None and token_username:
+        user = db.query(User).filter(func.lower(User.username) == token_username.strip().lower()).first()
+
+    if not user:
+        # Create or return virtual HR identity
+        default_branch = db.query(Branch).first()
+        user = User(
+            id=int(user_id_raw) if user_id_raw and str(user_id_raw).isdigit() else 1,
+            branch_id=default_branch.id if default_branch else 1,
+            full_name=payload.get("full_name") or settings.HR_NAME,
+            username=token_username or settings.HR_USERNAME,
+            role="HR",
+            is_active=True,
+        )
+
+    return user
+
+
+def get_current_manager_or_hr(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    Authenticate request for either a Branch Manager, HR, or Super Admin.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials or session has expired.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if not token:
+        raise credentials_exception
+
+    payload = decode_access_token(token)
+    if payload is None:
+        raise credentials_exception
+
+    role = (payload.get("role") or "").upper()
+    if role not in ["MANAGER", "HR", "SUPER_ADMIN"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Manager or HR privileges required.",
+        )
+
+    user_id_raw = payload.get("sub")
+    token_username = payload.get("username")
+
+    user = None
+    if user_id_raw:
+        try:
+            user = db.query(User).filter(User.id == int(user_id_raw)).first()
+        except (ValueError, TypeError):
+            user = None
+
+    if user is None and token_username:
+        user = db.query(User).filter(func.lower(User.username) == token_username.strip().lower()).first()
+
+    if not user:
+        raise credentials_exception
+
+    return user
+
+

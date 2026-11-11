@@ -42,9 +42,23 @@ import {
   Camera,
   Trophy,
   Bell,
+  Receipt,
+  CalendarDays,
+  Download,
+  X,
 } from 'lucide-react';
 import api from '../../api/client';
-import { CustomerActivity, EmployeeCallLog, EmployeeDashboardSummary, GoogleReview, VideoReview, OutdoorDuty, OutdoorCustomerDetail } from '../../types';
+import {
+  CustomerActivity,
+  EmployeeCallLog,
+  EmployeeDashboardSummary,
+  GoogleReview,
+  VideoReview,
+  OutdoorDuty,
+  OutdoorCustomerDetail,
+  EmployeePaySlip,
+  EmployeeLeaveRequest,
+} from '../../types';
 import { getMediaUrl } from '../../utils/media';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -214,8 +228,84 @@ export const EmployeePortalPage: React.FC = () => {
   const { user, selectedBranch, logout } = useAuth();
   const { success, error: toastError } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'CALLS' | 'REVIEWS' | 'OUTDOOR'>('CUSTOMERS');
+  const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'CALLS' | 'REVIEWS' | 'OUTDOOR' | 'PAYSLIPS' | 'LEAVES'>('CUSTOMERS');
   const [dashboardSummary, setDashboardSummary] = useState<EmployeeDashboardSummary | null>(null);
+
+  // Pay Slips State
+  const [myPayslips, setMyPayslips] = useState<EmployeePaySlip[]>([]);
+  const [isLoadingPayslips, setIsLoadingPayslips] = useState<boolean>(false);
+  const [payslipPreviewUrl, setPayslipPreviewUrl] = useState<string | null>(null);
+
+  // Leave Requests State
+  const [myLeaves, setMyLeaves] = useState<EmployeeLeaveRequest[]>([]);
+  const [isLoadingLeaves, setIsLoadingLeaves] = useState<boolean>(false);
+  const [isSubmittingLeave, setIsSubmittingLeave] = useState<boolean>(false);
+  const [leaveForm, setLeaveForm] = useState({
+    leave_type: 'Casual Leave',
+    subject: '',
+    message: '',
+    from_date: new Date().toISOString().split('T')[0],
+    to_date: new Date().toISOString().split('T')[0],
+  });
+
+  const fetchMyPayslips = async () => {
+    try {
+      setIsLoadingPayslips(true);
+      const res = await api.get('/api/v1/employee/payslips');
+      setMyPayslips(res.data || []);
+    } catch (err) {
+      console.error('Failed to load payslips:', err);
+    } finally {
+      setIsLoadingPayslips(false);
+    }
+  };
+
+  const fetchMyLeaves = async () => {
+    try {
+      setIsLoadingLeaves(true);
+      const res = await api.get('/api/v1/employee/leaves');
+      setMyLeaves(res.data || []);
+    } catch (err) {
+      console.error('Failed to load leave requests:', err);
+    } finally {
+      setIsLoadingLeaves(false);
+    }
+  };
+
+  const handleSubmitLeave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leaveForm.subject.trim()) {
+      toastError('Please enter a leave subject.');
+      return;
+    }
+    if (!leaveForm.message.trim()) {
+      toastError('Please enter your reason / message.');
+      return;
+    }
+    if (!leaveForm.from_date) {
+      toastError('Please select a leave start date.');
+      return;
+    }
+
+    try {
+      setIsSubmittingLeave(true);
+      const res = await api.post('/api/v1/employee/leaves', leaveForm);
+      success(res.data?.message || 'Leave request submitted successfully.');
+      setLeaveForm({
+        leave_type: 'Casual Leave',
+        subject: '',
+        message: '',
+        from_date: new Date().toISOString().split('T')[0],
+        to_date: new Date().toISOString().split('T')[0],
+      });
+      fetchMyLeaves();
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || 'Failed to submit leave request.';
+      toastError(msg);
+    } finally {
+      setIsSubmittingLeave(false);
+    }
+  };
 
   // Reviews state & Submissions
   const [employeeGoogleReviews, setEmployeeGoogleReviews] = useState<GoogleReview[]>([]);
@@ -555,6 +645,10 @@ export const EmployeePortalPage: React.FC = () => {
       fetchEmployeeOutdoorCustomers();
       fetchOutdoorDuty(selectedOutdoorDate);
       fetchOutdoorHistory();
+    } else if (activeTab === 'PAYSLIPS') {
+      fetchMyPayslips();
+    } else if (activeTab === 'LEAVES') {
+      fetchMyLeaves();
     }
   }, [activeTab]);
 
@@ -833,6 +927,44 @@ export const EmployeePortalPage: React.FC = () => {
       notes: '',
     });
     setShowAddOutdoorModal(true);
+  };
+
+  const handleViewOutdoorLead = (cust: any) => {
+    const pseudoAct: CustomerActivity = {
+      id: cust.id,
+      branch_id: selectedBranch?.id || 1,
+      employee_id: user?.id || 0,
+      activity_date: cust.date,
+      customer_name: cust.customer_name || 'Outdoor Lead',
+      phone_number: cust.phone || '',
+      dob: cust.dob || '',
+      anniversary: cust.anniversary_date || '',
+      status: cust.is_converted ? 'Sold' : (cust.status || 'Outdoor Marketing'),
+      product_value: cust.estimated_budget || 0,
+      notes: `[Outdoor Marketing - Area: ${cust.area_name || 'Field'}] ${cust.notes || ''}`.trim(),
+      approval_status: cust.approval_status || 'PENDING',
+      reviewed_by_name: cust.reviewed_by_name,
+      rejection_reason: cust.rejection_reason,
+      breakdown: JSON.stringify([{
+        name: cust.customer_name,
+        phone: cust.phone,
+        dob: cust.dob,
+        anniversary: cust.anniversary_date,
+        status: cust.status || 'Outdoor Marketing',
+        has_scheme: Boolean(cust.scheme_name),
+        scheme_name: cust.scheme_name || '',
+        has_google_review: Boolean(cust.has_google_review),
+        google_review_rating: cust.google_review_rating || 5,
+        has_customer_feedback: Boolean(cust.has_customer_feedback),
+        feedback_rating: cust.feedback_rating || 5,
+        notes: cust.notes || '',
+        sold_image_url: cust.photo_url || '',
+      }]),
+      created_at: cust.created_at || cust.date,
+      employee_name: user?.full_name || 'Me',
+      branch_name: selectedBranch?.name || user?.branch_name,
+    };
+    setViewingActivity(pseudoAct);
   };
 
   const handleOpenEditOutdoorCustomer = (cust: any) => {
@@ -1363,33 +1495,33 @@ export const EmployeePortalPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 6 Distinct Solid Colored Metric Blocks (Exact Manager Dashboard Palette) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-6 pt-6 border-t border-[#EBE6DC]">
+          {/* 6 Distinct Solid Colored Metric Blocks (Exact Manager Dashboard Palette - Fully Mobile Responsive) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-[#EBE6DC]">
             {/* Block 1: Total Points Earned (Warm Terracotta #FAF1EC & #B97855 - matching Manager Rating card) */}
             <div
               onClick={() => setActiveTab('REVIEWS')}
-              className="bg-[#FAF1EC] border border-[#ECCFC0] hover:border-[#B97855] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#FAF1EC] border border-[#ECCFC0] hover:border-[#B97855] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-[#B97855] uppercase tracking-wider block mb-1">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-[#B97855] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Points Earned
                     </span>
-                    <div className="text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none">
                       {dashboardSummary?.total_points ?? 0}
                     </div>
-                    <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Review Rewards</span>
+                    <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">Review Rewards</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#ECCFC0] text-[#B97855] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <Award className="w-5 h-5 text-[#B97855]" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl bg-white border border-[#ECCFC0] text-[#B97855] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Award className="w-4 h-4 sm:w-5 sm:h-5 text-[#B97855]" />
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-2.5 border-t border-[#ECCFC0] flex items-center justify-between text-[10px] font-bold text-[#B97855]">
-                  <span>{dashboardSummary?.google_review_points ?? 0} Google (1 pt)</span>
-                  <span>•</span>
-                  <span>{dashboardSummary?.video_review_points ?? 0} Video (5 pts)</span>
+                <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-2.5 border-t border-[#ECCFC0] flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-[#B97855] flex-wrap gap-x-1 leading-tight">
+                  <span className="truncate">{dashboardSummary?.google_review_points ?? 0} Google (1 pt)</span>
+                  <span className="hidden xs:inline">•</span>
+                  <span className="truncate">{dashboardSummary?.video_review_points ?? 0} Video (5 pts)</span>
                 </div>
               </div>
             </div>
@@ -1397,25 +1529,25 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Block 2: Total Customer Logs (Purple #F3E8FF & #7E22CE - matching Manager Staff card) */}
             <div
               onClick={() => setActiveTab('CUSTOMERS')}
-              className="bg-[#F3E8FF] border border-[#D8B4FE] hover:border-[#7E22CE] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#F3E8FF] border border-[#D8B4FE] hover:border-[#7E22CE] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-[#7E22CE] uppercase tracking-wider block mb-1">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-[#7E22CE] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Customer Logs
                     </span>
-                    <div className="text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none">
                       {dashboardSummary?.total_customer_activities ?? customerActivities.length}
                     </div>
-                    <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Walk-ins Logged</span>
+                    <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">Walk-ins Logged</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <Users className="w-5 h-5 text-[#7E22CE]" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl bg-white border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[#7E22CE]" />
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-2.5 border-t border-[#D8B4FE] flex items-center justify-between text-[10px] font-bold text-[#7E22CE]">
+                <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-2.5 border-t border-[#D8B4FE] flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-[#7E22CE]">
                   <span>Showroom Logs</span>
                   <span className="font-mono">Active</span>
                 </div>
@@ -1425,25 +1557,25 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Block 3: Outdoor Entries (Emerald Green #E8F4EE & #21845F - matching Outdoor Marketing theme) */}
             <div
               onClick={() => setActiveTab('OUTDOOR')}
-              className="bg-[#E8F4EE] border border-[#C5E3D5] hover:border-[#21845F] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#E8F4EE] border border-[#C5E3D5] hover:border-[#21845F] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Outdoor Entry
                     </span>
-                    <div className="text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none">
                       {dashboardSummary?.total_outdoor_customers ?? outdoorDuty?.customers?.length ?? 0}
                     </div>
-                    <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Field Leads</span>
+                    <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">Field Leads</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <Compass className="w-5 h-5 text-[#21845F]" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl bg-white border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Compass className="w-4 h-4 sm:w-5 sm:h-5 text-[#21845F]" />
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-2.5 border-t border-[#C5E3D5] flex items-center justify-between text-[10px] font-bold text-[#21845F]">
+                <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-2.5 border-t border-[#C5E3D5] flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-[#21845F]">
                   <span>Field Interactions</span>
                   <span className="font-mono">{outdoorDuty?.status || 'Active'}</span>
                 </div>
@@ -1453,28 +1585,28 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Block 4: Call Activities (Slate Blue #EDF2F8 & #526F91 - matching Manager Footfall card) */}
             <div
               onClick={() => setActiveTab('CALLS')}
-              className="bg-[#EDF2F8] border border-[#C6D4E3] hover:border-[#526F91] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#EDF2F8] border border-[#C6D4E3] hover:border-[#526F91] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-[#526F91] uppercase tracking-wider block mb-1">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-[#526F91] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Call Activities
                     </span>
-                    <div className="text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none">
                       {dashboardSummary?.total_calls ?? callLogs.length}
                     </div>
-                    <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Client Outreach</span>
+                    <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">Client Outreach</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#C6D4E3] text-[#526F91] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <PhoneCall className="w-5 h-5 text-[#526F91]" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl bg-white border border-[#C6D4E3] text-[#526F91] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <PhoneCall className="w-4 h-4 sm:w-5 sm:h-5 text-[#526F91]" />
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-2.5 border-t border-[#C6D4E3] flex items-center justify-between text-[10px] font-bold text-[#526F91]">
-                  <span>{dashboardSummary?.completed_calls ?? 0} Done</span>
-                  <span>•</span>
-                  <span>{dashboardSummary?.pending_calls ?? 0} Scheduled</span>
+                <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-2.5 border-t border-[#C6D4E3] flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-[#526F91] flex-wrap gap-x-1 leading-tight">
+                  <span className="truncate">{dashboardSummary?.completed_calls ?? 0} Done</span>
+                  <span className="hidden xs:inline">•</span>
+                  <span className="truncate">{dashboardSummary?.pending_calls ?? 0} Scheduled</span>
                 </div>
               </div>
             </div>
@@ -1485,26 +1617,26 @@ export const EmployeePortalPage: React.FC = () => {
                 setActiveTab('CUSTOMERS');
                 setCustomerApprovalFilter('PENDING');
               }}
-              className="bg-[#FEFCE8] border border-[#EAB308] hover:border-[#CA8A04] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#FEFCE8] border border-[#EAB308] hover:border-[#CA8A04] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-[#854D0E] uppercase tracking-wider block mb-1">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-[#854D0E] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Pending Review
                     </span>
-                    <div className="text-3xl font-bold text-[#854D0E] font-mono tracking-tight">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#854D0E] font-mono tracking-tight leading-none">
                       {dashboardSummary?.pending_customer_activities ?? customerActivities.filter(a => a.approval_status === 'PENDING').length}
                     </div>
-                    <span className="text-xs text-[#854D0E] font-medium mt-0.5 block">Awaiting Verification</span>
+                    <span className="text-[10px] sm:text-xs text-[#854D0E] font-medium mt-0.5 sm:mt-1 block truncate">Awaiting Verification</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#EAB308] text-[#CA8A04] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <Clock className="w-5 h-5 text-[#CA8A04]" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl bg-white border border-[#EAB308] text-[#CA8A04] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#CA8A04]" />
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-2.5 border-t border-[#EAB308]/40 flex items-center justify-between text-[10px] font-bold text-[#854D0E]">
-                  <span>In Manager's Queue</span>
+                <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-2.5 border-t border-[#EAB308]/40 flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-[#854D0E]">
+                  <span>Manager Queue</span>
                   <span>Pending</span>
                 </div>
               </div>
@@ -1516,25 +1648,25 @@ export const EmployeePortalPage: React.FC = () => {
                 setActiveTab('CUSTOMERS');
                 setCustomerApprovalFilter('APPROVED');
               }}
-              className="bg-[#E8F4EE] border border-[#C5E3D5] hover:border-[#21845F] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#E8F4EE] border border-[#C5E3D5] hover:border-[#21845F] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Approved Logs
                     </span>
-                    <div className="text-3xl font-bold text-[#21845F] font-mono tracking-tight">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#21845F] font-mono tracking-tight leading-none">
                       {dashboardSummary?.approved_customer_activities ?? customerActivities.filter(a => a.approval_status === 'APPROVED').length}
                     </div>
-                    <span className="text-xs text-[#21845F] font-medium mt-0.5 block">Manager Approved</span>
+                    <span className="text-[10px] sm:text-xs text-[#21845F] font-medium mt-0.5 sm:mt-1 block truncate">Manager Approved</span>
                   </div>
-                  <div className="w-11 h-11 rounded-2xl bg-white border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <CheckCircle2 className="w-5 h-5 text-[#21845F]" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl bg-white border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#21845F]" />
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-2.5 border-t border-[#C5E3D5] flex items-center justify-between text-[10px] font-bold text-[#21845F]">
+                <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-2.5 border-t border-[#C5E3D5] flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-[#21845F]">
                   <span>Verified Records</span>
                   <span>Active</span>
                 </div>
@@ -1545,7 +1677,7 @@ export const EmployeePortalPage: React.FC = () => {
 
         {/* Tab Selection & Main Action Header */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-[#E6E1D6] pb-4">
-          <div className="w-full sm:w-auto grid grid-cols-2 sm:grid-cols-4 sm:flex items-center gap-1.5 p-1.5 bg-white border border-[#D8B4FE]/70 rounded-2xl shadow-xs">
+          <div className="w-full sm:w-auto grid grid-cols-2 sm:grid-cols-3 lg:flex items-center gap-1.5 p-1.5 bg-white border border-[#D8B4FE]/70 rounded-2xl shadow-xs">
             {/* Tab 1: Customer Logs */}
             <button
               onClick={() => setActiveTab('CUSTOMERS')}
@@ -1629,6 +1761,54 @@ export const EmployeePortalPage: React.FC = () => {
                 {outdoorCustomersList.length || (outdoorDuty?.customers?.length ?? (dashboardSummary?.total_outdoor_customers ?? 0))}
               </span>
             </button>
+
+            {/* Tab 5: Pay Slips */}
+            <button
+              onClick={() => {
+                setActiveTab('PAYSLIPS');
+                fetchMyPayslips();
+              }}
+              className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'PAYSLIPS'
+                  ? 'bg-[#21845F] text-white shadow-xs scale-[1.01]'
+                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#E8F4EE]'
+              }`}
+            >
+              <Receipt className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Pay Slips</span>
+              <span className="sm:hidden text-[11px] truncate">Slips</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
+                activeTab === 'PAYSLIPS'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
+              }`}>
+                {myPayslips.length}
+              </span>
+            </button>
+
+            {/* Tab 6: Leave Update */}
+            <button
+              onClick={() => {
+                setActiveTab('LEAVES');
+                fetchMyLeaves();
+              }}
+              className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'LEAVES'
+                  ? 'bg-[#D97706] text-white shadow-xs scale-[1.01]'
+                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FFFBEB]'
+              }`}
+            >
+              <CalendarDays className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Leave Update</span>
+              <span className="sm:hidden text-[11px] truncate">Leaves</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
+                activeTab === 'LEAVES'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]'
+              }`}>
+                {myLeaves.length}
+              </span>
+            </button>
           </div>
 
           {/* Primary Action Button */}
@@ -1671,6 +1851,24 @@ export const EmployeePortalPage: React.FC = () => {
                 <span>Add Customer & Review</span>
               </Button>
             </div>
+          )}
+          {activeTab === 'PAYSLIPS' && (
+            <Button
+              onClick={fetchMyPayslips}
+              className="w-full sm:w-auto bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 text-white ${isLoadingPayslips ? 'animate-spin' : ''}`} />
+              <span>Refresh Slips</span>
+            </Button>
+          )}
+          {activeTab === 'LEAVES' && (
+            <Button
+              onClick={fetchMyLeaves}
+              className="w-full sm:w-auto bg-[#D97706] hover:bg-[#B45309] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 text-white ${isLoadingLeaves ? 'animate-spin' : ''}`} />
+              <span>Refresh Leaves</span>
+            </Button>
           )}
         </div>
 
@@ -3405,12 +3603,22 @@ export const EmployeePortalPage: React.FC = () => {
                             )}
                           </div>
 
-                          {/* Tier 2: Update & Delete Action Buttons in Clean Grid */}
-                          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#F0ECE1]/80">
+                          {/* Tier 2: View, Update & Delete Action Buttons in Clean Grid */}
+                          <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-[#F0ECE1]/80">
+                            <button
+                              type="button"
+                              onClick={() => handleViewOutdoorLead(cust)}
+                              className="w-full py-2 px-2 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#FAF8F5] text-[#5E5A52] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 active:scale-[0.98]"
+                              title="View details"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>View</span>
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => handleOpenEditOutdoorCustomer(cust)}
-                              className="w-full py-2 px-3 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#E8F4EE] hover:border-[#A7F3D0] text-[#23815F] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                              className="w-full py-2 px-2 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#E8F4EE] hover:border-[#A7F3D0] text-[#23815F] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 active:scale-[0.98]"
                               title="Update outdoor customer"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -3420,7 +3628,7 @@ export const EmployeePortalPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleDeleteOutdoorCustomer(cust.id)}
-                              className="w-full py-2 px-3 rounded-xl bg-white border border-red-200 hover:bg-red-50 text-[#C24141] hover:text-red-700 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                              className="w-full py-2 px-2 rounded-xl bg-white border border-red-200 hover:bg-red-50 text-[#C24141] hover:text-red-700 text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 active:scale-[0.98]"
                               title="Delete outdoor customer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -3612,9 +3820,19 @@ export const EmployeePortalPage: React.FC = () => {
                                 )}
                               </td>
 
-                              {/* Actions Column: Edit / Update, WhatsApp, Delete */}
+                              {/* Actions Column: View, Edit / Update, WhatsApp, Delete */}
                               <td className="px-4 py-3.5 text-right whitespace-nowrap">
                                 <div className="inline-flex items-center gap-1">
+                                  {/* View Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleViewOutdoorLead(cust)}
+                                    title="View Customer Details"
+                                    className="p-1.5 rounded-lg bg-white border border-[#E6E1D6] hover:bg-[#FAF8F3] hover:border-[#CBD5E1] text-[#5E5A52] hover:text-[#1D1D1B] transition-all cursor-pointer shadow-2xs"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+
                                   {/* Update Button */}
                                   <button
                                     type="button"
@@ -3703,6 +3921,383 @@ export const EmployeePortalPage: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 5: MY PAY SLIPS                                                */}
+        {/* =================================================================== */}
+        {activeTab === 'PAYSLIPS' && (
+          <div className="space-y-6">
+            <div className="bg-white border border-[#E4DFD4] rounded-3xl p-5 sm:p-7 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center font-bold">
+                    <Receipt className="w-4 h-4" />
+                  </span>
+                  <h3 className="text-lg font-black text-[#1D1D1B] tracking-tight">My Issued Pay Slips</h3>
+                </div>
+                <p className="text-xs text-[#5E5A52] font-medium mt-1">
+                  Official monthly salary slips issued by the Siri Samruddhi HR department.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-mono font-bold text-[#5E5A52]">
+                  Total Slips: {myPayslips.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={fetchMyPayslips}
+                  className="p-2 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#5E5A52] transition-colors cursor-pointer"
+                  title="Refresh pay slips"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoadingPayslips ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {isLoadingPayslips ? (
+              <div className="py-12 flex justify-center">
+                <LoadingSpinner message="Loading pay slips..." />
+              </div>
+            ) : myPayslips.length === 0 ? (
+              <div className="bg-white border border-[#E4DFD4] rounded-3xl p-10 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4] text-[#8A8479] flex items-center justify-center mx-auto">
+                  <Receipt className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-black text-[#1D1D1B]">No Pay Slips Issued Yet</h4>
+                <p className="text-xs text-[#8A8479] max-w-sm mx-auto">
+                  Your monthly salary slips issued by HR will appear here with downloadable receipts and image previews.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {myPayslips.map((slip) => {
+                  const isPdf = slip.file_url?.toLowerCase().endsWith('.pdf');
+                  const fullUrl = getMediaUrl(slip.file_url);
+
+                  return (
+                    <div
+                      key={slip.id}
+                      className="bg-white border border-[#E4DFD4] hover:border-[#21845F] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="px-2.5 py-1 rounded-full bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5] text-[11px] font-extrabold uppercase tracking-wide">
+                              {slip.month} {slip.year}
+                            </span>
+                            <div className="text-xl font-bold font-mono text-[#1D1D1B] mt-2">
+                              {slip.amount !== undefined && slip.amount !== null
+                                ? `₹${Number(slip.amount).toLocaleString('en-IN')}`
+                                : 'Salary Slip'}
+                            </div>
+                          </div>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#4B5563] font-bold">
+                            Issued
+                          </span>
+                        </div>
+
+                        {/* File preview thumbnail if image */}
+                        {slip.file_url && !isPdf && (
+                          <div
+                            onClick={() => setPayslipPreviewUrl(fullUrl)}
+                            className="h-36 rounded-xl border border-[#E6E1D6] overflow-hidden bg-[#FAF8F3] relative group cursor-pointer"
+                          >
+                            <img
+                              src={fullUrl}
+                              alt={`Payslip ${slip.month} ${slip.year}`}
+                              className="w-full h-full object-cover object-top transition-transform group-hover:scale-105 duration-200"
+                            />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                              <Eye className="w-4 h-4" />
+                              <span>Click to enlarge</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {slip.file_url && isPdf && (
+                          <div className="p-4 rounded-xl border border-dashed border-[#CBD5E1] bg-[#F8FAFC] flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-red-100 text-red-600 font-bold flex items-center justify-center text-xs">
+                              PDF
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-[#1D1D1B] truncate">
+                                Salary_Slip_{slip.month}_{slip.year}.pdf
+                              </p>
+                              <span className="text-[10px] text-[#64748B]">Official PDF Document</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {slip.notes && (
+                          <p className="text-xs text-[#5E5A52] bg-[#FAF8F3] p-2.5 rounded-xl border border-[#EBE6DC] leading-relaxed">
+                            {slip.notes}
+                          </p>
+                        )}
+
+                        <div className="text-[10px] text-[#8A8479] flex items-center gap-1 font-mono">
+                          <Calendar className="w-3 h-3 text-[#8A8479]" />
+                          <span>Issued: {slip.issued_date || slip.created_at?.slice(0, 10)}</span>
+                        </div>
+                      </div>
+
+                      {/* Download Action */}
+                      <a
+                        href={fullUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={`Payslip_${user?.employee_code || 'Staff'}_${slip.month}_${slip.year}`}
+                        className="w-full py-2.5 px-4 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Download Pay Slip</span>
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 6: LEAVE UPDATE & APPLICATIONS                                 */}
+        {/* =================================================================== */}
+        {activeTab === 'LEAVES' && (
+          <div className="space-y-6">
+            <div className="bg-white border border-[#E4DFD4] rounded-3xl p-5 sm:p-7 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center font-bold">
+                    <CalendarDays className="w-4 h-4" />
+                  </span>
+                  <h3 className="text-lg font-black text-[#1D1D1B] tracking-tight">Leave Update & Applications</h3>
+                </div>
+                <p className="text-xs text-[#5E5A52] font-medium mt-1">
+                  Request future leaves. Once submitted, updates are dispatched to your Showroom Manager and HR department.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-mono font-bold text-[#5E5A52]">
+                  Applications: {myLeaves.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={fetchMyLeaves}
+                  className="p-2 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#5E5A52] transition-colors cursor-pointer"
+                  title="Refresh leave applications"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoadingLeaves ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left Column: Apply for Leave Form (5 cols) */}
+              <div className="lg:col-span-5 bg-white border border-[#E4DFD4] rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
+                <div className="border-b border-[#EBE6DC] pb-3">
+                  <h4 className="text-sm font-black text-[#1D1D1B] uppercase tracking-wider">
+                    Submit Future Leave Update
+                  </h4>
+                  <p className="text-[11px] text-[#8A8479] mt-0.5">
+                    Fill in your leave dates, reason, and subject.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmitLeave} className="space-y-4">
+                  {/* Leave Type */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
+                      Leave Type *
+                    </label>
+                    <select
+                      value={leaveForm.leave_type}
+                      onChange={(e) => setLeaveForm({ ...leaveForm, leave_type: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-bold text-[#1D1D1B] focus:outline-none focus:border-[#D97706] focus:bg-white cursor-pointer"
+                    >
+                      <option value="Casual Leave">Casual Leave</option>
+                      <option value="Sick / Medical Leave">Sick / Medical Leave</option>
+                      <option value="Earned / Annual Leave">Earned / Annual Leave</option>
+                      <option value="Emergency Leave">Emergency Leave</option>
+                      <option value="Personal / Festival Leave">Personal / Festival Leave</option>
+                    </select>
+                  </div>
+
+                  {/* Subject */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
+                      Subject / Brief *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={leaveForm.subject}
+                      onChange={(e) => setLeaveForm({ ...leaveForm, subject: e.target.value })}
+                      placeholder="e.g. Sister wedding ceremony in hometown"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-medium text-[#1D1D1B] focus:outline-none focus:border-[#D97706] focus:bg-white"
+                    />
+                  </div>
+
+                  {/* Dates Range */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
+                        From Date *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={leaveForm.from_date}
+                        onChange={(e) => setLeaveForm({ ...leaveForm, from_date: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-bold text-[#1D1D1B] focus:outline-none focus:border-[#D97706] focus:bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
+                        To Date *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={leaveForm.to_date}
+                        min={leaveForm.from_date}
+                        onChange={(e) => setLeaveForm({ ...leaveForm, to_date: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-bold text-[#1D1D1B] focus:outline-none focus:border-[#D97706] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Message */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
+                      Message / Reason *
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={leaveForm.message}
+                      onChange={(e) => setLeaveForm({ ...leaveForm, message: e.target.value })}
+                      placeholder="Describe the reason for leave and handoff details..."
+                      className="w-full p-3 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-medium text-[#1D1D1B] focus:outline-none focus:border-[#D97706] focus:bg-white"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmittingLeave}
+                    className="w-full py-3 px-4 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99]"
+                  >
+                    {isSubmittingLeave ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CalendarDays className="w-4 h-4" />
+                    )}
+                    <span>Submit Leave Request</span>
+                  </button>
+
+                  <p className="text-[10px] text-[#8A8479] text-center leading-relaxed">
+                    A notification will be sent immediately to your Showroom Manager and HR department. Live status will update below once reviewed.
+                  </p>
+                </form>
+              </div>
+
+              {/* Right Column: History & Status (7 cols) */}
+              <div className="lg:col-span-7 space-y-3">
+                <div className="flex items-center justify-between border-b border-[#E6E1D6] pb-2">
+                  <h4 className="text-sm font-black text-[#1D1D1B] uppercase tracking-wider">
+                    My Leave History
+                  </h4>
+                  <span className="text-xs text-[#8A8479]">
+                    {myLeaves.length} {myLeaves.length === 1 ? 'Record' : 'Records'}
+                  </span>
+                </div>
+
+                {isLoadingLeaves ? (
+                  <div className="py-12 flex justify-center bg-white rounded-3xl border border-[#E4DFD4]">
+                    <LoadingSpinner message="Loading leave history..." />
+                  </div>
+                ) : myLeaves.length === 0 ? (
+                  <div className="bg-white border border-[#E4DFD4] rounded-3xl p-10 text-center space-y-2">
+                    <CalendarDays className="w-8 h-8 text-[#8A8479] mx-auto" />
+                    <p className="text-xs font-bold text-[#1D1D1B]">No Leave Requests Yet</p>
+                    <p className="text-[11px] text-[#8A8479]">
+                      Submit a leave application when you plan to take time off.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {myLeaves.map((leave) => {
+                      const isPending = leave.status === 'PENDING';
+                      const isApproved = leave.status === 'APPROVED';
+                      const isRejected = leave.status === 'REJECTED';
+
+                      return (
+                        <div
+                          key={leave.id}
+                          className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-xs space-y-2.5"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="px-2.5 py-0.5 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-[10px] font-bold text-[#5E5A52]">
+                                  {leave.leave_type}
+                                </span>
+                                <span className="text-[11px] font-mono text-[#8A8479]">
+                                  {leave.from_date} {leave.to_date && leave.to_date !== leave.from_date ? `to ${leave.to_date}` : ''} ({leave.days_count} {leave.days_count === 1 ? 'day' : 'days'})
+                                </span>
+                              </div>
+                              <h5 className="text-xs font-bold text-[#1D1D1B] mt-1">
+                                {leave.subject}
+                              </h5>
+                            </div>
+
+                            {/* Status badge */}
+                            <div>
+                              {isPending && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FEFCE8] border border-[#FEF08A] text-[#854D0E] text-[10px] font-bold">
+                                  <Clock className="w-3 h-3 text-[#EAB308]" />
+                                  <span>Pending Review</span>
+                                </span>
+                              )}
+                              {isApproved && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[10px] font-bold">
+                                  <CheckCircle2 className="w-3 h-3 text-[#16A34A]" />
+                                  <span>Approved{leave.reviewed_by_name ? ` by ${leave.reviewed_by_name}` : ''}</span>
+                                </span>
+                              )}
+                              {isRejected && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[10px] font-bold">
+                                  <XCircle className="w-3 h-3 text-[#EF4444]" />
+                                  <span>Rejected{leave.reviewed_by_name ? ` by ${leave.reviewed_by_name}` : ''}</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-[#5E5A52] bg-[#FAF8F3] p-2.5 rounded-xl border border-[#EBE6DC] leading-relaxed">
+                            {leave.message}
+                          </p>
+
+                          {isRejected && leave.rejection_reason && (
+                            <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800">
+                              <span className="font-bold">Manager Remark: </span>
+                              <span>{leave.rejection_reason}</span>
+                            </div>
+                          )}
+
+                          <div className="text-[10px] text-[#8A8479] font-mono">
+                            Requested: {leave.created_at?.slice(0, 10)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 </main>
@@ -4688,6 +5283,42 @@ export const EmployeePortalPage: React.FC = () => {
           onClose={() => setViewingActivity(null)}
           activity={viewingActivity}
         />
+      )}
+
+      {/* Lightbox Preview Modal for Pay Slips */}
+      {payslipPreviewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-3xl w-full p-4 shadow-2xl space-y-3 relative max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-[#E6E1D6] pb-2">
+              <h4 className="text-xs font-black uppercase text-[#1D1D1B] tracking-wider">Pay Slip Document Preview</h4>
+              <button
+                onClick={() => setPayslipPreviewUrl(null)}
+                className="p-1 rounded-lg hover:bg-gray-100 text-[#5E5A52]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto flex items-center justify-center bg-[#FAF8F3] rounded-2xl p-2">
+              <img
+                src={payslipPreviewUrl}
+                alt="Pay Slip Document"
+                className="max-h-[70vh] object-contain rounded-xl"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <a
+                href={payslipPreviewUrl}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-xl bg-[#21845F] text-white text-xs font-bold flex items-center gap-1.5"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Document</span>
+              </a>
+            </div>
+          </div>
+        </div>
       )}
 
       {showLogoutModal && (

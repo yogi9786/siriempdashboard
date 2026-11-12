@@ -228,3 +228,4 @@ export const EmployeePayslipsTab: React.FC<EmployeePayslipsTabProps> = ({
     </div>
   );
 };
+

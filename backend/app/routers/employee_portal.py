@@ -307,6 +307,10 @@ def list_employee_customer_activities(
             query = query.filter(CustomerActivity.status.ilike("%interested%"))
         elif st_clean == "lost":
             query = query.filter(CustomerActivity.status.ilike("%lost%"))
+        elif st_clean in ["window shopping", "walkin", "walk-in"]:
+            query = query.filter(or_(CustomerActivity.status.ilike("%walk%"), CustomerActivity.status.ilike("%window%")))
+        elif st_clean in ["outdoor marketing", "outdoor"]:
+            query = query.filter(or_(CustomerActivity.status.ilike("%outdoor%"), CustomerActivity.notes.ilike("%[outdoor%")))
         else:
             query = query.filter(CustomerActivity.status.ilike(f"%{st_clean}%"))
 
@@ -1522,6 +1526,10 @@ def get_employee_outdoor_customers(
             "follow_up_date": str(c.follow_up_date) if c.follow_up_date else None,
             "area_name": c.area_name or (c.duty.area if c.duty else "Field Marketing"),
             "scheme_name": c.scheme_name,
+            "scheme_amount": getattr(c, "scheme_amount", 0.0) or 0.0,
+            "scheme_notes": getattr(c, "scheme_notes", "") or "",
+            "scheme_reminder_date": str(c.scheme_reminder_date) if getattr(c, "scheme_reminder_date", None) else None,
+            "note_notification_date": str(c.note_notification_date) if getattr(c, "note_notification_date", None) else None,
             "date": str(c.date) if c.date else None,
             "is_converted": c.is_converted,
             "has_google_review": c.has_google_review,
@@ -1596,6 +1604,10 @@ def save_individual_outdoor_customer(
     dob_val = date.fromisoformat(payload["dob"]) if payload.get("dob") else None
     anniv_val = date.fromisoformat(payload["anniversary_date"]) if payload.get("anniversary_date") else None
     follow_val = date.fromisoformat(payload["follow_up_date"]) if payload.get("follow_up_date") else None
+    scheme_rem_val = date.fromisoformat(payload["scheme_reminder_date"]) if payload.get("scheme_reminder_date") else None
+    note_notif_val = date.fromisoformat(payload["note_notification_date"]) if payload.get("note_notification_date") else None
+    scheme_amt = float(payload.get("scheme_amount") or 0.0)
+    scheme_notes_val = (payload.get("scheme_notes") or "").strip() or None
 
     if not customer:
         customer = OutdoorMarketingCustomer(
@@ -1610,6 +1622,10 @@ def save_individual_outdoor_customer(
             photo_url=payload.get("photo_url") or None,
             area_name=area_name,
             scheme_name=payload.get("scheme_name") or None,
+            scheme_amount=scheme_amt,
+            scheme_notes=scheme_notes_val,
+            scheme_reminder_date=scheme_rem_val,
+            note_notification_date=note_notif_val,
             date=target_date,
             is_converted=bool(payload.get("is_converted", False)),
             has_google_review=bool(payload.get("has_google_review", False)),
@@ -1638,6 +1654,10 @@ def save_individual_outdoor_customer(
         customer.follow_up_date = follow_val
         customer.area_name = area_name
         customer.scheme_name = payload.get("scheme_name") or None
+        customer.scheme_amount = scheme_amt
+        customer.scheme_notes = scheme_notes_val
+        customer.scheme_reminder_date = scheme_rem_val
+        customer.note_notification_date = note_notif_val
         customer.date = target_date
         customer.duty_id = duty.id
         customer.is_converted = bool(payload.get("is_converted", False))

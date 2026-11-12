@@ -68,6 +68,9 @@ import { useToast } from '../../context/ToastContext';
 import { SCHEMES, DEFAULT_SCHEME, SchemeName } from '../../constants/schemes';
 import { CustomerActivityModal } from '../../components/customers/CustomerActivityModal';
 import { CustomerActivityViewModal } from '../../components/customers/CustomerActivityViewModal';
+import { EmployeePayslipsTab } from './components/EmployeePayslipsTab';
+import { EmployeeLeavesTab } from './components/EmployeeLeavesTab';
+import { EmployeeOutdoorCustomerModal } from './components/EmployeeOutdoorCustomerModal';
 import logoImg from '../../assets/siri samruddhi logo.png';
 
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
@@ -115,6 +118,8 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
   let videoTitle = '';
   let videoScreenshot = '';
   let productId = '';
+  let noteNotificationDate = '';
+  let schemeReminderDate = '';
 
   if (breakdownStr) {
     try {
@@ -123,6 +128,12 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
         for (const item of parsed) {
           if (!productId && item.product_id) {
             productId = item.product_id;
+          }
+          if (!noteNotificationDate && item.note_notification_date) {
+            noteNotificationDate = item.note_notification_date;
+          }
+          if (!schemeReminderDate && item.scheme_reminder_date) {
+            schemeReminderDate = item.scheme_reminder_date;
           }
           if (!hasScheme && (item.has_scheme || item.scheme_name)) {
             hasScheme = true;
@@ -178,6 +189,8 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
     videoTitle,
     videoScreenshot,
     productId,
+    noteNotificationDate,
+    schemeReminderDate,
   };
 };
 
@@ -375,6 +388,9 @@ export const EmployeePortalPage: React.FC = () => {
     anniversary_date: '',
     follow_up_date: '',
     scheme_name: '',
+    scheme_amount: '' as string | number,
+    scheme_notes: '',
+    scheme_reminder_date: '',
     interested_gold: false,
     interested_diamond: false,
     interested_silver: false,
@@ -390,6 +406,7 @@ export const EmployeePortalPage: React.FC = () => {
     photo_url: '',
     status: 'Lead',
     notes: '',
+    note_notification_date: '',
   });
 
   // Customer activities state
@@ -397,7 +414,7 @@ export const EmployeePortalPage: React.FC = () => {
   const [isLoadingCustomers, setIsLoadingCustomers] = useState<boolean>(true);
   const [customerSearch, setCustomerSearch] = useState<string>('');
   const [customerApprovalFilter, setCustomerApprovalFilter] = useState<string>('ALL');
-  const [customerStatusFilter, setCustomerStatusFilter] = useState<'ALL' | 'Sold' | 'Exchange' | 'In Hold' | 'Interested' | 'Lost' | 'Window Shopping'>('ALL');
+  const [customerStatusFilter, setCustomerStatusFilter] = useState<'ALL' | 'Sold' | 'Exchange' | 'In Hold' | 'Interested' | 'Lost' | 'Window Shopping' | 'Outdoor Marketing'>('ALL');
   const [showCustomerModal, setShowCustomerModal] = useState<boolean>(false);
 
   // Notification states (Attire checks & Review approvals)
@@ -910,6 +927,9 @@ export const EmployeePortalPage: React.FC = () => {
       anniversary_date: '',
       follow_up_date: '',
       scheme_name: '',
+      scheme_amount: '',
+      scheme_notes: '',
+      scheme_reminder_date: '',
       interested_gold: false,
       interested_diamond: false,
       interested_silver: false,
@@ -925,6 +945,7 @@ export const EmployeePortalPage: React.FC = () => {
       photo_url: '',
       status: 'Lead',
       notes: '',
+      note_notification_date: '',
     });
     setShowAddOutdoorModal(true);
   };
@@ -940,8 +961,8 @@ export const EmployeePortalPage: React.FC = () => {
       dob: cust.dob || '',
       anniversary: cust.anniversary_date || '',
       status: cust.is_converted ? 'Sold' : (cust.status || 'Outdoor Marketing'),
-      product_value: cust.estimated_budget || 0,
-      notes: `[Outdoor Marketing - Area: ${cust.area_name || 'Field'}] ${cust.notes || ''}`.trim(),
+      product_value: cust.estimated_budget || cust.scheme_amount || 0,
+      notes: `[Outdoor Marketing - Area: ${cust.area_name || 'Field'}]${cust.note_notification_date ? ` [Reminder: ${cust.note_notification_date}]` : ''} ${cust.notes || ''}`.trim(),
       approval_status: cust.approval_status || 'PENDING',
       reviewed_by_name: cust.reviewed_by_name,
       rejection_reason: cust.rejection_reason,
@@ -953,6 +974,10 @@ export const EmployeePortalPage: React.FC = () => {
         status: cust.status || 'Outdoor Marketing',
         has_scheme: Boolean(cust.scheme_name),
         scheme_name: cust.scheme_name || '',
+        scheme_amount: cust.scheme_amount || '',
+        scheme_notes: cust.scheme_notes || '',
+        scheme_reminder_date: cust.scheme_reminder_date || '',
+        note_notification_date: cust.note_notification_date || '',
         has_google_review: Boolean(cust.has_google_review),
         google_review_rating: cust.google_review_rating || 5,
         has_customer_feedback: Boolean(cust.has_customer_feedback),
@@ -979,6 +1004,9 @@ export const EmployeePortalPage: React.FC = () => {
       anniversary_date: cust.anniversary_date || '',
       follow_up_date: cust.follow_up_date || '',
       scheme_name: cust.scheme_name || '',
+      scheme_amount: cust.scheme_amount || '',
+      scheme_notes: cust.scheme_notes || '',
+      scheme_reminder_date: cust.scheme_reminder_date || '',
       interested_gold: intStr.includes('gold'),
       interested_diamond: intStr.includes('diamond'),
       interested_silver: intStr.includes('silver'),
@@ -994,6 +1022,7 @@ export const EmployeePortalPage: React.FC = () => {
       photo_url: cust.photo_url || '',
       status: cust.status || 'Lead',
       notes: cust.notes || '',
+      note_notification_date: cust.note_notification_date || '',
     });
     setShowAddOutdoorModal(true);
   };
@@ -1879,7 +1908,7 @@ export const EmployeePortalPage: React.FC = () => {
           <div className="space-y-4">
             {/* Customer Status Quick Filter Bar (Requirement 6: Lost, Interested, Sold) */}
             <div className="bg-white border border-[#E4DFD4] p-2.5 sm:p-3.5 rounded-2xl shadow-xs">
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              <div className="flex flex-wrap items-center gap-1.5 py-0.5">
                 <span className="text-xs font-black text-[#3B0764] mr-1 uppercase tracking-wider text-[11px] flex items-center gap-1.5 shrink-0">
                   <Filter className="w-3.5 h-3.5 text-[#7E22CE]" />
                   <span>Customer Status:</span>
@@ -1926,6 +1955,12 @@ export const EmployeePortalPage: React.FC = () => {
                     label: 'Window Shopping',
                     activeCls: 'bg-[#5E5A52] text-white border-[#5E5A52] shadow-xs',
                     inactiveCls: 'bg-[#F4F1EA] text-[#5E5A52] border-[#E4DFD4] hover:bg-[#EBE6DC]',
+                  },
+                  {
+                    id: 'Outdoor Marketing',
+                    label: 'Outdoor Marketing',
+                    activeCls: 'bg-[#1B694C] text-white border-[#1B694C] shadow-sm shadow-emerald-700/20',
+                    inactiveCls: 'bg-[#E8F4EE] text-[#1B694C] border-[#A7F3D0] hover:bg-[#D1FAE5]',
                   },
                 ].map((sTab) => {
                   const isSelected = customerStatusFilter === sTab.id;
@@ -2030,23 +2065,25 @@ export const EmployeePortalPage: React.FC = () => {
                                 <span>Outdoor Marketing</span>
                               </span>
                             )}
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                act.status === 'Sold'
-                                  ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
-                                  : act.status === 'Exchange'
-                                    ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
-                                    : act.status === 'In Hold / Follow Up'
-                                      ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
-                                      : act.status === 'Outdoor Marketing'
-                                        ? 'bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0]'
-                                        : act.status === 'Walkin' || act.status === 'Window Shopping'
-                                          ? 'bg-[#F4F1EA] text-[#5E5A52] border border-[#E4DFD4]'
-                                          : 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]'
-                              }`}
-                            >
-                              {act.status}
-                            </span>
+                            {(!isOutdoorActivity(act) || (act.status && act.status !== 'Outdoor Marketing')) && (
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                  act.status === 'Sold'
+                                    ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
+                                    : act.status === 'Exchange'
+                                      ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                                      : act.status === 'In Hold / Follow Up'
+                                        ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
+                                        : act.status === 'Outdoor Marketing'
+                                          ? 'bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0]'
+                                          : act.status === 'Walkin' || act.status === 'Window Shopping'
+                                            ? 'bg-[#F4F1EA] text-[#5E5A52] border border-[#E4DFD4]'
+                                            : 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]'
+                                }`}
+                              >
+                                {act.status === 'Walkin' ? 'Window Shopping' : (act.status || 'Window Shopping')}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -2088,8 +2125,20 @@ export const EmployeePortalPage: React.FC = () => {
                         </div>
 
                         {/* Schemes & Reviews badges */}
-                        {(subrecords.hasScheme || subrecords.hasReview || subrecords.hasVideoReview || subrecords.hasFeedback) && (
+                        {(subrecords.hasScheme || subrecords.hasReview || subrecords.hasVideoReview || subrecords.hasFeedback || subrecords.noteNotificationDate || subrecords.schemeReminderDate) && (
                           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                            {subrecords.noteNotificationDate && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE] text-[10px] font-bold">
+                                <Calendar className="w-3 h-3 text-[#2563EB]" />
+                                <span>Reminder: {subrecords.noteNotificationDate}</span>
+                              </span>
+                            )}
+                            {subrecords.schemeReminderDate && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A] text-[10px] font-bold">
+                                <Clock className="w-3 h-3 text-[#D97706]" />
+                                <span>Scheme Due: {subrecords.schemeReminderDate}</span>
+                              </span>
+                            )}
                             {subrecords.hasVideoReview && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] text-[10px] font-bold">
                                 <Video className="w-3 h-3 text-[#7E22CE]" />
@@ -2286,23 +2335,25 @@ export const EmployeePortalPage: React.FC = () => {
                                     <span>Outdoor Marketing</span>
                                   </span>
                                 )}
-                                <span
-                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                    act.status === 'Sold'
-                                      ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
-                                      : act.status === 'Exchange'
-                                        ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
-                                        : act.status === 'In Hold / Follow Up'
-                                          ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
-                                          : act.status === 'Outdoor Marketing'
-                                            ? 'bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0]'
-                                            : act.status === 'Walkin' || act.status === 'Window Shopping'
-                                              ? 'bg-[#F4F1EA] text-[#5E5A52] border border-[#E4DFD4]'
-                                              : 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]'
-                                  }`}
-                                >
-                                  {act.status}
-                                </span>
+                                {(!isOutdoorActivity(act) || (act.status && act.status !== 'Outdoor Marketing')) && (
+                                  <span
+                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                      act.status === 'Sold'
+                                        ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
+                                        : act.status === 'Exchange'
+                                          ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                                          : act.status === 'In Hold / Follow Up'
+                                            ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]'
+                                            : act.status === 'Outdoor Marketing'
+                                              ? 'bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0]'
+                                              : act.status === 'Walkin' || act.status === 'Window Shopping'
+                                                ? 'bg-[#F4F1EA] text-[#5E5A52] border border-[#E4DFD4]'
+                                                : 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]'
+                                    }`}
+                                  >
+                                    {act.status === 'Walkin' ? 'Window Shopping' : (act.status || 'Window Shopping')}
+                                  </span>
+                                )}
                               </div>
                               <div className="text-[10px] text-[#8A8479] mt-1 font-medium">
                                 {act.customers_count || 1} Person{(act.customers_count || 1) > 1 ? 's' : ''} Attended
@@ -2324,6 +2375,20 @@ export const EmployeePortalPage: React.FC = () => {
                             {/* Special tags */}
                             <td className="px-4 py-3.5">
                               <div className="flex flex-wrap items-center gap-1.5">
+                                {subrecords.noteNotificationDate && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE] text-[10px] font-bold">
+                                    <Calendar className="w-3 h-3 text-[#2563EB]" />
+                                    <span>Reminder: {subrecords.noteNotificationDate}</span>
+                                  </span>
+                                )}
+
+                                {subrecords.schemeReminderDate && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A] text-[10px] font-bold">
+                                    <Clock className="w-3 h-3 text-[#D97706]" />
+                                    <span>Scheme Due: {subrecords.schemeReminderDate}</span>
+                                  </span>
+                                )}
+
                                 {subrecords.hasScheme && (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold">
                                     <Award className="w-3 h-3 text-[#D97706]" />
@@ -2357,9 +2422,10 @@ export const EmployeePortalPage: React.FC = () => {
 
                                 {!subrecords.hasScheme &&
                                   !subrecords.hasReview &&
-                                  !subrecords.hasFeedback && (
+                                  !subrecords.hasFeedback &&
+                                  !subrecords.noteNotificationDate && (
                                     <span className="text-[11px] text-[#8A8479]">
-                                      Standard Window Shopping
+                                      {isOutdoorActivity(act) ? 'Outdoor Interaction' : 'Standard Window Shopping'}
                                     </span>
                                   )}
                               </div>
@@ -3741,9 +3807,19 @@ export const EmployeePortalPage: React.FC = () => {
                               <td className="px-4 py-3.5">
                                 <div className="flex flex-wrap items-center gap-1.5">
                                   {cust.scheme_name && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold flex-wrap">
                                       <Award className="w-3 h-3 text-[#D97706]" />
                                       <span>{cust.scheme_name}</span>
+                                      {cust.scheme_amount ? (
+                                        <span className="font-mono text-[#B45309]">
+                                          (₹{Number(cust.scheme_amount).toLocaleString('en-IN')})
+                                        </span>
+                                      ) : null}
+                                      {cust.scheme_reminder_date ? (
+                                        <span className="text-[#7E22CE] font-mono">
+                                          📅 {cust.scheme_reminder_date}
+                                        </span>
+                                      ) : null}
                                     </span>
                                   )}
                                   {cust.has_google_review && (
@@ -3817,6 +3893,12 @@ export const EmployeePortalPage: React.FC = () => {
                                   </p>
                                 ) : (
                                   <span className="text-[11px] text-[#8A8479] italic">—</span>
+                                )}
+                                {cust.note_notification_date && (
+                                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-[10px] font-bold mt-1">
+                                    <Calendar className="w-3 h-3 text-[#2563EB]" />
+                                    <span>Reminder: {cust.note_notification_date}</span>
+                                  </div>
                                 )}
                               </td>
 
@@ -3925,380 +4007,26 @@ export const EmployeePortalPage: React.FC = () => {
         )}
 
         {/* =================================================================== */}
-        {/* TAB 5: MY PAY SLIPS                                                */}
+        {/* TAB 5: MY PAY SLIPS (MODULAR COMPONENT)                            */}
         {/* =================================================================== */}
         {activeTab === 'PAYSLIPS' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-[#E4DFD4] rounded-3xl p-5 sm:p-7 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center font-bold">
-                    <Receipt className="w-4 h-4" />
-                  </span>
-                  <h3 className="text-lg font-black text-[#1D1D1B] tracking-tight">My Issued Pay Slips</h3>
-                </div>
-                <p className="text-xs text-[#5E5A52] font-medium mt-1">
-                  Official monthly salary slips issued by the Siri Samruddhi HR department.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1.5 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-mono font-bold text-[#5E5A52]">
-                  Total Slips: {myPayslips.length}
-                </span>
-                <button
-                  type="button"
-                  onClick={fetchMyPayslips}
-                  className="p-2 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#5E5A52] transition-colors cursor-pointer"
-                  title="Refresh pay slips"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isLoadingPayslips ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-            </div>
-
-            {isLoadingPayslips ? (
-              <div className="py-12 flex justify-center">
-                <LoadingSpinner message="Loading pay slips..." />
-              </div>
-            ) : myPayslips.length === 0 ? (
-              <div className="bg-white border border-[#E4DFD4] rounded-3xl p-10 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4] text-[#8A8479] flex items-center justify-center mx-auto">
-                  <Receipt className="w-6 h-6" />
-                </div>
-                <h4 className="text-sm font-black text-[#1D1D1B]">No Pay Slips Issued Yet</h4>
-                <p className="text-xs text-[#8A8479] max-w-sm mx-auto">
-                  Your monthly salary slips issued by HR will appear here with downloadable receipts and image previews.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {myPayslips.map((slip) => {
-                  const isPdf = slip.file_url?.toLowerCase().endsWith('.pdf');
-                  const fullUrl = getMediaUrl(slip.file_url);
-
-                  return (
-                    <div
-                      key={slip.id}
-                      className="bg-white border border-[#E4DFD4] hover:border-[#21845F] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <span className="px-2.5 py-1 rounded-full bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5] text-[11px] font-extrabold uppercase tracking-wide">
-                              {slip.month} {slip.year}
-                            </span>
-                            <div className="text-xl font-bold font-mono text-[#1D1D1B] mt-2">
-                              {slip.amount !== undefined && slip.amount !== null
-                                ? `₹${Number(slip.amount).toLocaleString('en-IN')}`
-                                : 'Salary Slip'}
-                            </div>
-                          </div>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#4B5563] font-bold">
-                            Issued
-                          </span>
-                        </div>
-
-                        {/* File preview thumbnail if image */}
-                        {slip.file_url && !isPdf && (
-                          <div
-                            onClick={() => setPayslipPreviewUrl(fullUrl)}
-                            className="h-36 rounded-xl border border-[#E6E1D6] overflow-hidden bg-[#FAF8F3] relative group cursor-pointer"
-                          >
-                            <img
-                              src={fullUrl}
-                              alt={`Payslip ${slip.month} ${slip.year}`}
-                              className="w-full h-full object-cover object-top transition-transform group-hover:scale-105 duration-200"
-                            />
-                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
-                              <Eye className="w-4 h-4" />
-                              <span>Click to enlarge</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {slip.file_url && isPdf && (
-                          <div className="p-4 rounded-xl border border-dashed border-[#CBD5E1] bg-[#F8FAFC] flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-red-100 text-red-600 font-bold flex items-center justify-center text-xs">
-                              PDF
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-bold text-[#1D1D1B] truncate">
-                                Salary_Slip_{slip.month}_{slip.year}.pdf
-                              </p>
-                              <span className="text-[10px] text-[#64748B]">Official PDF Document</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {slip.notes && (
-                          <p className="text-xs text-[#5E5A52] bg-[#FAF8F3] p-2.5 rounded-xl border border-[#EBE6DC] leading-relaxed">
-                            {slip.notes}
-                          </p>
-                        )}
-
-                        <div className="text-[10px] text-[#8A8479] flex items-center gap-1 font-mono">
-                          <Calendar className="w-3 h-3 text-[#8A8479]" />
-                          <span>Issued: {slip.issued_date || slip.created_at?.slice(0, 10)}</span>
-                        </div>
-                      </div>
-
-                      {/* Download Action */}
-                      <a
-                        href={fullUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download={`Payslip_${user?.employee_code || 'Staff'}_${slip.month}_${slip.year}`}
-                        className="w-full py-2.5 px-4 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Download Pay Slip</span>
-                      </a>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <EmployeePayslipsTab
+            payslips={myPayslips}
+            isLoading={isLoadingPayslips}
+            onRefresh={fetchMyPayslips}
+            employeeCode={user?.employee_code}
+          />
         )}
 
         {/* =================================================================== */}
-        {/* TAB 6: LEAVE UPDATE & APPLICATIONS                                 */}
+        {/* TAB 6: LEAVE UPDATE & APPLICATIONS (MODULAR COMPONENT)             */}
         {/* =================================================================== */}
         {activeTab === 'LEAVES' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-[#E4DFD4] rounded-3xl p-5 sm:p-7 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center font-bold">
-                    <CalendarDays className="w-4 h-4" />
-                  </span>
-                  <h3 className="text-lg font-black text-[#1D1D1B] tracking-tight">Leave Update & Applications</h3>
-                </div>
-                <p className="text-xs text-[#5E5A52] font-medium mt-1">
-                  Request future leaves. Once submitted, updates are dispatched to your Showroom Manager and HR department.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1.5 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-mono font-bold text-[#5E5A52]">
-                  Applications: {myLeaves.length}
-                </span>
-                <button
-                  type="button"
-                  onClick={fetchMyLeaves}
-                  className="p-2 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#5E5A52] transition-colors cursor-pointer"
-                  title="Refresh leave applications"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isLoadingLeaves ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Column: Apply for Leave Form (5 cols) */}
-              <div className="lg:col-span-5 bg-white border border-[#E4DFD4] rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="border-b border-[#EBE6DC] pb-3">
-                  <h4 className="text-sm font-black text-[#1D1D1B] uppercase tracking-wider">
-                    Submit Future Leave Update
-                  </h4>
-                  <p className="text-[11px] text-[#8A8479] mt-0.5">
-                    Fill in your leave dates, reason, and subject.
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmitLeave} className="space-y-4">
-                  {/* Leave Type */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
-                      Leave Type *
-                    </label>
-                    <select
-                      value={leaveForm.leave_type}
-                      onChange={(e) => setLeaveForm({ ...leaveForm, leave_type: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-bold text-[#1D1D1B] focus:outline-none focus:border-[#D97706] focus:bg-white cursor-pointer"
-                    >
-                      <option value="Casual Leave">Casual Leave</option>
-                      <option value="Sick / Medical Leave">Sick / Medical Leave</option>
-                      <option value="Earned / Annual Leave">Earned / Annual Leave</option>
-                      <option value="Emergency Leave">Emergency Leave</option>
-                      <option value="Personal / Festival Leave">Personal / Festival Leave</option>
-                    </select>
-                  </div>
-
-                  {/* Subject */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
-                      Subject / Brief *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={leaveForm.subject}
-                      onChange={(e) => setLeaveForm({ ...leaveForm, subject: e.target.value })}
-                      placeholder="e.g. Sister wedding ceremony in hometown"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-medium text-[#1D1D1B] focus:outline-none focus:border-[#D97706] focus:bg-white"
-                    />
-                  </div>
-
-                  {/* Dates Range */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
-                        From Date *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={leaveForm.from_date}
-                        onChange={(e) => setLeaveForm({ ...leaveForm, from_date: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-bold text-[#1D1D1B] focus:outline-none focus:border-[#D97706] focus:bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
-                        To Date *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={leaveForm.to_date}
-                        min={leaveForm.from_date}
-                        onChange={(e) => setLeaveForm({ ...leaveForm, to_date: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-bold text-[#1D1D1B] focus:outline-none focus:border-[#D97706] focus:bg-white"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Message */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
-                      Message / Reason *
-                    </label>
-                    <textarea
-                      required
-                      rows={3}
-                      value={leaveForm.message}
-                      onChange={(e) => setLeaveForm({ ...leaveForm, message: e.target.value })}
-                      placeholder="Describe the reason for leave and handoff details..."
-                      className="w-full p-3 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-medium text-[#1D1D1B] focus:outline-none focus:border-[#D97706] focus:bg-white"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSubmittingLeave}
-                    className="w-full py-3 px-4 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99]"
-                  >
-                    {isSubmittingLeave ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CalendarDays className="w-4 h-4" />
-                    )}
-                    <span>Submit Leave Request</span>
-                  </button>
-
-                  <p className="text-[10px] text-[#8A8479] text-center leading-relaxed">
-                    A notification will be sent immediately to your Showroom Manager and HR department. Live status will update below once reviewed.
-                  </p>
-                </form>
-              </div>
-
-              {/* Right Column: History & Status (7 cols) */}
-              <div className="lg:col-span-7 space-y-3">
-                <div className="flex items-center justify-between border-b border-[#E6E1D6] pb-2">
-                  <h4 className="text-sm font-black text-[#1D1D1B] uppercase tracking-wider">
-                    My Leave History
-                  </h4>
-                  <span className="text-xs text-[#8A8479]">
-                    {myLeaves.length} {myLeaves.length === 1 ? 'Record' : 'Records'}
-                  </span>
-                </div>
-
-                {isLoadingLeaves ? (
-                  <div className="py-12 flex justify-center bg-white rounded-3xl border border-[#E4DFD4]">
-                    <LoadingSpinner message="Loading leave history..." />
-                  </div>
-                ) : myLeaves.length === 0 ? (
-                  <div className="bg-white border border-[#E4DFD4] rounded-3xl p-10 text-center space-y-2">
-                    <CalendarDays className="w-8 h-8 text-[#8A8479] mx-auto" />
-                    <p className="text-xs font-bold text-[#1D1D1B]">No Leave Requests Yet</p>
-                    <p className="text-[11px] text-[#8A8479]">
-                      Submit a leave application when you plan to take time off.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {myLeaves.map((leave) => {
-                      const isPending = leave.status === 'PENDING';
-                      const isApproved = leave.status === 'APPROVED';
-                      const isRejected = leave.status === 'REJECTED';
-
-                      return (
-                        <div
-                          key={leave.id}
-                          className="bg-white border border-[#E4DFD4] rounded-2xl p-4 shadow-xs space-y-2.5"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="px-2.5 py-0.5 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-[10px] font-bold text-[#5E5A52]">
-                                  {leave.leave_type}
-                                </span>
-                                <span className="text-[11px] font-mono text-[#8A8479]">
-                                  {leave.from_date} {leave.to_date && leave.to_date !== leave.from_date ? `to ${leave.to_date}` : ''} ({leave.days_count} {leave.days_count === 1 ? 'day' : 'days'})
-                                </span>
-                              </div>
-                              <h5 className="text-xs font-bold text-[#1D1D1B] mt-1">
-                                {leave.subject}
-                              </h5>
-                            </div>
-
-                            {/* Status badge */}
-                            <div>
-                              {isPending && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FEFCE8] border border-[#FEF08A] text-[#854D0E] text-[10px] font-bold">
-                                  <Clock className="w-3 h-3 text-[#EAB308]" />
-                                  <span>Pending Review</span>
-                                </span>
-                              )}
-                              {isApproved && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] text-[10px] font-bold">
-                                  <CheckCircle2 className="w-3 h-3 text-[#16A34A]" />
-                                  <span>Approved{leave.reviewed_by_name ? ` by ${leave.reviewed_by_name}` : ''}</span>
-                                </span>
-                              )}
-                              {isRejected && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-[10px] font-bold">
-                                  <XCircle className="w-3 h-3 text-[#EF4444]" />
-                                  <span>Rejected{leave.reviewed_by_name ? ` by ${leave.reviewed_by_name}` : ''}</span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <p className="text-xs text-[#5E5A52] bg-[#FAF8F3] p-2.5 rounded-xl border border-[#EBE6DC] leading-relaxed">
-                            {leave.message}
-                          </p>
-
-                          {isRejected && leave.rejection_reason && (
-                            <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800">
-                              <span className="font-bold">Manager Remark: </span>
-                              <span>{leave.rejection_reason}</span>
-                            </div>
-                          )}
-
-                          <div className="text-[10px] text-[#8A8479] font-mono">
-                            Requested: {leave.created_at?.slice(0, 10)}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <EmployeeLeavesTab
+            leaves={myLeaves}
+            isLoading={isLoadingLeaves}
+            onRefresh={fetchMyLeaves}
+          />
         )}
 </main>
 
@@ -4323,540 +4051,19 @@ export const EmployeePortalPage: React.FC = () => {
       />
 
       {/* ------------------------------------------------------------------- */}
-      {/* MODAL: ADD / EDIT OUTDOOR CUSTOMER LEAD (CLOSES ON SAVE)             */}
+      {/* MODAL: ADD / EDIT OUTDOOR CUSTOMER LEAD (MODULAR COMPONENT)          */}
       {/* ------------------------------------------------------------------- */}
-      {showAddOutdoorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-white border border-[#C5E3D5] rounded-3xl w-full max-w-2xl p-5 sm:p-7 shadow-2xl relative my-8 text-[#1D1D1B] max-h-[90vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-[#EBE6DC] shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] flex items-center justify-center text-[#23815F] shadow-2xs shrink-0">
-                  <Compass className="w-5 h-5 text-[#23815F]" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-[#1D1D1B]">
-                    {outdoorModalForm.id ? 'Edit Outdoor Customer Lead' : 'Add Outdoor Customer Lead'}
-                  </h3>
-                  <p className="text-xs text-[#5E5A52]">
-                    Log field prospect details gathered during outdoor campaigns. Auto-syncs for manager verification.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAddOutdoorModal(false)}
-                className="text-[#8A8479] hover:text-[#1D1D1B] p-1.5 rounded-xl hover:bg-[#FAF8F5] transition-colors cursor-pointer shrink-0"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Form Scrollable */}
-            <form onSubmit={handleSaveOutdoorModalCustomer} className="py-4 space-y-4 overflow-y-auto flex-1 pr-1">
-              {/* Row 1: Duty Date & Campaign Area */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-[#23815F]" />
-                    <span>Duty Date <span className="text-red-500">*</span></span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={outdoorModalForm.date}
-                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, date: e.target.value })}
-                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs font-bold text-[#1D1D1B] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-[#23815F]" />
-                    <span>Campaign Area / Location <span className="text-red-500">*</span></span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Yelahanka Old Town Market, 4th Cross"
-                    value={outdoorModalForm.area_name}
-                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, area_name: e.target.value })}
-                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* Row 2: Customer Name & Phone */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                    <User className="w-3.5 h-3.5 text-[#23815F]" />
-                    <span>Customer Full Name <span className="text-red-500">*</span></span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Ramesh Kumar"
-                    value={outdoorModalForm.customer_name}
-                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, customer_name: e.target.value })}
-                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-[#23815F]" />
-                    <span>Mobile / Phone Number</span>
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="e.g. 9876543210"
-                    value={outdoorModalForm.phone}
-                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, phone: e.target.value })}
-                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Row 3: DOB, Anniversary, Follow-up Date */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                    <Calendar className="w-3 h-3 text-[#7E22CE]" />
-                    <span>Date of Birth</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={outdoorModalForm.dob}
-                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, dob: e.target.value })}
-                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1D1D1B] focus:outline-hidden focus:border-[#23815F] shadow-inner cursor-pointer"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                    <Gift className="w-3 h-3 text-[#D97706]" />
-                    <span>Wedding Anniversary</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={outdoorModalForm.anniversary_date}
-                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, anniversary_date: e.target.value })}
-                    className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#1D1D1B] focus:outline-hidden focus:border-[#23815F] shadow-inner cursor-pointer"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#1E40AF] uppercase mb-1 flex items-center gap-1">
-                    <Bell className="w-3 h-3 text-[#2563EB]" />
-                    <span>Follow-up Date</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={outdoorModalForm.follow_up_date}
-                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, follow_up_date: e.target.value })}
-                    className="w-full bg-[#EFF6FF] border border-[#93C5FD] rounded-xl px-3 py-2 text-xs text-[#1E3A8A] font-medium focus:outline-hidden focus:border-[#2563EB] shadow-inner cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {/* Row 4: Status & Jewelry Interests */}
-              <div className="p-3 bg-[#FAF8F5] border border-[#E6E1D6] rounded-2xl space-y-2.5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <label className="text-xs font-bold text-[#5E5A52] uppercase">
-                    Customer Outcome / Status
-                  </label>
-                  <select
-                    value={outdoorModalForm.status}
-                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, status: e.target.value })}
-                    className="bg-white border border-[#CBD5E1] rounded-xl px-3 py-1.5 text-xs font-bold text-[#1D1D1B] focus:outline-hidden focus:border-[#23815F]"
-                  >
-                    <option value="Lead">Lead (Initial Contact)</option>
-                    <option value="Interested">Interested (Considering)</option>
-                    <option value="Converted">Converted (Placed Order / Bought)</option>
-                    <option value="Contacted">Contacted (Follow-up scheduled)</option>
-                    <option value="Lost">Lost (Not interested)</option>
-                  </select>
-                </div>
-
-                {/* Jewelry Preferences & Conversion */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#EBE6DC]">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-[#5E5A52] uppercase mr-1">Customer Interested In:</span>
-                    <button
-                      type="button"
-                      onClick={() => setOutdoorModalForm((prev) => ({ ...prev, interested_gold: !prev.interested_gold }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                        outdoorModalForm.interested_gold
-                          ? 'bg-[#FEFCE8] text-[#854D0E] border-[#CA8A04] shadow-2xs font-black'
-                          : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
-                      }`}
-                    >
-                      <span>🪙 Gold</span>
-                      {outdoorModalForm.interested_gold && <Check className="w-3 h-3 text-[#854D0E]" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setOutdoorModalForm((prev) => ({ ...prev, interested_diamond: !prev.interested_diamond }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                        outdoorModalForm.interested_diamond
-                          ? 'bg-[#EFF6FF] text-[#1E40AF] border-[#3B82F6] shadow-2xs font-black'
-                          : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
-                      }`}
-                    >
-                      <span>💎 Diamond</span>
-                      {outdoorModalForm.interested_diamond && <Check className="w-3 h-3 text-[#1E40AF]" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setOutdoorModalForm((prev) => ({ ...prev, interested_silver: !prev.interested_silver }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                        outdoorModalForm.interested_silver
-                          ? 'bg-[#F1F5F9] text-[#334155] border-[#64748B] shadow-2xs font-black'
-                          : 'bg-white text-[#5E5A52] border-[#CBD5E1] hover:bg-[#FAF8F5]'
-                      }`}
-                    >
-                      <span>🥈 Silver</span>
-                      {outdoorModalForm.interested_silver && <Check className="w-3 h-3 text-[#334155]" />}
-                    </button>
-                  </div>
-
-                  <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#CBD5E1] hover:border-[#23815F] text-xs font-bold text-[#1D1D1B] cursor-pointer shadow-2xs transition-all">
-                    <input
-                      type="checkbox"
-                      checked={outdoorModalForm.is_converted}
-                      onChange={(e) => setOutdoorModalForm((prev) => ({ ...prev, is_converted: e.target.checked }))}
-                      className="w-4 h-4 text-[#23815F] rounded border-[#CBD5E1] focus:ring-[#23815F]"
-                    />
-                    <span className={outdoorModalForm.is_converted ? 'text-[#21845F] font-black' : 'text-[#5E5A52]'}>
-                      Converted to Sale
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Row 5: Scheme Selection */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#5E5A52] uppercase flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-[#D97706]" />
-                    <span>Promoted Gold Scheme Enrollment / Interest</span>
-                  </label>
-                  {outdoorModalForm.scheme_name && (
-                    <button
-                      type="button"
-                      onClick={() => setOutdoorModalForm({ ...outdoorModalForm, scheme_name: '' })}
-                      className="text-xs text-red-600 hover:underline font-bold"
-                    >
-                      Clear Scheme
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {SCHEMES.map((sch) => {
-                    const isSelected = outdoorModalForm.scheme_name === sch;
-                    return (
-                      <button
-                        key={sch}
-                        type="button"
-                        onClick={() => setOutdoorModalForm({ ...outdoorModalForm, scheme_name: isSelected ? '' : sch })}
-                        className={`p-2.5 rounded-xl text-xs font-bold border transition-all text-left flex items-center gap-2 cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#FEF3C7] text-[#92400E] border-[#D97706] shadow-xs font-black'
-                            : 'bg-[#FAF8F5] text-[#5E5A52] border-[#CBD5E1] hover:bg-white'
-                        }`}
-                      >
-                        <Award className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[#D97706]' : 'text-[#8A8479]'}`} />
-                        <span className="truncate">{sch}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Row 6: Field Photo Proof (1) */}
-              <div>
-                <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                  <Camera className="w-3.5 h-3.5 text-[#23815F]" />
-                  <span>Field Photo Proof (1)</span>
-                </label>
-                {outdoorModalForm.photo_url ? (
-                  <div className="flex items-center gap-2 bg-[#FAF8F5] border border-[#C5E3D5] rounded-xl p-2 shadow-2xs">
-                    <img
-                      src={getMediaUrl(outdoorModalForm.photo_url)}
-                      alt="Field Proof Preview"
-                      className="w-12 h-12 object-cover rounded-lg border border-[#E6E1D6] shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-[#23815F] truncate">Field Photo Attached</p>
-                      <p className="text-[10px] text-[#8A8479]">Ready to submit</p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0 pr-1">
-                      <button
-                        type="button"
-                        onClick={() => setViewProofUrl(getMediaUrl(outdoorModalForm.photo_url))}
-                        className="p-1.5 rounded-lg bg-[#E8F4EE] hover:bg-[#D1FAE5] text-[#21845F] transition-all cursor-pointer"
-                        title="View Photo"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setOutdoorModalForm({ ...outdoorModalForm, photo_url: '' })}
-                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all cursor-pointer"
-                        title="Remove Photo"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border border-dashed border-[#CBD5E1] hover:border-[#23815F] bg-[#FAF8F5] hover:bg-[#E8F4EE] text-xs font-bold text-[#23815F] cursor-pointer transition-all shadow-2xs">
-                    {isUploadingOutdoorModalFile ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-[#23815F]" />
-                    ) : (
-                      <Camera className="w-4 h-4 text-[#23815F]" />
-                    )}
-                    <span>{isUploadingOutdoorModalFile ? 'Uploading photo...' : '+ Upload Field Photo (1)'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) handleUploadOutdoorModalFile('photo_url', e.target.files[0]);
-                      }}
-                      disabled={isUploadingOutdoorModalFile}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-
-              {/* Row 7: Google Review Box */}
-              <div className={`p-3.5 rounded-2xl border transition-all ${
-                outdoorModalForm.has_google_review ? 'bg-[#FEFCE8] border-[#CA8A04]' : 'bg-[#FAF8F5] border-[#E6E1D6]'
-              }`}>
-                <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
-                  <input
-                    type="checkbox"
-                    checked={outdoorModalForm.has_google_review}
-                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, has_google_review: e.target.checked })}
-                    className="w-4 h-4 text-[#CA8A04] rounded border-[#CBD5E1] focus:ring-[#CA8A04]"
-                  />
-                  <span className="flex items-center gap-1 text-[#854D0E] font-black">
-                    <Star className="w-4 h-4 fill-[#CA8A04] text-[#CA8A04]" />
-                    <span>Google 5-Star Review Given</span>
-                  </span>
-                </label>
-
-                {outdoorModalForm.has_google_review && (
-                  <div className="space-y-2 mt-2 pt-2 border-t border-[#FDE047]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-[#854D0E]">Rating:</span>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setOutdoorModalForm({ ...outdoorModalForm, google_review_rating: star })}
-                          className="p-0.5 cursor-pointer"
-                        >
-                          <Star
-                            className={`w-4 h-4 ${
-                              star <= (outdoorModalForm.google_review_rating || 5)
-                                ? 'fill-[#F59E0B] text-[#F59E0B]'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Review summary or text..."
-                      value={outdoorModalForm.google_review_text}
-                      onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, google_review_text: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#CA8A04] focus:outline-hidden"
-                    />
-
-                    {/* Screenshot Upload */}
-                    {outdoorModalForm.google_review_screenshot ? (
-                      <div className="flex items-center gap-2 bg-white border border-[#FDE68A] rounded-xl p-2 shadow-2xs">
-                        <img
-                          src={getMediaUrl(outdoorModalForm.google_review_screenshot)}
-                          alt="Review Proof"
-                          className="w-10 h-10 object-cover rounded-lg border border-[#E6E1D6] shrink-0"
-                        />
-                        <p className="text-xs font-bold text-[#854D0E] flex-1 truncate">Screenshot Attached</p>
-                        <button
-                          type="button"
-                          onClick={() => setViewProofUrl(getMediaUrl(outdoorModalForm.google_review_screenshot))}
-                          className="p-1.5 text-[#854D0E] hover:bg-[#FEF3C7] rounded-lg cursor-pointer"
-                          title="View"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setOutdoorModalForm({ ...outdoorModalForm, google_review_screenshot: '' })}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
-                          title="Remove"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-dashed border-[#CA8A04]/50 bg-white hover:bg-[#FEFCE8] text-xs font-bold text-[#854D0E] cursor-pointer transition-all">
-                        <Camera className="w-4 h-4" />
-                        <span>+ Upload Review Screenshot</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) handleUploadOutdoorModalFile('google_review_screenshot', e.target.files[0]);
-                          }}
-                        />
-                      </label>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Row 8: Customer Feedback Box */}
-              <div className={`p-3.5 rounded-2xl border transition-all ${
-                outdoorModalForm.has_customer_feedback ? 'bg-[#FAF5FF] border-[#A855F7]' : 'bg-[#FAF8F5] border-[#E6E1D6]'
-              }`}>
-                <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1D1D1B] cursor-pointer mb-2">
-                  <input
-                    type="checkbox"
-                    checked={outdoorModalForm.has_customer_feedback}
-                    onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, has_customer_feedback: e.target.checked })}
-                    className="w-4 h-4 text-[#7E22CE] rounded border-[#CBD5E1] focus:ring-[#7E22CE]"
-                  />
-                  <span className="flex items-center gap-1 text-[#7E22CE] font-black">
-                    <MessageSquareHeart className="w-4 h-4 text-[#7E22CE]" />
-                    <span>Customer Feedback Recorded</span>
-                  </span>
-                </label>
-
-                {outdoorModalForm.has_customer_feedback && (
-                  <div className="space-y-2 mt-2 pt-2 border-t border-[#E9D5FF]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-[#7E22CE]">Rating:</span>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setOutdoorModalForm({ ...outdoorModalForm, feedback_rating: star })}
-                          className="p-0.5 cursor-pointer"
-                        >
-                          <Star
-                            className={`w-4 h-4 ${
-                              star <= (outdoorModalForm.feedback_rating || 5)
-                                ? 'fill-[#7E22CE] text-[#7E22CE]'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Customer feedback notes, collection impressions..."
-                      value={outdoorModalForm.feedback_text}
-                      onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, feedback_text: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] focus:border-[#7E22CE] focus:outline-hidden"
-                    />
-
-                    {/* Feedback Proof Upload */}
-                    {outdoorModalForm.customer_feedback_proof ? (
-                      <div className="flex items-center gap-2 bg-white border border-[#E9D5FF] rounded-xl p-2 shadow-2xs">
-                        <div className="w-10 h-10 rounded-lg bg-[#FAF5FF] border border-[#D8B4FE] flex items-center justify-center shrink-0 text-sm">
-                          {outdoorModalForm.customer_feedback_proof.match(/\.(mp4|webm|mov|avi)$/i) ? '🎬' : '🖼️'}
-                        </div>
-                        <p className="text-xs font-bold text-[#7E22CE] flex-1 truncate">Feedback Proof Attached</p>
-                        <button
-                          type="button"
-                          onClick={() => setViewProofUrl(getMediaUrl(outdoorModalForm.customer_feedback_proof))}
-                          className="p-1.5 text-[#7E22CE] hover:bg-[#FAF5FF] rounded-lg cursor-pointer"
-                          title="View"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setOutdoorModalForm({ ...outdoorModalForm, customer_feedback_proof: '' })}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
-                          title="Remove"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-dashed border-[#A855F7]/50 bg-white hover:bg-[#FAF5FF] text-xs font-bold text-[#7E22CE] cursor-pointer transition-all">
-                        <Camera className="w-4 h-4" />
-                        <span>+ Upload Feedback Proof (Photo/Video)</span>
-                        <input
-                          type="file"
-                          accept="image/*,video/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) handleUploadOutdoorModalFile('customer_feedback_proof', e.target.files[0]);
-                          }}
-                        />
-                      </label>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Row 9: Discussion Notes */}
-              <div>
-                <label className="block text-xs font-bold text-[#5E5A52] uppercase mb-1 flex items-center gap-1">
-                  <Edit2 className="w-3.5 h-3.5 text-[#23815F]" />
-                  <span>Discussion / Duty Field Notes</span>
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Key conversation points, designs requested, budget, customer preferences..."
-                  value={outdoorModalForm.notes}
-                  onChange={(e) => setOutdoorModalForm({ ...outdoorModalForm, notes: e.target.value })}
-                  className="w-full bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl p-3 text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#23815F] focus:ring-2 focus:ring-[#23815F]/15 shadow-inner resize-none font-medium"
-                />
-              </div>
-
-              {/* Modal Actions */}
-              <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#EBE6DC] shrink-0">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowAddOutdoorModal(false)}
-                  disabled={isSubmittingOutdoorModal}
-                  className="bg-white hover:bg-[#FAF8F5] text-[#1D1D1B] border-[#E6E1D6] text-xs rounded-xl shadow-2xs"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmittingOutdoorModal}
-                  className="bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs shadow-sm rounded-xl px-5 py-2.5 flex items-center gap-2 cursor-pointer hover:scale-102 active:scale-98 transition-all"
-                >
-                  {isSubmittingOutdoorModal ? (
-                    <span className="flex items-center gap-1.5">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                      Saving...
-                    </span>
-                  ) : (
-                    outdoorModalForm.id ? 'Update Customer Lead' : 'Save Customer Lead'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <EmployeeOutdoorCustomerModal
+        isOpen={showAddOutdoorModal}
+        onClose={() => setShowAddOutdoorModal(false)}
+        initialData={outdoorModalForm}
+        onSaveSuccess={() => {
+          fetchEmployeeOutdoorCustomers();
+          fetchCustomerActivities();
+          fetchSummary();
+          fetchOutdoorHistory();
+        }}
+      />
 
 
       {/* ------------------------------------------------------------------- */}

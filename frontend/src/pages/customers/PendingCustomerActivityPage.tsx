@@ -64,6 +64,7 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
   let soldImageUrl = '';
   let exchangeType = '';
   let productId = '';
+  let noteNotificationDate = '';
 
   if (breakdownStr) {
     try {
@@ -73,6 +74,7 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
           if (!productId && item.product_id) productId = item.product_id;
           if (!soldImageUrl && item.sold_image_url) soldImageUrl = item.sold_image_url;
           if (!exchangeType && item.exchange_type) exchangeType = item.exchange_type;
+          if (!noteNotificationDate && item.note_notification_date) noteNotificationDate = item.note_notification_date;
           if (!hasScheme && (item.has_scheme || item.scheme_name)) {
             hasScheme = true;
             schemePlan = item.scheme_name || '';
@@ -135,6 +137,7 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
     soldImageUrl,
     exchangeType,
     productId,
+    noteNotificationDate,
   };
 };
 
@@ -182,7 +185,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
-  const [customerOutcomeFilter, setCustomerOutcomeFilter] = useState<'ALL' | 'Sold' | 'Exchange' | 'In Hold' | 'Interested' | 'Lost'>('ALL');
+  const [customerOutcomeFilter, setCustomerOutcomeFilter] = useState<'ALL' | 'Sold' | 'Exchange' | 'In Hold' | 'Interested' | 'Lost' | 'Window Shopping' | 'Outdoor Marketing'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('all');
 
@@ -396,18 +399,24 @@ export const PendingCustomerActivityPage: React.FC = () => {
   const filteredActivities = activities.filter((act) => {
     // 1. Customer Outcome Status Filter (Requirement 6: Sold, Interested, Lost)
     if (customerOutcomeFilter !== 'ALL') {
-      const target = customerOutcomeFilter.toLowerCase();
-      const checkStatus = (st: string) => {
-        const s = (st || '').toLowerCase();
-        if (target === 'sold') return s.includes('sold') || s.includes('closed') || s.includes('purchased');
-        if (target === 'exchange') return s.includes('exchange');
-        if (target === 'in hold' || target === 'hold') return s.includes('hold') || s.includes('follow');
-        if (target === 'interested') return s.includes('interested');
-        if (target === 'lost') return s.includes('lost');
-        return s === target;
-      };
-      const matches = checkStatus(act.status) || (act.breakdown && act.breakdown.toLowerCase().includes(target));
-      if (!matches) return false;
+      if (customerOutcomeFilter === 'Outdoor Marketing') {
+        if (!isOutdoorActivity(act) && act.status !== 'Outdoor Marketing') return false;
+      } else if (customerOutcomeFilter === 'Window Shopping') {
+        if (act.status !== 'Walkin' && act.status !== 'Window Shopping') return false;
+      } else {
+        const target = customerOutcomeFilter.toLowerCase();
+        const checkStatus = (st: string) => {
+          const s = (st || '').toLowerCase();
+          if (target === 'sold') return s.includes('sold') || s.includes('closed') || s.includes('purchased');
+          if (target === 'exchange') return s.includes('exchange');
+          if (target === 'in hold' || target === 'hold') return s.includes('hold') || s.includes('follow');
+          if (target === 'interested') return s.includes('interested');
+          if (target === 'lost') return s.includes('lost');
+          return s === target;
+        };
+        const matches = checkStatus(act.status) || (act.breakdown && act.breakdown.toLowerCase().includes(target));
+        if (!matches) return false;
+      }
     }
 
     // 2. Search query filter
@@ -606,7 +615,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
         <>
       {/* Customer Status Quick Filters (Requirement 6: Lost, Interested, Sold, All) */}
       <div className="bg-[#FAF8F3] border border-[#E4DFD4] p-2.5 sm:p-3 rounded-2xl shadow-2xs">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex flex-wrap items-center gap-1.5 py-0.5">
           <span className="text-xs font-bold text-[#6B6559] mr-1 uppercase tracking-wider text-[10px] shrink-0">
             Customer Status:
           </span>
@@ -617,6 +626,8 @@ export const PendingCustomerActivityPage: React.FC = () => {
             { id: 'In Hold', label: 'In Hold / Follow Up', color: 'text-[#B45309] bg-[#FFFBEB] border-[#FDE68A]' },
             { id: 'Interested', label: 'Interested', color: 'text-[#92400E] bg-[#FEF3C7] border-[#FDE68A]' },
             { id: 'Lost', label: 'Lost', color: 'text-[#991B1B] bg-[#FEF2F2] border-[#FECACA]' },
+            { id: 'Window Shopping', label: 'Window Shopping', color: 'text-[#5E5A52] bg-[#F4F1EA] border-[#E4DFD4]' },
+            { id: 'Outdoor Marketing', label: 'Outdoor Marketing', color: 'text-[#1B694C] bg-[#E8F4EE] border-[#A7F3D0]' },
           ].map((sTab) => {
             const isSelected = customerOutcomeFilter === sTab.id;
             return (
@@ -739,9 +750,11 @@ export const PendingCustomerActivityPage: React.FC = () => {
                             <span>Outdoor Marketing</span>
                           </span>
                         )}
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(act.status)}`}>
-                          {act.status}
-                        </span>
+                        {(!isOutdoorActivity(act) || (act.status && act.status !== 'Outdoor Marketing')) && (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(act.status)}`}>
+                            {act.status === 'Walkin' ? 'Window Shopping' : (act.status || 'Window Shopping')}
+                          </span>
+                        )}
                         {waQueued && (
                           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[#E8F8EE] text-[#1E7E34] border border-[#A6E7B9] text-[9px] font-bold">
                             <WhatsAppIcon className="w-2.5 h-2.5 text-[#25D366]" />
@@ -1040,13 +1053,22 @@ export const PendingCustomerActivityPage: React.FC = () => {
                               <span>Outdoor Marketing</span>
                             </span>
                           )}
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(
-                              act.status
-                            )}`}
-                          >
-                            {act.status}
-                          </span>
+                          {(!isOutdoorActivity(act) || (act.status && act.status !== 'Outdoor Marketing')) && (
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(
+                                act.status
+                              )}`}
+                            >
+                              {act.status === 'Walkin' ? 'Window Shopping' : (act.status || 'Window Shopping')}
+                            </span>
+                          )}
+
+                          {subrecords.noteNotificationDate && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE] text-[9px] font-bold">
+                              <Calendar className="w-2.5 h-2.5 text-[#2563EB]" />
+                              <span>Reminder: {subrecords.noteNotificationDate}</span>
+                            </span>
+                          )}
 
                           {waQueued && (
                             <span

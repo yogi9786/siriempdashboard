@@ -16,10 +16,12 @@ import {
   Search,
   Plus,
   MapPin,
+  Filter,
 } from 'lucide-react';
 import api from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import { EmployeePaySlip } from '../../types';
+import { getMediaUrl, triggerFileDownload } from '../../utils/media';
 
 export const HrPaySlipsPage: React.FC = () => {
   const { success, error: toastError } = useToast();
@@ -40,6 +42,10 @@ export const HrPaySlipsPage: React.FC = () => {
   const [fileName, setFileName] = useState<string>('');
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Directory Filters: Date Filter & Employee Filter
+  const [filterPeriod, setFilterPeriod] = useState<string>('ALL');
+  const [filterEmployeeId, setFilterEmployeeId] = useState<string>('ALL');
 
   // Preview Lightbox
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -176,15 +182,34 @@ export const HrPaySlipsPage: React.FC = () => {
     (e) => (e.branch_code || '').toUpperCase() === selectedBranch.toUpperCase()
   );
 
+  // Available unique periods for Date Filter
+  const availablePeriods = Array.from(
+    new Set(payslips.map((s) => s.pay_period || `${s.month} ${s.year}`))
+  ).filter(Boolean);
+
   const filteredPayslips = payslips.filter((slip) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      slip.employee_name?.toLowerCase().includes(q) ||
-      slip.employee_code?.toLowerCase().includes(q) ||
-      slip.pay_period?.toLowerCase().includes(q) ||
-      slip.branch_name?.toLowerCase().includes(q)
-    );
+    // 1. Date Filter (Period)
+    if (filterPeriod !== 'ALL') {
+      const p = slip.pay_period || `${slip.month} ${slip.year}`;
+      if (p !== filterPeriod) return false;
+    }
+
+    // 2. Employee Filter
+    if (filterEmployeeId !== 'ALL') {
+      if (slip.employee_id !== Number(filterEmployeeId)) return false;
+    }
+
+    // 3. Search Filter
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return (
+        slip.employee_name?.toLowerCase().includes(q) ||
+        slip.employee_code?.toLowerCase().includes(q) ||
+        slip.pay_period?.toLowerCase().includes(q) ||
+        slip.branch_name?.toLowerCase().includes(q)
+      );
+    }
+    return true;
   });
 
   return (
@@ -458,22 +483,61 @@ export const HrPaySlipsPage: React.FC = () => {
 
       {/* ISSUED PAY SLIPS TABLE */}
       <div className="bg-white border border-[#E4DFD4] rounded-3xl overflow-hidden shadow-[0_4px_18px_rgba(40,35,25,0.045)] space-y-3">
-        <div className="p-6 border-b border-[#EBE6DC] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-6 border-b border-[#EBE6DC] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-extrabold text-[#1D1D1B]">Issued Pay Slips Directory</h2>
-            <p className="text-xs text-[#6B6559]">History of employee salary slips by month</p>
+            <p className="text-xs text-[#6B6559]">History of employee salary slips by month and showroom</p>
           </div>
 
-          {/* Search */}
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-[#8A8479] absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search employee, period..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl focus:outline-none focus:border-[#21845F] focus:bg-white"
-            />
+          {/* TWO DEDICATED FILTERS: Date Filter & Employee Filter */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            {/* Filter 1: Date Filter */}
+            <div className="relative min-w-[170px]">
+              <Calendar className="w-3.5 h-3.5 text-[#21845F] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={filterPeriod}
+                onChange={(e) => setFilterPeriod(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 text-xs font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] focus:bg-white cursor-pointer"
+                title="Date Filter"
+              >
+                <option value="ALL">All Dates / Periods</option>
+                {availablePeriods.map((p) => (
+                  <option key={p} value={p}>
+                    📅 {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter 2: Employee Filter */}
+            <div className="relative min-w-[190px]">
+              <User className="w-3.5 h-3.5 text-[#536B8A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={filterEmployeeId}
+                onChange={(e) => setFilterEmployeeId(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 text-xs font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] focus:bg-white cursor-pointer"
+                title="Employee Filter"
+              >
+                <option value="ALL">All Employees ({employees.length})</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    👤 {emp.full_name} ({emp.employee_code || emp.branch_code || 'Staff'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Quick Search */}
+            <div className="relative w-full sm:w-56">
+              <Search className="w-3.5 h-3.5 text-[#8A8479] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, code..."
+                className="w-full pl-8 pr-3 py-2 text-xs bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl focus:outline-none focus:border-[#21845F] focus:bg-white"
+              />
+            </div>
           </div>
         </div>
 
@@ -501,8 +565,8 @@ export const HrPaySlipsPage: React.FC = () => {
               ) : filteredPayslips.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-5 py-10 text-center text-[#8A8479]">
-                    <p className="font-bold text-sm text-[#1D1D1B]">No payslips issued yet.</p>
-                    <p className="text-xs mt-1">Use the form above to issue a payslip to an employee.</p>
+                    <p className="font-bold text-sm text-[#1D1D1B]">No payslips match current filters.</p>
+                    <p className="text-xs mt-1">Try resetting the date or employee filter above.</p>
                   </td>
                 </tr>
               ) : (
@@ -541,6 +605,7 @@ export const HrPaySlipsPage: React.FC = () => {
                     {/* Document link */}
                     <td className="px-5 py-3.5">
                       <button
+                        type="button"
                         onClick={() => setPreviewUrl(slip.file_url)}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#536B8A] font-bold border border-[#E4DFD4] transition-colors cursor-pointer"
                       >
@@ -552,17 +617,21 @@ export const HrPaySlipsPage: React.FC = () => {
                     {/* Actions */}
                     <td className="px-5 py-3.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
-                        <a
-                          href={slip.file_url}
-                          download={`payslip_${slip.employee_code}_${slip.month}_${slip.year}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-1.5 text-[#536B8A] hover:text-[#1D1D1B] hover:bg-[#FAF8F3] rounded-lg transition-colors"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            triggerFileDownload(
+                              slip.file_url,
+                              `Payslip_${slip.employee_code || slip.employee_name}_${slip.month}_${slip.year}`
+                            )
+                          }
+                          className="p-1.5 text-[#536B8A] hover:text-[#1D1D1B] hover:bg-[#FAF8F3] rounded-lg transition-colors cursor-pointer"
                           title="Download Document"
                         >
                           <Download className="w-3.5 h-3.5" />
-                        </a>
+                        </button>
                         <button
+                          type="button"
                           onClick={() => handleDeletePayslip(slip.id)}
                           className="p-1.5 text-[#8A8479] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                           title="Delete Payslip"
@@ -592,17 +661,16 @@ export const HrPaySlipsPage: React.FC = () => {
             <div className="px-6 py-4 bg-[#FAF8F3] border-b border-[#EBE6DC] flex items-center justify-between">
               <h3 className="text-sm font-extrabold text-[#1D1D1B]">Payslip Document Preview</h3>
               <div className="flex items-center gap-3">
-                <a
-                  href={previewUrl}
-                  download
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white text-xs font-bold flex items-center gap-1.5"
+                <button
+                  type="button"
+                  onClick={() => triggerFileDownload(previewUrl, 'payslip_document')}
+                  className="px-3 py-1.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Download</span>
-                </a>
+                </button>
                 <button
+                  type="button"
                   onClick={() => setPreviewUrl(null)}
                   className="w-8 h-8 rounded-xl bg-white border border-[#E4DFD4] text-[#6B6559] hover:bg-[#F2EDE4] font-bold text-sm cursor-pointer"
                 >
@@ -612,9 +680,9 @@ export const HrPaySlipsPage: React.FC = () => {
             </div>
             <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-[#18181B]">
               {previewUrl.toLowerCase().endsWith('.pdf') ? (
-                <iframe src={previewUrl} className="w-full h-[70vh] rounded-xl" title="Payslip PDF" />
+                <iframe src={getMediaUrl(previewUrl)} className="w-full h-[70vh] rounded-xl" title="Payslip PDF" />
               ) : (
-                <img src={previewUrl} alt="Payslip Preview" className="max-h-[75vh] object-contain rounded-xl shadow-lg" />
+                <img src={getMediaUrl(previewUrl)} alt="Payslip Preview" className="max-h-[75vh] object-contain rounded-xl shadow-lg" />
               )}
             </div>
           </div>

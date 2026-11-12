@@ -19,6 +19,7 @@ import {
   ArrowUpDown,
   FileImage,
   ExternalLink,
+  Compass,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -174,21 +175,29 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
                     </div>
 
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                          outcome === 'Sold'
-                            ? 'bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]'
-                            : outcome === 'Exchange'
-                              ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]'
-                              : outcome === 'Window Shopping'
-                                ? 'bg-[#F4F1EA] text-[#5E5A52] border-[#E4DFD4]'
-                                : outcome === 'Interested' || outcome === 'In Hold / Follow Up'
-                                  ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]'
-                                  : 'bg-[#FEE2E2] text-[#B91C1C] border-[#FECACA]'
-                        }`}
-                      >
-                        {outcome}
-                      </span>
+                      {((cust as any).is_outdoor || activity.notes?.includes('[Outdoor')) && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0] inline-flex items-center gap-1">
+                          <Compass className="w-3 h-3 text-[#1B694C]" />
+                          <span>Outdoor Marketing</span>
+                        </span>
+                      )}
+                      {outcome !== 'Outdoor Marketing' && (
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                            outcome === 'Sold'
+                              ? 'bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]'
+                              : outcome === 'Exchange'
+                                ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]'
+                                : outcome === 'Window Shopping'
+                                  ? 'bg-[#F4F1EA] text-[#5E5A52] border-[#E4DFD4]'
+                                  : outcome === 'Interested' || outcome === 'In Hold / Follow Up'
+                                    ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]'
+                                    : 'bg-[#FEE2E2] text-[#B91C1C] border-[#FECACA]'
+                          }`}
+                        >
+                          {outcome}
+                        </span>
+                      )}
                       {outcome === 'Exchange' && cust.exchange_type && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#EFF6FF] text-[#1D4ED8] border border-[#93C5FD]">
                           {cust.exchange_type}
@@ -388,13 +397,21 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
                     </div>
                   )}
 
-                  {/* Individual Customer Notes */}
-                  {cust.notes && (
-                    <div className="text-xs text-[#525252] bg-[#FAF8F3] p-2.5 rounded-xl border border-[#EFEBE1]">
-                      <span className="font-bold text-[#5E5A52] block text-[10.5px] uppercase mb-0.5">
-                        Customer Inquiries / Notes:
-                      </span>
-                      <p className="whitespace-pre-wrap">{cust.notes}</p>
+                  {/* Individual Customer Notes & Reminder */}
+                  {(cust.notes || (cust as any).note_notification_date) && (
+                    <div className="text-xs text-[#525252] bg-[#FAF8F3] p-2.5 rounded-xl border border-[#EFEBE1] space-y-1">
+                      <div className="flex items-center justify-between flex-wrap gap-1">
+                        <span className="font-bold text-[#5E5A52] block text-[10.5px] uppercase">
+                          Customer Inquiries / Notes:
+                        </span>
+                        {(cust as any).note_notification_date && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]">
+                            <Calendar className="w-3 h-3 text-[#2563EB]" />
+                            <span>Note Reminder: {(cust as any).note_notification_date}</span>
+                          </span>
+                        )}
+                      </div>
+                      {cust.notes && <p className="whitespace-pre-wrap">{cust.notes}</p>}
                     </div>
                   )}
                 </div>

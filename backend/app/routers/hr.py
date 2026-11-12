@@ -282,7 +282,7 @@ def get_hr_customers(
     db: Session = Depends(get_db),
     current_hr: User = Depends(get_current_hr),
 ):
-    query = db.query(CustomerActivity)
+    query = db.query(CustomerActivity).outerjoin(Employee, CustomerActivity.employee_id == Employee.id)
 
     if branch_id:
         query = query.filter(CustomerActivity.branch_id == branch_id)
@@ -300,33 +300,38 @@ def get_hr_customers(
             or_(
                 func.lower(CustomerActivity.customer_name).like(s),
                 func.lower(CustomerActivity.phone_number).like(s),
-                func.lower(CustomerActivity.employee_name).like(s),
-                func.lower(CustomerActivity.product_id).like(s),
+                func.lower(Employee.full_name).like(s),
+                func.lower(Employee.employee_code).like(s),
+                func.lower(CustomerActivity.notes).like(s),
             )
         )
 
     activities = query.order_by(desc(CustomerActivity.activity_date), desc(CustomerActivity.id)).limit(limit).all()
 
     branches_map = {b.id: b for b in db.query(Branch).all()}
+    employees_map = {e.id: e for e in db.query(Employee).all()}
+    managers_map = {u.id: u for u in db.query(User).all()}
     results = []
     for act in activities:
         b = branches_map.get(act.branch_id)
+        emp = employees_map.get(act.employee_id)
+        rev = managers_map.get(act.reviewed_by_id) if act.reviewed_by_id else None
         results.append({
             "id": act.id,
             "branch_id": act.branch_id,
             "branch_name": b.name if b else "Showroom",
             "branch_code": b.code if b else "SHOWROOM",
             "employee_id": act.employee_id,
-            "employee_name": act.employee_name or "",
-            "employee_code": act.employee_code or "",
+            "employee_name": emp.full_name if emp else "",
+            "employee_code": emp.employee_code if emp else "",
             "customer_name": act.customer_name or "Walk-in Customer",
             "phone_number": act.phone_number or "",
             "activity_date": act.activity_date.isoformat() if act.activity_date else "",
             "status": act.status or "Walkin",
             "product_value": act.product_value or 0.0,
-            "product_id": act.product_id or "",
+            "product_id": "",
             "approval_status": act.approval_status or "PENDING",
-            "approved_by_name": act.approved_by_name or "",
+            "approved_by_name": rev.full_name if rev else "",
             "notes": act.notes or "",
             "breakdown": act.breakdown,
             "customers_count": act.customers_count or 1,

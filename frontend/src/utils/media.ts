@@ -25,3 +25,29 @@ export const getMediaUrl = (url?: string | null): string => {
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
   return `${cleanBase}${cleanPath}`;
 };
+
+/**
+ * Safely downloads a file in the browser, fetching as blob to bypass cross-origin download restrictions.
+ */
+export const triggerFileDownload = async (url: string, suggestedFilename?: string): Promise<void> => {
+  if (!url) return;
+  const fullUrl = getMediaUrl(url);
+  try {
+    const response = await fetch(fullUrl, { mode: 'cors' });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.status}`);
+    }
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = suggestedFilename || url.split('/').pop() || 'document.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 2000);
+  } catch (err) {
+    console.warn('Direct blob download failed, falling back to window.open:', err);
+    window.open(fullUrl, '_blank');
+  }
+};

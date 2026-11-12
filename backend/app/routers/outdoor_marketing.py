@@ -271,6 +271,10 @@ def _sync_outdoor_customer_to_activity(customer: OutdoorMarketingCustomer, db: S
         "area_name": customer.area_name or "",
         "has_scheme": bool(customer.scheme_name),
         "scheme_name": customer.scheme_name or "",
+        "scheme_amount": getattr(customer, "scheme_amount", 0.0) or "",
+        "scheme_notes": getattr(customer, "scheme_notes", "") or "",
+        "scheme_reminder_date": str(customer.scheme_reminder_date) if getattr(customer, "scheme_reminder_date", None) else "",
+        "note_notification_date": str(customer.note_notification_date) if getattr(customer, "note_notification_date", None) else "",
         "has_google_review": customer.has_google_review,
         "google_review_rating": customer.google_review_rating or 5,
         "google_review_text": customer.google_review_text or "",
@@ -288,7 +292,8 @@ def _sync_outdoor_customer_to_activity(customer: OutdoorMarketingCustomer, db: S
     }]
 
     clean_notes = (customer.notes or "").replace(tag, "").strip()
-    full_notes = f"[Outdoor Marketing - Area: {customer.area_name or 'Field'}] {tag}\n{clean_notes}".strip()
+    note_rem_tag = f" [Note Reminder: {customer.note_notification_date}]" if getattr(customer, "note_notification_date", None) else ""
+    full_notes = f"[Outdoor Marketing - Area: {customer.area_name or 'Field'}]{note_rem_tag} {tag}\n{clean_notes}".strip()
 
     if not activity:
         activity = CustomerActivity(

@@ -83,3 +83,4 @@ gunicorn backend.app.main:app \
    - Customer and staff search bars debounce keypresses to avoid triggering backend API calls on every keystroke.
 3. **Modularized View Components**:
    - Large monolithic components divided into dedicated tabs (`EmployeePayslipsTab`, `EmployeeLeavesTab`, `EmployeeOutdoorCustomerModal`), minimizing unnecessary re-renders.
+

@@ -66,3 +66,4 @@ Cross-branch tampering attempts return `404 Not Found` or `403 Forbidden`.
 - [ ] Enable HTTPS with auto-renewing Let's Encrypt certificates on VPS Nginx.
 - [ ] Configure UFW firewall on VPS (Allow only ports 22, 80, 443).
 - [ ] Enable fail2ban on Linux host for SSH and repeated 401s.
+

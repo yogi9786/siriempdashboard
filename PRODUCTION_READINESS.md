@@ -67,3 +67,4 @@ Add the following entry to `crontab -e`:
 0 2 * * * pg_dump -U postgres -d siridashboard -n siridashboard | gzip > /var/backups/siridashboard_$(date +\%F).sql.gz
 ```
 Retain the last 14 daily backup snapshots.
+

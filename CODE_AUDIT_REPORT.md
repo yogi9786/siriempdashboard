@@ -118,3 +118,4 @@ The automated Pytest suite was executed against the backend:
 1. **Environment Variables Hardening**: Ensure all production deployment servers override `JWT_SECRET_KEY` and `ADMIN_PASSWORD_HASH` in `.env` rather than relying on development defaults.
 2. **Automated Database Backups**: Establish a daily cron job dumping the PostgreSQL `siridashboard` schema to encrypted S3 or local offsite storage.
 3. **Log Rotation**: Configure `logrotate` for `/var/log/nginx/` and the systemd service logs to prevent disk exhaustion.
+

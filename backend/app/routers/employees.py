@@ -83,20 +83,14 @@ def list_employees(
 
     employees = query.order_by(Employee.id.asc()).all()
 
-    # Strictly exclude managers - managers are not employees and do not receive employee points
-    mgr_names, mgr_usernames, mgr_codes = get_manager_exclusions(db)
-    filtered_employees = [
-        e for e in employees
-        if not is_manager_staff(e, mgr_names, mgr_usernames, mgr_codes)
-    ]
-
-    for emp in filtered_employees:
+    # Calculate review and performance points for each branch employee
+    for emp in employees:
         g_pts = sum(max(1, r.customers_count or 1) for r in (emp.google_reviews or []) if (r.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
         v_pts = sum(max(1, v.videos_count or 1) * 5 for v in (emp.video_reviews or []) if (v.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
         emp.google_review_points = g_pts
         emp.video_review_points = v_pts
         emp.total_points = g_pts + v_pts
-    return filtered_employees
+    return employees
 
 
 @router.post("", response_model=EmployeeResponse, status_code=status.HTTP_201_CREATED, summary="Create a new employee in current manager's branch")

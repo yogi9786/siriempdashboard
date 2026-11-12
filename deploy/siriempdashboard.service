@@ -1,0 +1,32 @@
+[Unit]
+Description=Siri Samruddhi Gold Palace FastAPI Backend Service with Multi-Worker Load Balancing
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/siriempdashboard/siriempdashboard
+Environment="PATH=/var/www/siriempdashboard/siriempdashboard/backend/venv/bin:/usr/local/bin:/usr/bin"
+EnvironmentFile=/var/www/siriempdashboard/siriempdashboard/backend/.env
+
+# Launch Gunicorn with 4 Uvicorn workers for concurrency & automatic recovery
+ExecStart=/var/www/siriempdashboard/siriempdashboard/backend/venv/bin/gunicorn \
+    backend.app.main:app \
+    --workers 4 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 127.0.0.1:8000 \
+    --timeout 120 \
+    --keep-alive 5 \
+    --max-requests 2000 \
+    --max-requests-jitter 200 \
+    --access-logfile /var/log/siriempdashboard_access.log \
+    --error-logfile /var/log/siriempdashboard_error.log
+
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

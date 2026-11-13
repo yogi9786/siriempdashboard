@@ -17,36 +17,54 @@ import {
   RefreshCw,
   Building2,
   CheckCircle2,
+  RotateCcw,
 } from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { CustomerActivity, CustomerDetailItem } from '../../types';
+import { CustomerActivity, CustomerDetailItem, Employee } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
 import { CustomerActivityViewModal } from '../../components/customers/CustomerActivityViewModal';
 
 export const BranchRevenuePage: React.FC = () => {
   const { user, selectedBranch } = useAuth();
-  const { success, error: toastError } = useToast();
+  const { error: toastError } = useToast();
 
   const [activities, setActivities] = useState<CustomerActivity[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'SOLD' | 'SCHEMES'>('SOLD');
   const [schemeCategory, setSchemeCategory] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
-  const [dateRange, setDateRange] = useState<'ALL' | 'TODAY' | 'MONTH'>('ALL');
+  
+  // Date and Employee Filter States
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'this_week' | 'this_month' | 'last_month' | 'custom'>('all');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('ALL');
+
   const [viewingActivity, setViewingActivity] = useState<CustomerActivity | null>(null);
 
   const fetchBranchActivities = async () => {
     try {
       setIsLoading(true);
-      const res = await api.get('/api/v1/customers', {
-        params: {
-          branch_id: selectedBranch?.id || user?.branch_id,
-          limit: 300,
-        },
-      });
-      setActivities(res.data || []);
+      const params: Record<string, any> = {
+        branch_id: selectedBranch?.id || user?.branch_id,
+      };
+      if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom') {
+        params.date_filter = dateFilter;
+      }
+      if (fromDate) params.from_date = fromDate;
+      if (toDate) params.to_date = toDate;
+
+      const [actRes, empRes] = await Promise.all([
+        api.get('/api/v1/customers', { params }),
+        api.get<Employee[]>('/api/v1/employees').catch(() => ({ data: [] })),
+      ]);
+      setActivities(actRes.data || []);
+      if (empRes?.data && Array.isArray(empRes.data)) {
+        setEmployees(empRes.data);
+      }
     } catch (err: any) {
       console.error('Failed to load revenue data:', err);
       toastError('Could not load branch revenue activities.');
@@ -57,7 +75,51 @@ export const BranchRevenuePage: React.FC = () => {
 
   useEffect(() => {
     fetchBranchActivities();
-  }, [selectedBranch]);
+  }, [selectedBranch, dateFilter, fromDate, toDate]);
+
+  // Date filtering helper
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const toLocalDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  const matchesDateFilter = (itemDateStr?: string) => {
+    if (!itemDateStr) return false;
+    const rowDate = itemDateStr.slice(0, 10);
+
+    // Explicit custom date range
+    if (fromDate && rowDate < fromDate) return false;
+    if (toDate && rowDate > toDate) return false;
+
+    if (dateFilter === 'all') return true;
+
+    const now = new Date();
+    const todayStr = toLocalDateStr(now);
+
+    if (dateFilter === 'today') {
+      return rowDate === todayStr;
+    } else if (dateFilter === 'yesterday') {
+      const yest = new Date(now);
+      yest.setDate(yest.getDate() - 1);
+      return rowDate === toLocalDateStr(yest);
+    } else if (dateFilter === 'this_week') {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekAgoStr = toLocalDateStr(weekAgo);
+      return rowDate >= weekAgoStr && rowDate <= todayStr;
+    } else if (dateFilter === 'this_month') {
+      const monthStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
+      return rowDate >= monthStart && rowDate <= todayStr;
+    } else if (dateFilter === 'last_month') {
+      const firstThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastPrevMonth = new Date(firstThisMonth.getTime() - 86400000);
+      const firstPrevMonth = new Date(lastPrevMonth.getFullYear(), lastPrevMonth.getMonth(), 1);
+      return rowDate >= toLocalDateStr(firstPrevMonth) && rowDate <= toLocalDateStr(lastPrevMonth);
+    } else if (dateFilter === 'custom') {
+      if (fromDate && rowDate < fromDate) return false;
+      if (toDate && rowDate > toDate) return false;
+      return true;
+    }
+    return true;
+  };
 
   // Flattened Sold Purchases
   const soldPurchases = useMemo(() => {
@@ -166,18 +228,21 @@ export const BranchRevenuePage: React.FC = () => {
     return list;
   }, [activities]);
 
-  // Summary Metrics strictly for this branch
-  const totalSalesRevenue = useMemo(() => {
-    return soldPurchases.reduce((acc, curr) => acc + (curr.productValue || 0), 0);
-  }, [soldPurchases]);
-
-  const totalSchemesVolume = useMemo(() => {
-    return schemeEnrollments.reduce((acc, curr) => acc + (curr.monthlyAmount || 0), 0);
-  }, [schemeEnrollments]);
-
   // Filtered Sold List
   const filteredSold = useMemo(() => {
     return soldPurchases.filter((s) => {
+      // 1. Date filter
+      if (!matchesDateFilter(s.date)) return false;
+
+      // 2. Employee filter
+      if (selectedEmployee !== 'ALL') {
+        const empMatch =
+          s.employeeName.toLowerCase().trim() === selectedEmployee.toLowerCase().trim() ||
+          s.employeeCode.toLowerCase().trim() === selectedEmployee.toLowerCase().trim();
+        if (!empMatch) return false;
+      }
+
+      // 3. Search query
       if (search.trim()) {
         const q = search.toLowerCase();
         const match =
@@ -190,16 +255,30 @@ export const BranchRevenuePage: React.FC = () => {
       }
       return true;
     });
-  }, [soldPurchases, search]);
+  }, [soldPurchases, dateFilter, fromDate, toDate, selectedEmployee, search]);
 
   // Filtered Schemes List
   const filteredSchemes = useMemo(() => {
     return schemeEnrollments.filter((sch) => {
+      // 1. Date filter
+      if (!matchesDateFilter(sch.date)) return false;
+
+      // 2. Employee filter
+      if (selectedEmployee !== 'ALL') {
+        const empMatch =
+          sch.employeeName.toLowerCase().trim() === selectedEmployee.toLowerCase().trim() ||
+          sch.employeeCode.toLowerCase().trim() === selectedEmployee.toLowerCase().trim();
+        if (!empMatch) return false;
+      }
+
+      // 3. Scheme Category filter
       if (schemeCategory !== 'ALL') {
         if (!sch.schemeName.toUpperCase().includes(schemeCategory.toUpperCase())) {
           return false;
         }
       }
+
+      // 4. Search query
       if (search.trim()) {
         const q = search.toLowerCase();
         const match =
@@ -212,7 +291,33 @@ export const BranchRevenuePage: React.FC = () => {
       }
       return true;
     });
-  }, [schemeEnrollments, schemeCategory, search]);
+  }, [schemeEnrollments, dateFilter, fromDate, toDate, selectedEmployee, schemeCategory, search]);
+
+  // Summary Metrics strictly for this branch and active filter
+  const totalSalesRevenue = useMemo(() => {
+    return filteredSold.reduce((acc, curr) => acc + (curr.productValue || 0), 0);
+  }, [filteredSold]);
+
+  const totalSchemesVolume = useMemo(() => {
+    return filteredSchemes.reduce((acc, curr) => acc + (curr.monthlyAmount || 0), 0);
+  }, [filteredSchemes]);
+
+  const handleResetFilters = () => {
+    setDateFilter('all');
+    setFromDate('');
+    setToDate('');
+    setSelectedEmployee('ALL');
+    setSearch('');
+    setSchemeCategory('ALL');
+  };
+
+  const hasActiveFilters =
+    dateFilter !== 'all' ||
+    Boolean(fromDate) ||
+    Boolean(toDate) ||
+    selectedEmployee !== 'ALL' ||
+    Boolean(search.trim()) ||
+    schemeCategory !== 'ALL';
 
   // Export to CSV
   const handleExportCSV = () => {
@@ -318,7 +423,7 @@ export const BranchRevenuePage: React.FC = () => {
             Items / Deals Sold
           </span>
           <div className="text-2xl sm:text-3xl font-black font-mono text-[#1D1D1B]">
-            {soldPurchases.length}
+            {filteredSold.length}
           </div>
           <span className="text-xs text-[#B97855] font-semibold mt-1 block">Purchasing Customers</span>
         </div>
@@ -329,7 +434,7 @@ export const BranchRevenuePage: React.FC = () => {
             Schemes Enrolled
           </span>
           <div className="text-2xl sm:text-3xl font-black font-mono text-[#1D1D1B]">
-            {schemeEnrollments.length}
+            {filteredSchemes.length}
           </div>
           <span className="text-xs text-[#92400E] font-semibold mt-1 block">Active Savings Accounts</span>
         </div>
@@ -346,6 +451,126 @@ export const BranchRevenuePage: React.FC = () => {
         </div>
       </div>
 
+      {/* Date & Staff Attribution Filter Control Panel */}
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-[#21845F]" />
+            <h2 className="text-xs sm:text-sm font-bold text-[#1D1D1B]">
+              Filter Revenue Period & Staff Attribution
+            </h2>
+          </div>
+
+          {/* Active Period / Filter Badge */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-semibold text-[#5E5A52] px-2.5 py-1 rounded-full bg-[#FAF8F3] border border-[#E4DFD4]">
+              Active Period:{' '}
+              <strong className="text-[#1D1D1B]">
+                {dateFilter === 'today'
+                  ? 'Today'
+                  : dateFilter === 'yesterday'
+                  ? 'Yesterday'
+                  : dateFilter === 'this_week'
+                  ? 'This Week'
+                  : dateFilter === 'this_month'
+                  ? 'This Month'
+                  : dateFilter === 'last_month'
+                  ? 'Last Month'
+                  : dateFilter === 'custom' && (fromDate || toDate)
+                  ? `${fromDate || 'Start'} to ${toDate || 'Now'}`
+                  : 'All Time'}
+              </strong>
+            </span>
+            {hasActiveFilters && (
+              <button
+                onClick={handleResetFilters}
+                className="text-xs font-bold text-[#C24141] hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                title="Reset all filters to All Time"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset Filters</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filter Controls Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#F0ECE1]">
+          {/* Quick Date Presets */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-bold text-[#8A8479] mr-1 flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Date:</span>
+            </span>
+            {[
+              { id: 'all', label: 'All Time' },
+              { id: 'today', label: 'Today' },
+              { id: 'yesterday', label: 'Yesterday' },
+              { id: 'this_week', label: 'This Week' },
+              { id: 'this_month', label: 'This Month' },
+              { id: 'last_month', label: 'Last Month' },
+            ].map((p) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  setDateFilter(p.id as any);
+                  setFromDate('');
+                  setToDate('');
+                }}
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                  dateFilter === p.id && !fromDate && !toDate
+                    ? 'bg-[#21845F] border-[#21845F] text-white shadow-2xs'
+                    : 'bg-[#FAF8F3] border-[#E4DFD4] text-[#5E5A52] hover:bg-white'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Date Pickers */}
+          <div className="flex items-center gap-1.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-2.5 py-1">
+            <span className="text-[11px] font-bold text-[#8A8479]">From:</span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value);
+                setDateFilter('custom');
+              }}
+              className="px-1.5 py-0.5 text-xs bg-white border border-[#E4DFD4] rounded-lg font-medium text-[#1D1D1B] focus:outline-none focus:border-[#21845F]"
+            />
+            <span className="text-[11px] font-bold text-[#8A8479]">To:</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value);
+                setDateFilter('custom');
+              }}
+              className="px-1.5 py-0.5 text-xs bg-white border border-[#E4DFD4] rounded-lg font-medium text-[#1D1D1B] focus:outline-none focus:border-[#21845F]"
+            />
+          </div>
+
+          {/* Employee Filter */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <User className="w-3.5 h-3.5 text-[#8A8479]" />
+            <select
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(e.target.value)}
+              className="text-xs font-semibold px-3 py-1.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] cursor-pointer"
+            >
+              <option value="ALL">All Staff Members</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.full_name}>
+                  {emp.full_name} ({emp.employee_code})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Main Tab Toggle: Sold Purchases vs Jewellery Schemes */}
       <div className="bg-white border border-[#E4DFD4] rounded-2xl p-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -358,7 +583,7 @@ export const BranchRevenuePage: React.FC = () => {
             }`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Sold Ornaments & Purchases ({soldPurchases.length})</span>
+            <span>Sold Ornaments & Purchases ({filteredSold.length})</span>
           </button>
 
           <button
@@ -370,7 +595,7 @@ export const BranchRevenuePage: React.FC = () => {
             }`}
           >
             <Award className="w-3.5 h-3.5" />
-            <span>Jewellery Savings Schemes ({schemeEnrollments.length})</span>
+            <span>Jewellery Savings Schemes ({filteredSchemes.length})</span>
           </button>
         </div>
 
@@ -525,7 +750,7 @@ export const BranchRevenuePage: React.FC = () => {
                   : 'bg-white hover:bg-[#FAF8F3] text-[#5E5A52] border border-[#E4DFD4]'
               }`}
             >
-              All Schemes ({schemeEnrollments.length})
+              All Schemes ({filteredSchemes.length})
             </button>
             <button
               onClick={() => setSchemeCategory('GOLDEN DREAMS')}

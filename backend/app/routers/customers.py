@@ -37,22 +37,25 @@ router = APIRouter(prefix="/api/v1/customers", tags=["Customer Activity"])
 @router.get("", response_model=List[CustomerActivityResponse], summary="List customer activity logs for current manager's branch")
 def list_customer_activities(
     employee_id: Optional[int] = Query(None, description="Filter by employee ID"),
+    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
     status: Optional[str] = Query(None, description="Filter by status: Attended, Closed, Follow-up, Lost"),
     approval_status: Optional[str] = Query(None, description="Filter by approval status: PENDING, APPROVED, REJECTED, all"),
     search: Optional[str] = Query(None, description="Search by customer name or phone"),
     from_date: Optional[date] = Query(None, description="Filter activities from date (YYYY-MM-DD)"),
     to_date: Optional[date] = Query(None, description="Filter activities to date (YYYY-MM-DD)"),
-    date_filter: Optional[str] = Query(None, description="Filter by preset: today, yesterday, this_week, this_month"),
+    date_filter: Optional[str] = Query(None, description="Filter by preset: today, yesterday, this_week, this_month, last_month"),
     current_user: User = Depends(get_current_manager),
     db: Session = Depends(get_db),
 ):
     from datetime import timedelta
 
+    target_branch_id = branch_id if (branch_id and getattr(current_user, "role", "") in ["ADMIN", "SUPERADMIN"]) else current_user.branch_id
+
     query = (
         db.query(CustomerActivity)
         .join(Employee, CustomerActivity.employee_id == Employee.id)
         .filter(
-            CustomerActivity.branch_id == current_user.branch_id,
+            CustomerActivity.branch_id == target_branch_id,
         )
     )
 
@@ -87,6 +90,14 @@ def list_customer_activities(
         query = query.filter(CustomerActivity.activity_date >= today_dt - timedelta(days=7))
     elif date_filter == "this_month":
         query = query.filter(CustomerActivity.activity_date >= today_dt.replace(day=1))
+    elif date_filter == "last_month":
+        first_of_this_month = today_dt.replace(day=1)
+        last_of_prev_month = first_of_this_month - timedelta(days=1)
+        first_of_prev_month = last_of_prev_month.replace(day=1)
+        query = query.filter(
+            CustomerActivity.activity_date >= first_of_prev_month,
+            CustomerActivity.activity_date <= last_of_prev_month,
+        )
 
     # Explicit custom date range
     if from_date:

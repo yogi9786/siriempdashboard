@@ -443,6 +443,61 @@ def create_hr_payslip(
     }
 
 
+@router.put("/payslips/{slip_id}", summary="Edit / Update an issued pay slip")
+def update_hr_payslip(
+    slip_id: int,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    current_hr: User = Depends(get_current_hr),
+):
+    slip = db.query(EmployeePaySlip).filter(EmployeePaySlip.id == slip_id).first()
+    if not slip:
+        raise HTTPException(status_code=404, detail="Pay slip record not found.")
+
+    if "employee_id" in payload and payload["employee_id"]:
+        new_emp = db.query(Employee).filter(Employee.id == int(payload["employee_id"])).first()
+        if new_emp:
+            slip.employee_id = new_emp.id
+            slip.branch_id = new_emp.branch_id
+
+    if "month" in payload and payload["month"]:
+        slip.month = str(payload["month"]).strip()
+    if "year" in payload and payload["year"]:
+        slip.year = int(payload["year"])
+    if "amount" in payload and payload["amount"] is not None:
+        try:
+            slip.amount = float(payload["amount"])
+        except (ValueError, TypeError):
+            pass
+    if "notes" in payload:
+        slip.notes = str(payload["notes"] or "").strip()
+    if "file_url" in payload and payload["file_url"]:
+        slip.file_url = str(payload["file_url"]).strip()
+
+    # Recompute pay_period if month or year updated
+    if "pay_period" in payload and payload["pay_period"]:
+        slip.pay_period = str(payload["pay_period"]).strip()
+    else:
+        slip.pay_period = f"{slip.month} {slip.year}"
+
+    db.commit()
+    db.refresh(slip)
+
+    emp = db.query(Employee).filter(Employee.id == slip.employee_id).first()
+    return {
+        "id": slip.id,
+        "employee_id": slip.employee_id,
+        "employee_name": emp.full_name if emp else "",
+        "pay_period": slip.pay_period,
+        "month": slip.month,
+        "year": slip.year,
+        "amount": slip.amount,
+        "notes": slip.notes,
+        "file_url": slip.file_url,
+        "message": "Pay slip record updated successfully.",
+    }
+
+
 @router.delete("/payslips/{slip_id}", summary="Delete an issued pay slip")
 def delete_hr_payslip(
     slip_id: int,

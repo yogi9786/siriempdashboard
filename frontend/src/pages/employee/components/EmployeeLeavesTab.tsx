@@ -57,7 +57,8 @@ export const EmployeeLeavesTab: React.FC<EmployeeLeavesTabProps> = ({
         subject: form.subject.trim(),
         from_date: form.from_date,
         to_date: form.to_date,
-        reason: form.message.trim(),
+        message: form.message.trim() || form.subject.trim(),
+        reason: form.message.trim() || form.subject.trim(),
       };
 
       const res = await api.post('/api/v1/employee/leaves', payload);
@@ -191,10 +192,6 @@ export const EmployeeLeavesTab: React.FC<EmployeeLeavesTabProps> = ({
               )}
               <span>Submit Leave Request</span>
             </button>
-
-            <p className="text-[10px] text-[#8A8479] text-center leading-relaxed">
-              A notification will be sent immediately to your Showroom Manager and HR department. Live status will update below once reviewed.
-            </p>
           </form>
         </div>
 

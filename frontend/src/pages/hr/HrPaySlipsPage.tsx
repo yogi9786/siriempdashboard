@@ -17,14 +17,26 @@ import {
   Plus,
   MapPin,
   Filter,
+  Edit2,
+  X,
 } from 'lucide-react';
 import api from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import { EmployeePaySlip } from '../../types';
 import { getMediaUrl, triggerFileDownload } from '../../utils/media';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 export const HrPaySlipsPage: React.FC = () => {
   const { success, error: toastError } = useToast();
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const years = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+
+  const currentMonth = months[new Date().getMonth()];
+  const currentYear = new Date().getFullYear();
 
   const [payslips, setPayslips] = useState<EmployeePaySlip[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -34,8 +46,8 @@ export const HrPaySlipsPage: React.FC = () => {
 
   // Form State
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | ''>('');
-  const [month, setMonth] = useState<string>('November');
-  const [year, setYear] = useState<number>(2026);
+  const [month, setMonth] = useState<string>(currentMonth);
+  const [year, setYear] = useState<number>(currentYear);
   const [amount, setAmount] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [fileUrl, setFileUrl] = useState<string>('');
@@ -43,17 +55,28 @@ export const HrPaySlipsPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Directory Filters: Date Filter & Employee Filter
-  const [filterPeriod, setFilterPeriod] = useState<string>('ALL');
+  // Directory Filters: Month, Year & Employee Filter
+  const [filterMonth, setFilterMonth] = useState<string>('ALL');
+  const [filterYear, setFilterYear] = useState<string>('ALL');
   const [filterEmployeeId, setFilterEmployeeId] = useState<string>('ALL');
 
   // Preview Lightbox
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+  // Edit Payslip Modal State
+  const [editingSlip, setEditingSlip] = useState<EmployeePaySlip | null>(null);
+  const [editMonth, setEditMonth] = useState<string>(currentMonth);
+  const [editYear, setEditYear] = useState<number>(currentYear);
+  const [editAmount, setEditAmount] = useState<string>('');
+  const [editNotes, setEditNotes] = useState<string>('');
+  const [editFileUrl, setEditFileUrl] = useState<string>('');
+  const [editFileName, setEditFileName] = useState<string>('');
+  const [isEditUploading, setIsEditUploading] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+
+  // Delete Confirm Dialog State
+  const [deleteTargetSlip, setDeleteTargetSlip] = useState<EmployeePaySlip | null>(null);
+  const [isDeletingSlip, setIsDeletingSlip] = useState<boolean>(false);
 
   const fetchEmployees = async () => {
     try {
@@ -127,6 +150,33 @@ export const HrPaySlipsPage: React.FC = () => {
     }
   };
 
+  const handleEditFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toastError('File exceeds 10MB limit.');
+      return;
+    }
+
+    try {
+      setIsEditUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post('/api/v1/hr/upload-payslip', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setEditFileUrl(res.data.file_url || res.data.url);
+      setEditFileName(file.name);
+      success('Updated pay slip document uploaded.');
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || 'Failed to upload payslip document.';
+      toastError(msg);
+    } finally {
+      setIsEditUploading(false);
+    }
+  };
+
   const handleSubmitPayslip = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEmployeeId) {
@@ -167,14 +217,56 @@ export const HrPaySlipsPage: React.FC = () => {
     }
   };
 
-  const handleDeletePayslip = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this payslip record?')) return;
+  const handleOpenEdit = (slip: EmployeePaySlip) => {
+    setEditingSlip(slip);
+    setEditMonth(slip.month || currentMonth);
+    setEditYear(slip.year || currentYear);
+    setEditAmount(slip.amount ? String(slip.amount) : '');
+    setEditNotes(slip.notes || '');
+    setEditFileUrl(slip.file_url || '');
+    setEditFileName(slip.file_url ? slip.file_url.split('/').pop() || 'Existing File' : '');
+  };
+
+  const handleSaveEditPayslip = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSlip) return;
+
     try {
-      await api.delete(`/api/v1/hr/payslips/${id}`);
-      success('Pay slip deleted.');
-      setPayslips(payslips.filter((p) => p.id !== id));
+      setIsUpdating(true);
+      const payload = {
+        employee_id: editingSlip.employee_id,
+        month: editMonth,
+        year: Number(editYear),
+        pay_period: `${editMonth} ${editYear}`,
+        amount: editAmount ? parseFloat(editAmount) : 0,
+        notes: editNotes.trim(),
+        file_url: editFileUrl,
+      };
+
+      await api.put(`/api/v1/hr/payslips/${editingSlip.id}`, payload);
+      success('Pay slip updated successfully.');
+      setEditingSlip(null);
+      fetchPayslips();
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || 'Failed to update payslip.';
+      toastError(msg);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTargetSlip) return;
+    try {
+      setIsDeletingSlip(true);
+      await api.delete(`/api/v1/hr/payslips/${deleteTargetSlip.id}`);
+      success('Pay slip deleted successfully.');
+      setPayslips(payslips.filter((p) => p.id !== deleteTargetSlip.id));
+      setDeleteTargetSlip(null);
     } catch (err: any) {
       toastError('Failed to delete payslip.');
+    } finally {
+      setIsDeletingSlip(false);
     }
   };
 
@@ -182,24 +274,24 @@ export const HrPaySlipsPage: React.FC = () => {
     (e) => (e.branch_code || '').toUpperCase() === selectedBranch.toUpperCase()
   );
 
-  // Available unique periods for Date Filter
-  const availablePeriods = Array.from(
-    new Set(payslips.map((s) => s.pay_period || `${s.month} ${s.year}`))
-  ).filter(Boolean);
-
   const filteredPayslips = payslips.filter((slip) => {
-    // 1. Date Filter (Period)
-    if (filterPeriod !== 'ALL') {
-      const p = slip.pay_period || `${slip.month} ${slip.year}`;
-      if (p !== filterPeriod) return false;
+    // 1. Month Filter
+    if (filterMonth !== 'ALL') {
+      const m = (slip.month || '').trim().toLowerCase();
+      if (m !== filterMonth.toLowerCase()) return false;
     }
 
-    // 2. Employee Filter
+    // 2. Year Filter
+    if (filterYear !== 'ALL') {
+      if (String(slip.year) !== String(filterYear)) return false;
+    }
+
+    // 3. Employee Filter
     if (filterEmployeeId !== 'ALL') {
       if (slip.employee_id !== Number(filterEmployeeId)) return false;
     }
 
-    // 3. Search Filter
+    // 4. Search Filter
     if (search.trim()) {
       const q = search.toLowerCase();
       return (
@@ -489,27 +581,44 @@ export const HrPaySlipsPage: React.FC = () => {
             <p className="text-xs text-[#6B6559]">History of employee salary slips by month and showroom</p>
           </div>
 
-          {/* TWO DEDICATED FILTERS: Date Filter & Employee Filter */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-            {/* Filter 1: Date Filter */}
-            <div className="relative min-w-[170px]">
+          {/* DEDICATED FILTERS: Month Filter, Year Filter & Employee Filter */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Filter 1: Month Filter */}
+            <div className="relative min-w-[140px]">
               <Calendar className="w-3.5 h-3.5 text-[#21845F] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
-                value={filterPeriod}
-                onChange={(e) => setFilterPeriod(e.target.value)}
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
                 className="w-full pl-8 pr-3 py-2 text-xs font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] focus:bg-white cursor-pointer"
-                title="Date Filter"
+                title="Filter by Month"
               >
-                <option value="ALL">All Dates / Periods</option>
-                {availablePeriods.map((p) => (
-                  <option key={p} value={p}>
-                    📅 {p}
+                <option value="ALL">All Months</option>
+                {months.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Filter 2: Employee Filter */}
+            {/* Filter 2: Year Filter */}
+            <div className="relative min-w-[120px]">
+              <select
+                value={filterYear}
+                onChange={(e) => setFilterYear(e.target.value)}
+                className="w-full px-3 py-2 text-xs font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] focus:bg-white cursor-pointer"
+                title="Filter by Year"
+              >
+                <option value="ALL">All Years</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    Year {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter 3: Employee Filter */}
             <div className="relative min-w-[190px]">
               <User className="w-3.5 h-3.5 text-[#536B8A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
@@ -528,7 +637,7 @@ export const HrPaySlipsPage: React.FC = () => {
             </div>
 
             {/* Quick Search */}
-            <div className="relative w-full sm:w-56">
+            <div className="relative w-full sm:w-48">
               <Search className="w-3.5 h-3.5 text-[#8A8479] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -616,7 +725,15 @@ export const HrPaySlipsPage: React.FC = () => {
 
                     {/* Actions */}
                     <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(slip)}
+                          className="p-1.5 text-[#536B8A] hover:text-[#21845F] hover:bg-[#E8F4EE] rounded-lg transition-colors cursor-pointer"
+                          title="Edit Payslip Data"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           type="button"
                           onClick={() =>
@@ -632,7 +749,7 @@ export const HrPaySlipsPage: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDeletePayslip(slip.id)}
+                          onClick={() => setDeleteTargetSlip(slip)}
                           className="p-1.5 text-[#8A8479] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                           title="Delete Payslip"
                         >
@@ -647,6 +764,146 @@ export const HrPaySlipsPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* EDIT PAYSLIP MODAL */}
+      {editingSlip && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setEditingSlip(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-[#E4DFD4]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 bg-[#FAF8F3] border-b border-[#EBE6DC] flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-extrabold text-[#1D1D1B]">Edit Pay Slip Record</h3>
+                <p className="text-xs text-[#6B6559]">
+                  {editingSlip.employee_name} ({editingSlip.employee_code || 'Staff'})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSlip(null)}
+                className="w-8 h-8 rounded-xl bg-white border border-[#E4DFD4] text-[#6B6559] hover:bg-[#F2EDE4] font-bold text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditPayslip} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
+                    Month *
+                  </label>
+                  <select
+                    value={editMonth}
+                    onChange={(e) => setEditMonth(e.target.value)}
+                    className="w-full px-3 py-2 text-xs font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] focus:bg-white"
+                  >
+                    {months.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
+                    Year *
+                  </label>
+                  <select
+                    value={editYear}
+                    onChange={(e) => setEditYear(Number(e.target.value))}
+                    className="w-full px-3 py-2 text-xs font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] focus:bg-white"
+                  >
+                    {years.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
+                  Net Salary (₹)
+                </label>
+                <input
+                  type="number"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  placeholder="e.g. 28500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs font-mono font-bold text-[#1D1D1B] focus:outline-none focus:border-[#21845F] focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
+                  HR Notes
+                </label>
+                <input
+                  type="text"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Optional notes or bonus memo"
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-xs text-[#1D1D1B] focus:outline-none focus:border-[#21845F] focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#6B6559] uppercase tracking-wider mb-1.5">
+                  Replace Document / Image (Optional)
+                </label>
+                <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-[#C5E3D5] bg-[#E8F4EE]/50 hover:bg-[#E8F4EE] text-[#21845F] text-xs font-bold cursor-pointer transition-colors">
+                  <Upload className="w-4 h-4" />
+                  <span>{isEditUploading ? 'Uploading file...' : editFileName ? `Selected: ${editFileName}` : 'Upload New Image or PDF (Up to 10MB)'}</span>
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleEditFileUpload}
+                    className="hidden"
+                    disabled={isEditUploading}
+                  />
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#EBE6DC]">
+                <button
+                  type="button"
+                  onClick={() => setEditingSlip(null)}
+                  className="px-4 py-2 text-xs font-bold text-[#5E5A52] hover:bg-[#FAF8F3] rounded-xl border border-[#E4DFD4] cursor-pointer"
+                  disabled={isUpdating}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating || isEditUploading}
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#21845F] hover:bg-[#1A6B4C] rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  {isUpdating && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation In-App Dialog (No native localhost popups) */}
+      <ConfirmDialog
+        isOpen={!!deleteTargetSlip}
+        title="Delete Payslip Record"
+        message={`Are you sure you want to delete the pay slip for "${deleteTargetSlip?.employee_name}" (${deleteTargetSlip?.pay_period})? It will be permanently removed and no longer visible in the employee's portal.`}
+        confirmText="Delete Payslip"
+        variant="danger"
+        isLoading={isDeletingSlip}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteTargetSlip(null)}
+      />
 
       {/* Lightbox / Document Preview Modal */}
       {previewUrl && (

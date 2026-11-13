@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   CalendarDays,
   CheckCircle2,
@@ -17,13 +18,23 @@ import { useToast } from '../../context/ToastContext';
 import { EmployeeLeaveRequest } from '../../types';
 
 export const HrLeavesPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const { success, error: toastError } = useToast();
 
   const [leaves, setLeaves] = useState<EmployeeLeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [branchFilter, setBranchFilter] = useState<string>('ALL');
+  const [branchFilter, setBranchFilter] = useState<string>(
+    searchParams.get('branch')?.toUpperCase() || 'ALL'
+  );
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
+
+  useEffect(() => {
+    const b = searchParams.get('branch')?.toUpperCase();
+    if (b) {
+      setBranchFilter(b);
+    }
+  }, [searchParams]);
 
   // Reject Modal
   const [rejectTarget, setRejectTarget] = useState<EmployeeLeaveRequest | null>(null);

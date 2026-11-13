@@ -55,16 +55,16 @@ async def upload_form_media(
             detail=f"Invalid file type '{file.content_type}'. Only JPEG, PNG, and WebP images are permitted.",
         )
 
-    # 3. Validate file size and read content (Max 2.5 MB)
+    # 3. Validate file size and read content (Max 4.0 MB for images)
     ensure_media_dir()
     contents = await file.read()
     file_size = len(contents)
-    max_bytes = int(2.5 * 1024 * 1024)  # 2.5 MB (2,621,440 bytes)
+    max_bytes = int(4.0 * 1024 * 1024)  # 4.0 MB (4,194,304 bytes)
 
     if file_size > max_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File size exceeds maximum allowed limit of 2.5 MB. Please select or capture an image under 2.5 MB.",
+            detail="File size exceeds maximum allowed limit of 4.0 MB. Please select or capture an image under 4.0 MB.",
         )
 
     if file_size == 0:

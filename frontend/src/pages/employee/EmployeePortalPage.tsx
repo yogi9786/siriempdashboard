@@ -63,6 +63,7 @@ import { getMediaUrl } from '../../utils/media';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { SCHEMES, DEFAULT_SCHEME, SchemeName } from '../../constants/schemes';
@@ -616,29 +617,62 @@ export const EmployeePortalPage: React.FC = () => {
     }
   };
 
-  // Delete Review Submissions
-  const handleDeleteGoogleReview = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this Google review submission?')) return;
-    try {
-      await api.delete(`/api/v1/employee/reviews/google/${id}`);
-      success('Google review deleted.');
-      fetchReviews();
-      fetchSummary();
-    } catch (err: any) {
-      toastError(err.response?.data?.detail || 'Failed to delete review.');
-    }
+  // In-App Confirm Dialog State (Zero native browser alerts)
+  const [deleteConfirmState, setDeleteConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void> | void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
+
+  const requestConfirmation = (title: string, message: string, onConfirm: () => Promise<void> | void) => {
+    setDeleteConfirmState({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+    });
   };
 
-  const handleDeleteVideoReview = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this video review submission?')) return;
-    try {
-      await api.delete(`/api/v1/employee/reviews/video/${id}`);
-      success('Video review deleted.');
-      fetchReviews();
-      fetchSummary();
-    } catch (err: any) {
-      toastError(err.response?.data?.detail || 'Failed to delete video review.');
-    }
+  // Delete Review Submissions
+  const handleDeleteGoogleReview = (id: number) => {
+    requestConfirmation(
+      'Delete Google Review',
+      'Are you sure you want to delete this Google review submission?',
+      async () => {
+        try {
+          await api.delete(`/api/v1/employee/reviews/google/${id}`);
+          success('Google review deleted.');
+          fetchReviews();
+          fetchSummary();
+        } catch (err: any) {
+          toastError(err.response?.data?.detail || 'Failed to delete review.');
+        }
+      }
+    );
+  };
+
+  const handleDeleteVideoReview = (id: number) => {
+    requestConfirmation(
+      'Delete Video Review',
+      'Are you sure you want to delete this video review submission?',
+      async () => {
+        try {
+          await api.delete(`/api/v1/employee/reviews/video/${id}`);
+          success('Video review deleted.');
+          fetchReviews();
+          fetchSummary();
+        } catch (err: any) {
+          toastError(err.response?.data?.detail || 'Failed to delete video review.');
+        }
+      }
+    );
   };
 
   // Fast Concurrent Initial Data Load
@@ -701,16 +735,21 @@ export const EmployeePortalPage: React.FC = () => {
   };
 
   // Delete Customer Activity
-  const handleDeleteCustomerActivity = async (activityId: number) => {
-    if (!window.confirm('Are you sure you want to delete this customer log?')) return;
-    try {
-      await api.delete(`/api/v1/employee/customers/${activityId}`);
-      success('Customer log deleted.');
-      fetchCustomerActivities();
-      fetchSummary();
-    } catch (err: any) {
-      toastError(err.response?.data?.detail || 'Failed to delete customer activity.');
-    }
+  const handleDeleteCustomerActivity = (activityId: number) => {
+    requestConfirmation(
+      'Delete Customer Log',
+      'Are you sure you want to delete this customer log? All associated details will be removed.',
+      async () => {
+        try {
+          await api.delete(`/api/v1/employee/customers/${activityId}`);
+          success('Customer log deleted.');
+          fetchCustomerActivities();
+          fetchSummary();
+        } catch (err: any) {
+          toastError(err.response?.data?.detail || 'Failed to delete customer activity.');
+        }
+      }
+    );
   };
 
   // Handle Submit Call Log
@@ -1081,18 +1120,23 @@ export const EmployeePortalPage: React.FC = () => {
     }
   };
 
-  const handleDeleteOutdoorCustomer = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this outdoor customer entry?')) return;
-    try {
-      await api.delete(`/api/v1/employee/outdoor/customer/${id}`);
-      success('Outdoor customer entry removed.');
-      fetchEmployeeOutdoorCustomers();
-      fetchCustomerActivities();
-      fetchSummary();
-      fetchOutdoorHistory();
-    } catch (err: any) {
-      toastError(err.response?.data?.detail || 'Failed to delete outdoor customer.');
-    }
+  const handleDeleteOutdoorCustomer = (id: number) => {
+    requestConfirmation(
+      'Delete Outdoor Customer',
+      'Are you sure you want to delete this outdoor customer entry?',
+      async () => {
+        try {
+          await api.delete(`/api/v1/employee/outdoor/customer/${id}`);
+          success('Outdoor customer entry removed.');
+          fetchEmployeeOutdoorCustomers();
+          fetchCustomerActivities();
+          fetchSummary();
+          fetchOutdoorHistory();
+        } catch (err: any) {
+          toastError(err.response?.data?.detail || 'Failed to delete outdoor customer.');
+        }
+      }
+    );
   };
 
   const handleUploadOutdoorModalFile = async (field: 'photo_url' | 'google_review_screenshot' | 'customer_feedback_proof', file: File) => {
@@ -1357,16 +1401,21 @@ export const EmployeePortalPage: React.FC = () => {
   };
 
   // Delete Call
-  const handleDeleteCall = async (callId: number) => {
-    if (!window.confirm('Are you sure you want to delete this call log?')) return;
-    try {
-      await api.delete(`/api/v1/employee/calls/${callId}`);
-      success('Call log deleted.');
-      fetchCallLogs();
-      fetchSummary();
-    } catch (err) {
-      toastError('Failed to delete call log.');
-    }
+  const handleDeleteCall = (callId: number) => {
+    requestConfirmation(
+      'Delete Call Record',
+      'Are you sure you want to delete this call log? This record will be permanently removed.',
+      async () => {
+        try {
+          await api.delete(`/api/v1/employee/calls/${callId}`);
+          success('Call log deleted.');
+          fetchCallLogs();
+          fetchSummary();
+        } catch (err) {
+          toastError('Failed to delete call log.');
+        }
+      }
+    );
   };
 
   return (
@@ -4566,6 +4615,26 @@ export const EmployeePortalPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* In-App Generic Delete Confirm Dialog (No native browser popups) */}
+      <ConfirmDialog
+        isOpen={deleteConfirmState.isOpen}
+        title={deleteConfirmState.title}
+        message={deleteConfirmState.message}
+        variant="danger"
+        confirmText="Confirm Delete"
+        isLoading={isConfirmLoading}
+        onConfirm={async () => {
+          setIsConfirmLoading(true);
+          try {
+            await deleteConfirmState.onConfirm();
+          } finally {
+            setIsConfirmLoading(false);
+            setDeleteConfirmState((prev) => ({ ...prev, isOpen: false }));
+          }
+        }}
+        onClose={() => setDeleteConfirmState((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

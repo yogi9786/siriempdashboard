@@ -34,6 +34,7 @@ import { CustomerActivity, Employee } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -385,14 +386,25 @@ export const PendingCustomerActivityPage: React.FC = () => {
     }
   };
 
-  const handleDeleteActivity = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this customer activity?')) return;
+  const [deleteActivityId, setDeleteActivityId] = useState<number | null>(null);
+  const [isDeletingActivity, setIsDeletingActivity] = useState<boolean>(false);
+
+  const handleDeleteActivity = (id: number) => {
+    setDeleteActivityId(id);
+  };
+
+  const confirmDeleteActivity = async () => {
+    if (!deleteActivityId) return;
     try {
-      await api.delete(`/api/v1/customers/${id}`);
+      setIsDeletingActivity(true);
+      await api.delete(`/api/v1/customers/${deleteActivityId}`);
       success('Customer activity deleted successfully.');
+      setDeleteActivityId(null);
       fetchActivities();
     } catch (err: any) {
       toastError(err.response?.data?.detail || 'Failed to delete customer activity.');
+    } finally {
+      setIsDeletingActivity(false);
     }
   };
 
@@ -1836,6 +1848,18 @@ export const PendingCustomerActivityPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Activity Confirmation Dialog (No native browser alerts) */}
+      <ConfirmDialog
+        isOpen={!!deleteActivityId}
+        title="Delete Customer Activity"
+        message="Are you sure you want to permanently delete this customer interaction record? This action cannot be undone."
+        confirmText="Delete Record"
+        variant="danger"
+        isLoading={isDeletingActivity}
+        onConfirm={confirmDeleteActivity}
+        onClose={() => setDeleteActivityId(null)}
+      />
     </div>
   );
 };

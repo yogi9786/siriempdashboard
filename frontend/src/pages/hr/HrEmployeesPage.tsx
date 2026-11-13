@@ -67,9 +67,7 @@ export const HrEmployeesPage: React.FC = () => {
 
   useEffect(() => {
     const b = searchParams.get('branch')?.toUpperCase();
-    if (b) {
-      setBranchFilter(b);
-    }
+    setBranchFilter(b || 'ALL');
   }, [searchParams]);
 
   useEffect(() => {

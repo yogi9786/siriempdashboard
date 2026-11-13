@@ -1505,8 +1505,12 @@ def get_employee_outdoor_customers(
         )
 
         app_status = act.approval_status if act else ("APPROVED" if c.status in ("Approved", "Converted") else "PENDING")
-        reviewed_by = act.reviewed_by_name if act else None
-        rej_reason = act.rejection_reason if act else None
+        reviewed_by = None
+        if act and getattr(act, "reviewed_by_id", None):
+            rev_user = db.query(User).filter(User.id == act.reviewed_by_id).first()
+            if rev_user:
+                reviewed_by = rev_user.full_name
+        rej_reason = getattr(act, "rejection_reason", None) if act else None
 
         if approval_status and approval_status != "ALL":
             if approval_status == "PENDING" and app_status != "PENDING":
@@ -1823,7 +1827,9 @@ def submit_my_leave_request(
     db: Session = Depends(get_db),
 ):
     subject = (payload.get("subject") or "").strip()
-    message = (payload.get("message") or "").strip()
+    message = (payload.get("message") or payload.get("reason") or "").strip()
+    if not message and subject:
+        message = f"Leave application: {subject}"
     leave_type = (payload.get("leave_type") or "Casual Leave").strip()
     from_date_str = (payload.get("from_date") or "").strip()
     to_date_str = (payload.get("to_date") or "").strip()

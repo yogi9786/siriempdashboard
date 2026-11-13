@@ -212,8 +212,12 @@ export const HrSidebar: React.FC<HrSidebarProps> = ({ onCloseMobile }) => {
 
         {/* 3. Employees Management */}
         <div>
-          <button
-            onClick={() => setEmployeesOpen(!employeesOpen)}
+          <NavLink
+            to="/hr/employees"
+            onClick={() => {
+              setEmployeesOpen(true);
+              if (onCloseMobile) onCloseMobile();
+            }}
             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer group ${
               location.pathname.startsWith('/hr/employees')
                 ? 'bg-[#1E293B]/70 text-[#E2E8F0] font-bold border-l-[3px] border-l-[#60A5FA] border border-[#3B82F6]/30 shadow-xs pl-2.5'
@@ -232,12 +236,23 @@ export const HrSidebar: React.FC<HrSidebarProps> = ({ onCloseMobile }) => {
               </div>
               <span>Employees</span>
             </div>
-            {employeesOpen ? (
-              <ChevronDown className="w-4 h-4 text-[#A1A1AA]" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-[#A1A1AA]" />
-            )}
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setEmployeesOpen(!employeesOpen);
+              }}
+              className="p-1 hover:bg-white/10 rounded-md transition-colors"
+              title={employeesOpen ? 'Collapse menu' : 'Expand menu'}
+            >
+              {employeesOpen ? (
+                <ChevronDown className="w-3.5 h-3.5 text-[#A1A1AA]" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5 text-[#A1A1AA]" />
+              )}
+            </button>
+          </NavLink>
 
           {employeesOpen && (
             <div className="pl-6 pr-1 py-1 space-y-1 transition-all duration-200">
@@ -357,19 +372,22 @@ export const HrSidebar: React.FC<HrSidebarProps> = ({ onCloseMobile }) => {
           {({ isActive }) => (
             <>
               <div
-                className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors relative ${
                   isActive
                     ? 'bg-[#92400E] text-[#FDE68A] border border-[#F59E0B]/50 shadow-2xs'
                     : 'bg-[#27272A] text-[#FBBF24] group-hover:bg-[#3F3F46]'
                 }`}
               >
                 <CalendarDays className="w-3.5 h-3.5" />
+                {pendingLeavesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#EF4444] rounded-full border-2 border-[#18181B] animate-pulse" />
+                )}
               </div>
               <div className="flex-1 flex items-center justify-between min-w-0">
                 <span className="truncate">Leave Requests</span>
                 {pendingLeavesCount > 0 && (
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#EF4444] text-white font-black shrink-0 ml-1">
-                    {pendingLeavesCount}
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EF4444] text-white font-black shrink-0 ml-1 shadow-xs flex items-center gap-1 animate-pulse">
+                    <span>{pendingLeavesCount}</span>
                   </span>
                 )}
               </div>

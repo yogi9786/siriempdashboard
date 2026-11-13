@@ -1,14 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { HrSidebar } from './HrSidebar';
-import { Menu, X, Sparkles, Building2, User, LogOut } from 'lucide-react';
+import { Menu, X, Sparkles, Building2, User, LogOut, CalendarDays } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import logoImg from '../../../assets/siri samruddhi logo.png';
+import api from '../../../api/client';
 
 export const HrLayout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pendingLeavesCount, setPendingLeavesCount] = useState<number>(0);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchStats = async () => {
+      try {
+        const res = await api.get('/api/v1/hr/stats');
+        if (isMounted && res.data) {
+          setPendingLeavesCount(res.data.pending_leaves || 0);
+        }
+      } catch {
+        // silent
+      }
+    };
+    fetchStats();
+    const interval = setInterval(fetchStats, 60000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   return (
     <div className="flex h-screen bg-[#FAF8F3] text-[#1D1D1B] overflow-hidden font-sans">
@@ -59,6 +81,18 @@ export const HrLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {pendingLeavesCount > 0 && (
+              <button
+                type="button"
+                onClick={() => navigate('/hr/leaves')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#78350F]/70 border border-[#F59E0B]/50 text-[#FDE68A] hover:bg-[#92400E] text-xs font-bold transition-all cursor-pointer shadow-xs animate-pulse"
+                title={`${pendingLeavesCount} pending leave request(s) require review`}
+              >
+                <CalendarDays className="w-3.5 h-3.5 text-[#FBBF24]" />
+                <span>{pendingLeavesCount} Pending Leaves</span>
+              </button>
+            )}
+
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
               <User className="w-3.5 h-3.5 text-[#E5C378]" />
               <span className="text-xs font-bold text-white">{user?.full_name || 'HR Manager'}</span>

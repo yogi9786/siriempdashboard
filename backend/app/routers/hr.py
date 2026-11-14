@@ -278,6 +278,217 @@ def create_hr_employee(
     }
 
 
+@router.get("/me", summary="Get current logged in HR profile")
+def get_hr_me(
+    db: Session = Depends(get_db),
+    current_hr: User = Depends(get_current_hr),
+):
+    branch = db.query(Branch).filter(Branch.id == current_hr.branch_id).first() if current_hr.branch_id else None
+    return {
+        "id": current_hr.id,
+        "username": current_hr.username,
+        "full_name": current_hr.full_name,
+        "email": current_hr.email or f"{current_hr.username.lower()}@sirisamruddhigold.com",
+        "role": "HR",
+        "branch_id": current_hr.branch_id or 1,
+        "branch_code": branch.code if branch else "ALL",
+        "branch_name": branch.name if branch else "All Showrooms",
+        "is_active": True,
+    }
+
+
+@router.get("/employees/{employee_id}", summary="Get employee detailed profile & overview for HR")
+def get_hr_employee_overview(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    current_hr: User = Depends(get_current_hr),
+):
+    emp = db.query(Employee).filter(Employee.id == employee_id).first()
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found.")
+
+    branch = db.query(Branch).filter(Branch.id == emp.branch_id).first()
+
+    # Calculate statistics
+    activities = db.query(CustomerActivity).filter(CustomerActivity.employee_id == emp.id).all()
+    total_customers_attended = len(activities)
+    sold_activities = [a for a in activities if a.status in ["Sold", "Exchange"] or (a.product_value or 0) > 0]
+    total_sold_count = len(sold_activities)
+    total_sales_value = sum(float(a.product_value or 0) for a in sold_activities)
+
+    # Count schemes enrolled
+    schemes_count = 0
+    schemes_amount = 0.0
+    for a in activities:
+        if a.breakdown:
+            try:
+                items = json.loads(a.breakdown)
+                if isinstance(items, list):
+                    for it in items:
+                        if isinstance(it, dict) and (it.get("has_scheme") or it.get("scheme_name")):
+                            schemes_count += 1
+                            schemes_amount += float(it.get("scheme_amount") or 0.0)
+            except Exception:
+                pass
+
+    # Review Points
+    g_pts = sum(max(1, r.customers_count or 1) for r in (emp.google_reviews or []) if (r.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
+    v_pts = sum(max(1, v.videos_count or 1) * 5 for v in (emp.video_reviews or []) if (v.status or "").upper() in ["APPROVED", "VERIFIED", "PUBLISHED"])
+
+    # Payslips issued count
+    payslips_count = db.query(EmployeePaySlip).filter(EmployeePaySlip.employee_id == emp.id).count()
+
+    # Leaves count
+    leaves = db.query(EmployeeLeaveRequest).filter(EmployeeLeaveRequest.employee_id == emp.id).all()
+    approved_leaves = len([l for l in leaves if l.status == "APPROVED"])
+    pending_leaves = len([l for l in leaves if l.status == "PENDING"])
+
+    # Recent 5 activities
+    recent_acts = []
+    for a in sorted(activities, key=lambda x: (x.activity_date, x.id), reverse=True)[:5]:
+        recent_acts.append({
+            "id": a.id,
+            "date": a.activity_date.isoformat() if a.activity_date else "",
+            "customer_name": a.customer_name or "Walk-in Customer",
+            "phone_number": a.phone_number or "",
+            "status": a.status or "Walkin",
+            "product_value": a.product_value or 0.0,
+            "approval_status": a.approval_status or "PENDING",
+        })
+
+    return {
+        "id": emp.id,
+        "branch_id": emp.branch_id,
+        "branch_code": branch.code if branch else "UNKNOWN",
+        "branch_name": branch.name if branch else "Unknown Branch",
+        "employee_code": emp.employee_code,
+        "full_name": emp.full_name,
+        "phone": emp.phone or "",
+        "email": emp.email or "",
+        "designation": emp.designation or "Sales Executive",
+        "department": emp.department or "Sales & Showroom Operations",
+        "date_of_joining": emp.date_of_joining.isoformat() if emp.date_of_joining else None,
+        "status": emp.status,
+        "notes": emp.notes or "",
+        "created_at": emp.created_at.isoformat() if emp.created_at else None,
+        "metrics": {
+            "total_customers_attended": total_customers_attended,
+            "total_sold_count": total_sold_count,
+            "total_sales_value": round(total_sales_value, 2),
+            "schemes_count": schemes_count,
+            "schemes_amount": round(schemes_amount, 2),
+            "google_review_points": g_pts,
+            "video_review_points": v_pts,
+            "total_points": g_pts + v_pts,
+            "payslips_issued": payslips_count,
+            "approved_leaves": approved_leaves,
+            "pending_leaves": pending_leaves,
+        },
+        "recent_activities": recent_acts,
+    }
+
+
+@router.put("/employees/{employee_id}", summary="Edit / Update employee details via HR")
+def update_hr_employee(
+    employee_id: int,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    current_hr: User = Depends(get_current_hr),
+):
+    emp = db.query(Employee).filter(Employee.id == employee_id).first()
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found.")
+
+    if "full_name" in payload and payload["full_name"]:
+        emp.full_name = str(payload["full_name"]).strip()
+
+    if "employee_code" in payload and payload["employee_code"]:
+        new_code = str(payload["employee_code"]).strip().upper()
+        if new_code != emp.employee_code:
+            existing = db.query(Employee).filter(
+                Employee.branch_id == emp.branch_id,
+                Employee.employee_code == new_code,
+                Employee.id != emp.id,
+            ).first()
+            if existing:
+                raise HTTPException(status_code=400, detail=f"Employee code '{new_code}' already exists.")
+            emp.employee_code = new_code
+
+    if "phone" in payload:
+        emp.phone = str(payload["phone"] or "").strip()
+
+    if "email" in payload:
+        emp.email = str(payload["email"] or "").strip() or None
+
+    if "designation" in payload and payload["designation"]:
+        emp.designation = str(payload["designation"]).strip()
+
+    if "department" in payload and payload["department"]:
+        emp.department = str(payload["department"]).strip()
+
+    if "status" in payload and payload["status"]:
+        emp.status = str(payload["status"]).strip().lower()
+
+    if "notes" in payload:
+        emp.notes = str(payload["notes"] or "").strip()
+
+    if "date_of_joining" in payload and payload["date_of_joining"]:
+        try:
+            emp.date_of_joining = datetime.strptime(str(payload["date_of_joining"])[:10], "%Y-%m-%d").date()
+        except Exception:
+            pass
+
+    if "branch_id" in payload and payload["branch_id"]:
+        new_b_id = int(payload["branch_id"])
+        b_exists = db.query(Branch).filter(Branch.id == new_b_id).first()
+        if b_exists:
+            emp.branch_id = new_b_id
+    elif "branch_code" in payload and payload["branch_code"]:
+        b_exists = db.query(Branch).filter(func.upper(Branch.code) == str(payload["branch_code"]).strip().upper()).first()
+        if b_exists:
+            emp.branch_id = b_exists.id
+
+    db.commit()
+    db.refresh(emp)
+
+    return {
+        "id": emp.id,
+        "employee_code": emp.employee_code,
+        "full_name": emp.full_name,
+        "branch_id": emp.branch_id,
+        "designation": emp.designation,
+        "status": emp.status,
+        "message": f"Employee {emp.full_name} updated successfully.",
+    }
+
+
+@router.delete("/employees/{employee_id}", summary="Delete employee record via HR")
+def delete_hr_employee(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    current_hr: User = Depends(get_current_hr),
+):
+    emp = db.query(Employee).filter(Employee.id == employee_id).first()
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found.")
+
+    emp_name = emp.full_name
+    emp_code = emp.employee_code
+
+    # Detach or clean up foreign keys so delete succeeds safely
+    db.query(CustomerActivity).filter(CustomerActivity.employee_id == employee_id).update({"employee_id": None})
+    db.query(EmployeePaySlip).filter(EmployeePaySlip.employee_id == employee_id).delete()
+    db.query(EmployeeLeaveRequest).filter(EmployeeLeaveRequest.employee_id == employee_id).delete()
+
+    db.delete(emp)
+    db.commit()
+
+    return {
+        "message": f"Employee {emp_name} ({emp_code}) deleted successfully.",
+        "id": employee_id,
+    }
+
+
 # -------------------------------------------------------------------------
 # Customer Records Across All Branches
 # -------------------------------------------------------------------------

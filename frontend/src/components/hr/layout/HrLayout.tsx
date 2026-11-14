@@ -3,12 +3,14 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { HrSidebar } from './HrSidebar';
 import { Menu, X, Sparkles, Building2, User, LogOut, CalendarDays } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { SignOutConfirmModal } from '../../auth/SignOutConfirmModal';
 import logoImg from '../../../assets/siri samruddhi logo.png';
 import api from '../../../api/client';
 
 export const HrLayout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pendingLeavesCount, setPendingLeavesCount] = useState<number>(0);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -99,8 +101,8 @@ export const HrLayout: React.FC = () => {
             </div>
 
             <button
-              onClick={logout}
-              className="p-2 rounded-xl text-[#A1A1AA] hover:text-red-400 hover:bg-white/10 transition-colors"
+              onClick={() => setShowLogoutConfirm(true)}
+              className="p-2 rounded-xl text-[#A1A1AA] hover:text-red-400 hover:bg-white/10 transition-colors cursor-pointer"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -113,6 +115,13 @@ export const HrLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <SignOutConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={logout}
+      />
     </div>
   );
 };

@@ -19,7 +19,7 @@ from backend.app.schemas.auth import (
     EmployeePublicOption,
 )
 from backend.app.services.auth_service import AuthService, sync_managers_from_env, get_live_env_settings
-from backend.app.dependencies.auth import get_current_manager, get_current_employee
+from backend.app.dependencies.auth import get_current_manager, get_current_employee, get_current_manager_or_hr
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -295,8 +295,22 @@ def login(login_data: LoginRequest, request: Request, db: Session = Depends(get_
 
 
 
-@router.get("/me", response_model=ManagerProfile, summary="Get current logged in manager profile")
-def get_me(current_user: User = Depends(get_current_manager), db: Session = Depends(get_db)):
+@router.get("/me", summary="Get current logged in manager or HR profile")
+def get_me(current_user: User = Depends(get_current_manager_or_hr), db: Session = Depends(get_db)):
+    if (current_user.role or "").upper() == "HR":
+        branch = db.query(Branch).filter(Branch.id == current_user.branch_id).first() if current_user.branch_id else None
+        return {
+            "id": current_user.id,
+            "username": current_user.username,
+            "full_name": current_user.full_name,
+            "email": current_user.email or f"{current_user.username.lower()}@sirisamruddhigold.com",
+            "role": "HR",
+            "branch_id": current_user.branch_id or 1,
+            "branch_code": branch.code if branch else "ALL",
+            "branch_name": branch.name if branch else "All Showrooms",
+            "manager_code": None,
+            "is_active": current_user.is_active,
+        }
     auth_service = AuthService(db)
     return auth_service.get_manager_profile(current_user.id, current_user.branch_id)
 

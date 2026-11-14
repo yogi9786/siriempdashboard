@@ -238,14 +238,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ? '/api/v1/admin/auth/me'
           : user?.role === 'EMPLOYEE'
             ? '/api/v1/auth/employee/me'
-            : '/api/v1/auth/me';
+            : (user?.role || '').toUpperCase() === 'HR'
+              ? '/api/v1/hr/me'
+              : '/api/v1/auth/me';
       const res = await api.get<any>(endpoint);
       const userObj: User = {
         ...res.data,
         role: user?.role || res.data.role || (res.data.employee_code ? 'EMPLOYEE' : 'MANAGER'),
       };
       setUser(userObj);
-      if (userObj.role === 'SUPER_ADMIN') {
+      if (userObj.role === 'SUPER_ADMIN' || (userObj.role || '').toUpperCase() === 'HR') {
         const branchObj: Branch = {
           id: 0,
           code: 'ALL',
@@ -300,7 +302,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               ? '/api/v1/admin/auth/me'
               : parsedUser.role === 'EMPLOYEE'
                 ? '/api/v1/auth/employee/me'
-                : '/api/v1/auth/me';
+                : (parsedUser.role || '').toUpperCase() === 'HR'
+                  ? '/api/v1/hr/me'
+                  : '/api/v1/auth/me';
           api.get<any>(endpoint)
             .then((res) => {
               if (res.data) {

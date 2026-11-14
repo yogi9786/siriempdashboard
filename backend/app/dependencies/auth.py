@@ -375,7 +375,29 @@ def get_current_manager_or_hr(
         user = db.query(User).filter(func.lower(User.username) == token_username.strip().lower()).first()
 
     if not user:
-        raise credentials_exception
+        if role == "HR":
+            default_branch = db.query(Branch).first()
+            user = User(
+                id=int(user_id_raw) if user_id_raw and str(user_id_raw).isdigit() else 13,
+                branch_id=default_branch.id if default_branch else 1,
+                full_name=payload.get("full_name") or settings.HR_NAME,
+                username=token_username or settings.HR_USERNAME,
+                email=payload.get("email") or f"{settings.HR_USERNAME.lower()}@sirisamruddhigold.com",
+                role="HR",
+                is_active=True,
+            )
+        elif role == "SUPER_ADMIN":
+            user = User(
+                id=0,
+                branch_id=1,
+                full_name="Super Administrator",
+                username="superadmin",
+                email="admin@sirisamruddhigold.com",
+                role="SUPER_ADMIN",
+                is_active=True,
+            )
+        else:
+            raise credentials_exception
 
     return user
 

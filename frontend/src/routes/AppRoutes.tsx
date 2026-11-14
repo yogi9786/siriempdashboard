@@ -34,6 +34,7 @@ const HrDashboardPage = lazy(() => import('../pages/hr/HrDashboardPage').then(m 
 const HrEmployeesPage = lazy(() => import('../pages/hr/HrEmployeesPage').then(m => ({ default: m.HrEmployeesPage })));
 const HrPaySlipsPage = lazy(() => import('../pages/hr/HrPaySlipsPage').then(m => ({ default: m.HrPaySlipsPage })));
 const HrCustomersPage = lazy(() => import('../pages/hr/HrCustomersPage').then(m => ({ default: m.HrCustomersPage })));
+const HrRevenuePage = lazy(() => import('../pages/hr/HrRevenuePage').then(m => ({ default: m.HrRevenuePage })));
 const HrLeavesPage = lazy(() => import('../pages/hr/HrLeavesPage').then(m => ({ default: m.HrLeavesPage })));
 
 // Employee Module Pages & Guard
@@ -115,6 +116,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/hr/employees/add" element={<HrEmployeesPage />} />
             <Route path="/hr/payslips" element={<HrPaySlipsPage />} />
             <Route path="/hr/customers" element={<HrCustomersPage />} />
+            <Route path="/hr/revenue" element={<HrRevenuePage />} />
             <Route path="/hr/leaves" element={<HrLeavesPage />} />
           </Route>
         </Route>

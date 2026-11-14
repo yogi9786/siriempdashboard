@@ -14,6 +14,7 @@ import {
   MapPin,
   Clock,
   Sparkles,
+  TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { SignOutConfirmModal } from '../../auth/SignOutConfirmModal';
@@ -357,7 +358,41 @@ export const HrSidebar: React.FC<HrSidebarProps> = ({ onCloseMobile }) => {
           )}
         </NavLink>
 
-        {/* 6. Employee Leave Requests */}
+        {/* 6. Revenue & Sales Intelligence Across Branches */}
+        <NavLink
+          to="/hr/revenue"
+          onClick={onCloseMobile}
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 relative group ${
+              isActive
+                ? 'bg-[#78350F]/70 text-[#FEF3C7] font-bold border-l-[3px] border-l-[#F59E0B] border border-[#D97706]/40 shadow-xs pl-2.5'
+                : 'text-[#D4D4D8] hover:text-white hover:bg-white/5'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <div
+                className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                  isActive
+                    ? 'bg-[#B45309] text-[#FDE68A] border border-[#F59E0B]/50 shadow-2xs'
+                    : 'bg-[#27272A] text-[#FBBF24] group-hover:bg-[#3F3F46]'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 flex items-center justify-between min-w-0">
+                <span className="truncate">Revenue</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-[#B45309]/50 text-[#FDE68A] border border-[#F59E0B]/40 font-bold uppercase tracking-wider ml-1 shrink-0">
+                  Sales
+                </span>
+              </div>
+              {isActive && <div className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] ml-1 shrink-0" />}
+            </>
+          )}
+        </NavLink>
+
+        {/* 7. Employee Leave Requests */}
         <NavLink
           to="/hr/leaves"
           onClick={onCloseMobile}

@@ -1,6 +1,7 @@
 import os
 import uuid
-from datetime import datetime, date, timezone
+import json
+from datetime import datetime, date, timezone, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, status, Body
 from sqlalchemy.orm import Session
@@ -88,21 +89,29 @@ def get_hr_stats(
     total_payslips = db.query(EmployeePaySlip).count()
     total_customers = db.query(CustomerActivity).count()
 
-    # Branch employee distribution
+    # Branch employee & revenue distribution
     branches = db.query(Branch).all()
     branch_stats = []
+    total_rev = 0.0
     for b in branches:
         emp_count = db.query(Employee).filter(Employee.branch_id == b.id, Employee.status == "active").count()
+        b_rev = db.query(func.coalesce(func.sum(CustomerActivity.product_value), 0.0))\
+            .filter(CustomerActivity.branch_id == b.id, CustomerActivity.status.in_(["Sold", "Exchange"]))\
+            .scalar()
+        b_rev_float = round(float(b_rev), 2)
+        total_rev += b_rev_float
         branch_stats.append({
             "branch_id": b.id,
             "branch_code": b.code,
             "branch_name": b.name,
             "employee_count": emp_count,
+            "revenue": b_rev_float,
         })
 
     return {
         "total_employees": total_employees,
         "total_branches": total_branches,
+        "total_revenue": round(total_rev, 2),
         "pending_leaves": pending_leaves,
         "total_payslips": total_payslips,
         "total_customers": total_customers,
@@ -278,7 +287,7 @@ def get_hr_customers(
     branch_code: Optional[str] = None,
     search: Optional[str] = None,
     status_filter: Optional[str] = None,
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(500, ge=1, le=5000),
     db: Session = Depends(get_db),
     current_hr: User = Depends(get_current_hr),
 ):
@@ -338,6 +347,183 @@ def get_hr_customers(
             "created_at": act.created_at.isoformat() if act.created_at else "",
         })
     return results
+
+
+# -------------------------------------------------------------------------
+# Revenue & Sales Intelligence Across Branches (HR)
+# -------------------------------------------------------------------------
+@router.get("/revenue", summary="Get consolidated and branch-segregated revenue for HR")
+def get_hr_revenue(
+    branch_id: Optional[int] = None,
+    branch_code: Optional[str] = None,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    date_filter: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = Query(2500, ge=1, le=10000),
+    db: Session = Depends(get_db),
+    current_hr: User = Depends(get_current_hr),
+):
+    """
+    Returns segregated and consolidated revenue metrics, customer purchase transactions,
+    and savings scheme records across all 3 showroom branches (Yelahanka, Kolar, Udupi).
+    """
+    query = db.query(CustomerActivity).outerjoin(Employee, CustomerActivity.employee_id == Employee.id)
+
+    if branch_id:
+        query = query.filter(CustomerActivity.branch_id == branch_id)
+    elif branch_code and branch_code.strip().upper() != "ALL":
+        branch = db.query(Branch).filter(func.upper(Branch.code) == branch_code.strip().upper()).first()
+        if branch:
+            query = query.filter(CustomerActivity.branch_id == branch.id)
+
+    # Date filter presets
+    today = date.today()
+    parsed_from = None
+    parsed_to = None
+
+    if date_filter:
+        df = date_filter.lower().strip()
+        if df == "today":
+            parsed_from = today
+            parsed_to = today
+        elif df == "yesterday":
+            parsed_from = today - timedelta(days=1)
+            parsed_to = today - timedelta(days=1)
+        elif df == "this_week":
+            parsed_from = today - timedelta(days=7)
+            parsed_to = today
+        elif df == "this_month":
+            parsed_from = date(today.year, today.month, 1)
+            parsed_to = today
+        elif df == "last_month":
+            first_this_month = date(today.year, today.month, 1)
+            last_prev_month = first_this_month - timedelta(days=1)
+            first_prev_month = date(last_prev_month.year, last_prev_month.month, 1)
+            parsed_from = first_prev_month
+            parsed_to = last_prev_month
+
+    if from_date:
+        try:
+            parsed_from = datetime.strptime(from_date.strip()[:10], "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    if to_date:
+        try:
+            parsed_to = datetime.strptime(to_date.strip()[:10], "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    if parsed_from:
+        query = query.filter(CustomerActivity.activity_date >= parsed_from)
+    if parsed_to:
+        query = query.filter(CustomerActivity.activity_date <= parsed_to)
+
+    if search:
+        s = f"%{search.strip().lower()}%"
+        query = query.filter(
+            or_(
+                func.lower(CustomerActivity.customer_name).like(s),
+                func.lower(CustomerActivity.phone_number).like(s),
+                func.lower(Employee.full_name).like(s),
+                func.lower(Employee.employee_code).like(s),
+                func.lower(CustomerActivity.notes).like(s),
+            )
+        )
+
+    activities = query.order_by(desc(CustomerActivity.activity_date), desc(CustomerActivity.id)).limit(limit).all()
+
+    branches_map = {b.id: b for b in db.query(Branch).all()}
+    employees_map = {e.id: e for e in db.query(Employee).all()}
+    managers_map = {u.id: u for u in db.query(User).all()}
+
+    total_gross_revenue = 0.0
+    total_sold_count = 0
+    total_schemes_volume = 0.0
+    total_schemes_count = 0
+
+    branch_breakdown = {}
+    for b_id, b_obj in branches_map.items():
+        branch_breakdown[b_obj.code] = {
+            "branch_id": b_id,
+            "branch_code": b_obj.code,
+            "branch_name": b_obj.name,
+            "city": b_obj.city or "",
+            "revenue": 0.0,
+            "sold_count": 0,
+            "schemes_volume": 0.0,
+            "schemes_count": 0,
+        }
+
+    formatted_activities = []
+    for act in activities:
+        b = branches_map.get(act.branch_id)
+        emp = employees_map.get(act.employee_id)
+        rev = managers_map.get(act.reviewed_by_id) if act.reviewed_by_id else None
+
+        val = float(act.product_value or 0.0)
+        status_norm = (act.status or "").strip()
+        is_sold_or_exchange = status_norm in ["Sold", "Exchange"] or val > 0
+
+        if is_sold_or_exchange:
+            total_gross_revenue += val
+            if status_norm == "Sold":
+                total_sold_count += 1
+            if b and b.code in branch_breakdown:
+                branch_breakdown[b.code]["revenue"] += val
+                if status_norm == "Sold":
+                    branch_breakdown[b.code]["sold_count"] += 1
+
+        # Check breakdown for savings schemes
+        if act.breakdown:
+            try:
+                items = json.loads(act.breakdown)
+                if isinstance(items, list):
+                    for it in items:
+                        if isinstance(it, dict) and (it.get("has_scheme") or it.get("scheme_name")):
+                            amt = float(it.get("scheme_amount") or 0.0)
+                            total_schemes_volume += amt
+                            total_schemes_count += 1
+                            if b and b.code in branch_breakdown:
+                                branch_breakdown[b.code]["schemes_volume"] += amt
+                                branch_breakdown[b.code]["schemes_count"] += 1
+            except Exception:
+                pass
+
+        formatted_activities.append({
+            "id": act.id,
+            "branch_id": act.branch_id,
+            "branch_name": b.name if b else "Showroom",
+            "branch_code": b.code if b else "SHOWROOM",
+            "employee_id": act.employee_id,
+            "employee_name": emp.full_name if emp else "",
+            "employee_code": emp.employee_code if emp else "",
+            "customer_name": act.customer_name or "Walk-in Customer",
+            "phone_number": act.phone_number or "",
+            "activity_date": act.activity_date.isoformat() if act.activity_date else "",
+            "status": act.status or "Walkin",
+            "product_value": val,
+            "product_id": "",
+            "approval_status": act.approval_status or "PENDING",
+            "approved_by_name": rev.full_name if rev else "",
+            "notes": act.notes or "",
+            "breakdown": act.breakdown,
+            "customers_count": act.customers_count or 1,
+            "created_at": act.created_at.isoformat() if act.created_at else "",
+        })
+
+    return {
+        "summary": {
+            "total_gross_revenue": round(total_gross_revenue, 2),
+            "total_sold_count": total_sold_count,
+            "total_schemes_volume": round(total_schemes_volume, 2),
+            "total_schemes_count": total_schemes_count,
+            "total_records": len(formatted_activities),
+        },
+        "branch_breakdown": list(branch_breakdown.values()),
+        "activities": formatted_activities,
+    }
 
 
 # -------------------------------------------------------------------------

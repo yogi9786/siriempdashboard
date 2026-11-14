@@ -14,6 +14,8 @@ import {
   Sparkles,
   RefreshCw,
   UserPlus,
+  IndianRupee,
+  ShoppingBag,
 } from 'lucide-react';
 import api from '../../api/client';
 
@@ -62,6 +64,13 @@ export const HrDashboardPage: React.FC = () => {
 
         <div className="flex items-center gap-3 shrink-0">
           <button
+            onClick={() => navigate('/hr/revenue')}
+            className="px-4 py-2.5 rounded-xl bg-[#1D1D1B] hover:bg-[#27272A] text-[#E5C378] font-extrabold text-xs shadow-sm flex items-center gap-2 cursor-pointer transition-all hover:scale-102 border border-[#3F3F46]"
+          >
+            <TrendingUp className="w-4 h-4 text-[#E5C378]" />
+            <span>Revenue</span>
+          </button>
+          <button
             onClick={() => navigate('/hr/employees/add')}
             className="px-4 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs shadow-sm flex items-center gap-2 cursor-pointer transition-all hover:scale-102"
           >
@@ -77,7 +86,7 @@ export const HrDashboardPage: React.FC = () => {
           </button>
           <button
             onClick={fetchStats}
-            className="p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors"
+            className="p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer"
             title="Refresh Stats"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -86,7 +95,7 @@ export const HrDashboardPage: React.FC = () => {
       </div>
 
       {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Card 1: Total Employees */}
         <div
           onClick={() => navigate('/hr/employees')}
@@ -129,7 +138,28 @@ export const HrDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 3: Pending Leave Requests */}
+        {/* Card 3: Gross Sold Revenue */}
+        <div
+          onClick={() => navigate('/hr/revenue')}
+          className="bg-white border border-[#E4DFD4] hover:border-[#21845F] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1">
+                Gross Revenue
+              </span>
+              <div className="text-2xl sm:text-3xl font-black text-[#21845F] font-mono">
+                {stats?.total_revenue ? `₹${Number(stats.total_revenue).toLocaleString('en-IN')}` : '₹0'}
+              </div>
+              <span className="text-xs text-[#8A8479] font-medium mt-1 block">Sold & Exchanges</span>
+            </div>
+            <div className="w-11 h-11 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
+              <IndianRupee className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Pending Leave Requests */}
         <div
           onClick={() => navigate('/hr/leaves')}
           className="bg-white border border-[#E4DFD4] hover:border-[#EF4444] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
@@ -150,14 +180,14 @@ export const HrDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 4: Total Pay Slips */}
+        {/* Card 5: Total Pay Slips */}
         <div
           onClick={() => navigate('/hr/payslips')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#21845F] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+          className="bg-white border border-[#E4DFD4] hover:border-[#0284C7] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1">
+              <span className="text-[11px] font-bold text-[#0284C7] uppercase tracking-wider block mb-1">
                 Issued Payslips
               </span>
               <div className="text-3xl font-black text-[#1D1D1B] font-mono">
@@ -165,7 +195,7 @@ export const HrDashboardPage: React.FC = () => {
               </div>
               <span className="text-xs text-[#8A8479] font-medium mt-1 block">Salary Slips</span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-[#E0F2FE] border border-[#BAE6FD] text-[#0284C7] flex items-center justify-center shrink-0">
               <Receipt className="w-5 h-5" />
             </div>
           </div>
@@ -279,7 +309,7 @@ export const HrDashboardPage: React.FC = () => {
       </div>
 
       {/* Quick Action Modules Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Module 1: Add / Issue Pay Slips */}
         <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4">
           <div>
@@ -316,6 +346,26 @@ export const HrDashboardPage: React.FC = () => {
             className="w-full py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs"
           >
             <span>View All Customer Logs</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Module 3: Showroom Revenue & Sales */}
+        <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4">
+          <div>
+            <div className="w-10 h-10 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center mb-3">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <h3 className="text-lg font-bold text-[#1D1D1B]">Showroom Revenue & Sales</h3>
+            <p className="text-xs text-[#5E5A52] mt-1 leading-relaxed">
+              Real-time revenue monitoring, customer jewellery purchases, and savings schemes segregation across Yelahanka, Kolar, and Udupi showrooms.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/hr/revenue')}
+            className="w-full py-2.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs"
+          >
+            <span>View Revenue Breakdown</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

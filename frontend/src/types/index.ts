@@ -53,6 +53,8 @@ export interface Branch {
 export interface Employee {
   id: number;
   branch_id: number;
+  branch_code?: string;
+  branch_name?: string;
   employee_code: string;
   full_name: string;
   phone: string;

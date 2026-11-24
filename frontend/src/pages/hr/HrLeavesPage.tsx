@@ -111,17 +111,17 @@ export const HrLeavesPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="max-w-7xl mx-auto p-3.5 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
       {/* Top Banner */}
-      <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center gap-1.5">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center gap-1.5 whitespace-nowrap">
               <CalendarDays className="w-3.5 h-3.5" />
               <span>Leave Administration</span>
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#1D1D1B] tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] tracking-tight">
             Employee Leave Approvals
           </h1>
           <p className="text-xs sm:text-sm text-[#5E5A52] font-medium mt-1">
@@ -131,24 +131,24 @@ export const HrLeavesPage: React.FC = () => {
 
         <button
           onClick={fetchLeaves}
-          className="p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors self-start md:self-auto cursor-pointer"
+          className="p-2 sm:p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors self-start md:self-auto cursor-pointer shrink-0"
           title="Refresh Leaves"
         >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       {/* Segregated Branches & Status Filters */}
-      <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 shadow-2xs space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-4 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Branch filter */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider px-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap w-full sm:w-auto">
+            <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider px-1 shrink-0 whitespace-nowrap">
               Branch:
             </span>
             <button
               onClick={() => setBranchFilter('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 branchFilter === 'ALL'
                   ? 'bg-[#18181B] text-white shadow-2xs'
                   : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
@@ -158,7 +158,7 @@ export const HrLeavesPage: React.FC = () => {
             </button>
             <button
               onClick={() => setBranchFilter('YELAHANKA')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0 ${
                 branchFilter === 'YELAHANKA'
                   ? 'bg-[#D97706] text-white shadow-2xs'
                   : 'bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] border border-[#FDE68A]'
@@ -169,7 +169,7 @@ export const HrLeavesPage: React.FC = () => {
             </button>
             <button
               onClick={() => setBranchFilter('KOLAR')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0 ${
                 branchFilter === 'KOLAR'
                   ? 'bg-[#0284C7] text-white shadow-2xs'
                   : 'bg-[#E0F2FE] hover:bg-[#BAE6FD] text-[#0369A1] border border-[#BAE6FD]'
@@ -180,7 +180,7 @@ export const HrLeavesPage: React.FC = () => {
             </button>
             <button
               onClick={() => setBranchFilter('UDUPI')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0 ${
                 branchFilter === 'UDUPI'
                   ? 'bg-[#059669] text-white shadow-2xs'
                   : 'bg-[#D1FAE5] hover:bg-[#A7F3D0] text-[#065F46] border border-[#A7F3D0]'
@@ -192,15 +192,15 @@ export const HrLeavesPage: React.FC = () => {
           </div>
 
           {/* Status filter */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider px-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap w-full sm:w-auto">
+            <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider px-1 shrink-0 whitespace-nowrap">
               Status:
             </span>
             {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   statusFilter === st
                     ? 'bg-[#21845F] text-white shadow-2xs'
                     : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
@@ -210,9 +210,11 @@ export const HrLeavesPage: React.FC = () => {
               </button>
             ))}
           </div>
+        </div>
 
-          {/* Search */}
-          <div className="relative w-full sm:w-64">
+        {/* Search */}
+        <div className="pt-2 border-t border-[#F0ECE1]">
+          <div className="relative w-full sm:w-80">
             <Search className="w-3.5 h-3.5 text-[#8A8479] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -313,9 +315,9 @@ export const HrLeavesPage: React.FC = () => {
                       </td>
 
                       {/* Status */}
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold whitespace-nowrap ${
                             isApproved
                               ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
                               : isPending

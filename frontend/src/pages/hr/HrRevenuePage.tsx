@@ -474,20 +474,20 @@ export const HrRevenuePage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="max-w-7xl mx-auto p-3.5 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
       {/* Top Banner Header */}
-      <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-[#B45309] flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-[#B45309] flex items-center gap-1.5 whitespace-nowrap">
               <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
               <span>HR Central Revenue Control</span>
             </span>
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F]">
+            <span className="text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] whitespace-nowrap">
               Yelahanka • Kolar • Udupi
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#1D1D1B] tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] tracking-tight">
             Revenue & Sales Intelligence
           </h1>
           <p className="text-xs sm:text-sm text-[#5E5A52] font-medium mt-1">
@@ -495,30 +495,30 @@ export const HrRevenuePage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full md:w-auto">
           <button
             onClick={handleExportCSV}
-            className="px-4 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs shadow-sm flex items-center gap-2 cursor-pointer transition-all hover:scale-102"
+            className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs shadow-sm flex items-center gap-2 cursor-pointer transition-all hover:scale-102 whitespace-nowrap shrink-0"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Export CSV</span>
           </button>
           <button
             onClick={fetchRevenueData}
-            className="p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer"
+            className="p-2 sm:p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer shrink-0"
             title="Refresh Data"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* Showroom Branch Segregation Bar */}
-      <div className="bg-white border border-[#E4DFD4] rounded-2xl p-2.5 shadow-xs flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl p-2.5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap w-full sm:w-auto">
           <button
             onClick={() => handleBranchChange('ALL')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap ${
               selectedBranch === 'ALL'
                 ? 'bg-[#1D1D1B] text-white shadow-xs'
                 : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#F2EDE4] hover:text-[#1D1D1B] border border-[#E4DFD4]'
@@ -530,7 +530,7 @@ export const HrRevenuePage: React.FC = () => {
 
           <button
             onClick={() => handleBranchChange('YELAHANKA')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap ${
               selectedBranch === 'YELAHANKA'
                 ? 'bg-[#D97706] text-white shadow-xs'
                 : 'bg-[#FAF8F3] text-[#B45309] hover:bg-[#FEF3C7] border border-[#FDE68A]'
@@ -542,7 +542,7 @@ export const HrRevenuePage: React.FC = () => {
 
           <button
             onClick={() => handleBranchChange('KOLAR')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap ${
               selectedBranch === 'KOLAR'
                 ? 'bg-[#0284C7] text-white shadow-xs'
                 : 'bg-[#FAF8F3] text-[#0284C7] hover:bg-[#E0F2FE] border border-[#BAE6FD]'
@@ -554,7 +554,7 @@ export const HrRevenuePage: React.FC = () => {
 
           <button
             onClick={() => handleBranchChange('UDUPI')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap ${
               selectedBranch === 'UDUPI'
                 ? 'bg-[#059669] text-white shadow-xs'
                 : 'bg-[#FAF8F3] text-[#059669] hover:bg-[#D1FAE5] border border-[#A7F3D0]'
@@ -568,7 +568,7 @@ export const HrRevenuePage: React.FC = () => {
         {(selectedBranch !== 'ALL' || dateFilter !== 'all' || selectedEmployee !== 'ALL' || search) && (
           <button
             onClick={resetFilters}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold text-[#8A8479] hover:text-[#DC2626] hover:bg-[#FEE2E2]/50 transition-colors flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold text-[#8A8479] hover:text-[#DC2626] hover:bg-[#FEE2E2]/50 transition-colors flex items-center gap-1 cursor-pointer self-start sm:self-auto shrink-0 whitespace-nowrap"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Reset Filters</span>
@@ -577,42 +577,42 @@ export const HrRevenuePage: React.FC = () => {
       </div>
 
       {/* Showroom Branch Comparison Cards (Visible when ALL or summary) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {branchBreakdown.map((b: any) => {
           const isSelected = selectedBranch === b.branch_code;
           return (
             <div
               key={b.branch_code}
               onClick={() => handleBranchChange(b.branch_code)}
-              className={`bg-white rounded-2xl p-5 border-2 transition-all cursor-pointer group shadow-xs hover:shadow-md ${
+              className={`bg-white rounded-2xl p-4 sm:p-5 border-2 transition-all cursor-pointer group shadow-xs hover:shadow-md ${
                 isSelected
                   ? 'border-[#D97706] ring-2 ring-[#D97706]/20'
                   : 'border-[#E4DFD4] hover:border-[#D97706]/50'
               }`}
             >
-              <div className="flex items-start justify-between">
-                <div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
                   <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-[#8A8479] uppercase">
                     {b.branch_code}
                   </span>
-                  <h3 className="text-base font-extrabold text-[#1D1D1B] mt-1.5 group-hover:text-[#D97706] transition-colors">
+                  <h3 className="text-sm sm:text-base font-extrabold text-[#1D1D1B] mt-1.5 group-hover:text-[#D97706] transition-colors truncate">
                     {b.branch_name}
                   </h3>
-                  <p className="text-xs text-[#8A8479] flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-3 h-3 text-[#D97706]" />
+                  <p className="text-xs text-[#8A8479] flex items-center gap-1 mt-0.5 truncate">
+                    <MapPin className="w-3 h-3 text-[#D97706] shrink-0" />
                     <span>{b.city || 'Showroom'}</span>
                   </p>
                 </div>
-                <div className="text-right">
-                  <span className="text-[11px] font-bold text-[#8A8479] block">Revenue</span>
-                  <div className="text-lg font-black font-mono text-[#21845F]">
+                <div className="text-right shrink-0">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-[#8A8479] block">Revenue</span>
+                  <div className="text-base sm:text-lg font-black font-mono text-[#21845F]">
                     ₹{(b.revenue || 0).toLocaleString('en-IN')}
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#F0ECE1] flex items-center justify-between text-xs text-[#6B6559]">
-                <div className="flex items-center gap-3 font-semibold">
+              <div className="mt-3 sm:mt-4 pt-3 border-t border-[#F0ECE1] flex items-center justify-between text-xs text-[#6B6559]">
+                <div className="flex items-center gap-2 sm:gap-3 font-semibold text-[11px] sm:text-xs">
                   <span>
                     <strong className="text-[#1D1D1B] font-mono">{b.sold_count || 0}</strong> Sold
                   </span>
@@ -621,7 +621,7 @@ export const HrRevenuePage: React.FC = () => {
                     <strong className="text-[#D97706] font-mono">₹{(b.schemes_volume || 0).toLocaleString('en-IN')}</strong> Schemes
                   </span>
                 </div>
-                <span className="text-[11px] font-bold text-[#D97706] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                <span className="text-[11px] font-bold text-[#D97706] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 shrink-0">
                   <span>Filter</span>
                   <ArrowUpRight className="w-3 h-3" />
                 </span>
@@ -632,94 +632,103 @@ export const HrRevenuePage: React.FC = () => {
       </div>
 
       {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Gross Revenue */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-5 shadow-xs">
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Gross Sold Revenue
               </span>
-              <div className="text-2xl sm:text-3xl font-black text-[#1D1D1B] font-mono">
+              <div
+                className="text-lg sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
+                title={`₹${totalRevenue.toLocaleString('en-IN')}`}
+              >
                 ₹{totalRevenue.toLocaleString('en-IN')}
               </div>
-              <span className="text-xs text-[#8A8479] font-medium mt-1 block">
+              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
                 {selectedBranch === 'ALL' ? 'Across all 3 showrooms' : `${selectedBranch} branch`}
               </span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
-              <IndianRupee className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
+              <IndianRupee className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
 
         {/* Card 2: Sold Transactions */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-5 shadow-xs">
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold text-[#D97706] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#D97706] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Completed Purchases
               </span>
-              <div className="text-2xl sm:text-3xl font-black text-[#1D1D1B] font-mono">
+              <div className="text-lg sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate">
                 {filteredSold.length}
               </div>
-              <span className="text-xs text-[#8A8479] font-medium mt-1 block">
+              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
                 Sold & Exchange orders
               </span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
-              <ShoppingBag className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
 
         {/* Card 3: Jewellery Savings Schemes */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-5 shadow-xs">
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Monthly Schemes Volume
               </span>
-              <div className="text-2xl sm:text-3xl font-black text-[#1D1D1B] font-mono">
+              <div
+                className="text-lg sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
+                title={`₹${totalSchemesVolume.toLocaleString('en-IN')}`}
+              >
                 ₹{totalSchemesVolume.toLocaleString('en-IN')}
               </div>
-              <span className="text-xs text-[#8A8479] font-medium mt-1 block">
+              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
                 {filteredSchemes.length} Active Accounts
               </span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#3B82F6] flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#3B82F6] flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
 
         {/* Card 4: Average Order Value */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-5 shadow-xs">
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold text-[#8B5CF6] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#8B5CF6] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Avg Ticket Size
               </span>
-              <div className="text-2xl sm:text-3xl font-black text-[#1D1D1B] font-mono">
+              <div
+                className="text-lg sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
+                title={`₹${avgOrderValue.toLocaleString('en-IN')}`}
+              >
                 ₹{avgOrderValue.toLocaleString('en-IN')}
               </div>
-              <span className="text-xs text-[#8A8479] font-medium mt-1 block">
+              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
                 Per customer transaction
               </span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] flex items-center justify-center shrink-0">
-              <TrendingUp className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] flex items-center justify-center shrink-0">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters Toolbar */}
-      <div className="bg-white border border-[#E4DFD4] rounded-3xl p-5 shadow-xs space-y-4">
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs space-y-4">
         {/* Date Filter Presets */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-bold text-[#6B6559] flex items-center gap-1 mr-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap w-full sm:w-auto">
+            <span className="text-xs font-bold text-[#6B6559] flex items-center gap-1 mr-1 shrink-0 whitespace-nowrap">
               <Calendar className="w-3.5 h-3.5 text-[#536B8A]" />
               <span>Period:</span>
             </span>
@@ -737,7 +746,7 @@ export const HrRevenuePage: React.FC = () => {
               <button
                 key={item.val}
                 onClick={() => setDateFilter(item.val)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   dateFilter === item.val
                     ? 'bg-[#1D1D1B] text-white shadow-xs'
                     : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#F2EDE4] border border-[#E4DFD4]'
@@ -749,12 +758,12 @@ export const HrRevenuePage: React.FC = () => {
           </div>
 
           {/* Employee Filter */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
             <User className="w-3.5 h-3.5 text-[#536B8A] shrink-0" />
             <select
               value={selectedEmployee}
               onChange={(e) => setSelectedEmployee(e.target.value)}
-              className="px-3 py-1.5 text-xs font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] focus:bg-white"
+              className="w-full sm:w-auto px-3 py-1.5 text-xs font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] focus:bg-white"
             >
               <option value="ALL">All Attending Staff ({filteredEmployeesList.length})</option>
               {filteredEmployeesList.map((emp) => (
@@ -769,22 +778,22 @@ export const HrRevenuePage: React.FC = () => {
         {/* Custom Datepicker Row (Visible if custom selected) */}
         {dateFilter === 'custom' && (
           <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[#F0ECE1]">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-[#6B6559]">From:</span>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-bold text-[#6B6559] shrink-0">From:</span>
               <input
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="px-3 py-1.5 text-xs font-mono font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl focus:outline-none focus:border-[#21845F]"
+                className="w-full sm:w-auto px-3 py-1.5 text-xs font-mono font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl focus:outline-none focus:border-[#21845F]"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-[#6B6559]">To:</span>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-bold text-[#6B6559] shrink-0">To:</span>
               <input
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className="px-3 py-1.5 text-xs font-mono font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl focus:outline-none focus:border-[#21845F]"
+                className="w-full sm:w-auto px-3 py-1.5 text-xs font-mono font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl focus:outline-none focus:border-[#21845F]"
               />
             </div>
           </div>
@@ -793,33 +802,33 @@ export const HrRevenuePage: React.FC = () => {
         {/* Search Bar & Tabs Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#F0ECE1]">
           {/* Main Tabs */}
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('SOLD')}
-              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
                 activeTab === 'SOLD'
                   ? 'bg-[#21845F] text-white shadow-xs'
                   : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#F2EDE4] border border-[#E4DFD4]'
               }`}
             >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Customer Purchases ({filteredSold.length})</span>
+              <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Customer Purchases ({filteredSold.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('SCHEMES')}
-              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
                 activeTab === 'SCHEMES'
                   ? 'bg-[#D97706] text-white shadow-xs'
                   : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#F2EDE4] border border-[#E4DFD4]'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Savings Schemes ({filteredSchemes.length})</span>
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Savings Schemes ({filteredSchemes.length})</span>
             </button>
           </div>
 
-          {/* Search Box */}
+          {/* Search Input */}
           <div className="relative w-full sm:w-72">
             <Search className="w-3.5 h-3.5 text-[#8A8479] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -834,8 +843,8 @@ export const HrRevenuePage: React.FC = () => {
 
         {/* Scheme Category Filter (Only on SCHEMES tab) */}
         {activeTab === 'SCHEMES' && (
-          <div className="flex items-center gap-2 pt-2 border-t border-[#F0ECE1]">
-            <span className="text-[11px] font-bold text-[#6B6559] uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap pt-2 border-t border-[#F0ECE1]">
+            <span className="text-[11px] font-bold text-[#6B6559] uppercase tracking-wider shrink-0 whitespace-nowrap mr-1">
               Scheme Category:
             </span>
             {[
@@ -847,7 +856,7 @@ export const HrRevenuePage: React.FC = () => {
               <button
                 key={c.val}
                 onClick={() => setSchemeCategory(c.val)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   schemeCategory === c.val
                     ? 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
                     : 'text-[#8A8479] hover:bg-[#FAF8F3]'
@@ -1137,3 +1146,4 @@ export const HrRevenuePage: React.FC = () => {
     </div>
   );
 };
+

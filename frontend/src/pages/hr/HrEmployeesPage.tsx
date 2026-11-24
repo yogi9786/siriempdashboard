@@ -233,17 +233,17 @@ export const HrEmployeesPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="max-w-7xl mx-auto p-3.5 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
       {/* Top Header */}
-      <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] flex items-center gap-1.5">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] flex items-center gap-1.5 whitespace-nowrap">
               <Users className="w-3.5 h-3.5" />
               <span>Personnel Directory</span>
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#1D1D1B] tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] tracking-tight">
             Employee Directory & Roster
           </h1>
           <p className="text-xs sm:text-sm text-[#5E5A52] font-medium mt-1">
@@ -251,35 +251,35 @@ export const HrEmployeesPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs shadow-sm flex items-center gap-2 cursor-pointer transition-all hover:scale-102"
+            className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs shadow-sm flex items-center gap-2 cursor-pointer transition-all hover:scale-102 whitespace-nowrap shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>+ Add Employee</span>
           </button>
           <button
             onClick={fetchEmployees}
-            className="p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer"
+            className="p-2 sm:p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer shrink-0"
             title="Refresh List"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* Segregated Branches Switcher Bar */}
-      <div className="bg-white border border-[#E4DFD4] rounded-2xl p-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider px-2 flex items-center gap-1">
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl p-2.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap w-full sm:w-auto">
+          <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider px-2 flex items-center gap-1 shrink-0 whitespace-nowrap">
             <Building2 className="w-3.5 h-3.5 text-[#536B8A]" />
             <span>Branch Filter:</span>
           </span>
 
           <button
             onClick={() => handleBranchSelect('ALL')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               branchFilter === 'ALL'
                 ? 'bg-[#18181B] text-white shadow-2xs'
                 : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
@@ -290,7 +290,7 @@ export const HrEmployeesPage: React.FC = () => {
 
           <button
             onClick={() => handleBranchSelect('YELAHANKA')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               branchFilter === 'YELAHANKA'
                 ? 'bg-[#D97706] text-white shadow-2xs'
                 : 'bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] border border-[#FDE68A]'
@@ -302,7 +302,7 @@ export const HrEmployeesPage: React.FC = () => {
 
           <button
             onClick={() => handleBranchSelect('KOLAR')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               branchFilter === 'KOLAR'
                 ? 'bg-[#0284C7] text-white shadow-2xs'
                 : 'bg-[#E0F2FE] hover:bg-[#BAE6FD] text-[#0369A1] border border-[#BAE6FD]'
@@ -314,7 +314,7 @@ export const HrEmployeesPage: React.FC = () => {
 
           <button
             onClick={() => handleBranchSelect('UDUPI')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               branchFilter === 'UDUPI'
                 ? 'bg-[#059669] text-white shadow-2xs'
                 : 'bg-[#D1FAE5] hover:bg-[#A7F3D0] text-[#065F46] border border-[#A7F3D0]'

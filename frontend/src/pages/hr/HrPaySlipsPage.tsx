@@ -305,9 +305,9 @@ export const HrPaySlipsPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="max-w-7xl mx-auto p-3.5 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
       {/* Top Banner */}
-      <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center gap-1.5">
@@ -582,9 +582,9 @@ export const HrPaySlipsPage: React.FC = () => {
           </div>
 
           {/* DEDICATED FILTERS: Month Filter, Year Filter & Employee Filter */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
             {/* Filter 1: Month Filter */}
-            <div className="relative min-w-[140px]">
+            <div className="relative flex-1 sm:flex-initial min-w-[130px]">
               <Calendar className="w-3.5 h-3.5 text-[#21845F] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
                 value={filterMonth}
@@ -602,7 +602,7 @@ export const HrPaySlipsPage: React.FC = () => {
             </div>
 
             {/* Filter 2: Year Filter */}
-            <div className="relative min-w-[120px]">
+            <div className="relative flex-1 sm:flex-initial min-w-[110px]">
               <select
                 value={filterYear}
                 onChange={(e) => setFilterYear(e.target.value)}
@@ -619,7 +619,7 @@ export const HrPaySlipsPage: React.FC = () => {
             </div>
 
             {/* Filter 3: Employee Filter */}
-            <div className="relative min-w-[190px]">
+            <div className="relative w-full sm:w-auto sm:min-w-[190px]">
               <User className="w-3.5 h-3.5 text-[#536B8A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
                 value={filterEmployeeId}
@@ -695,28 +695,28 @@ export const HrPaySlipsPage: React.FC = () => {
                     </td>
 
                     {/* Period */}
-                    <td className="px-5 py-3.5 font-bold text-[#1D1D1B]">
-                      <span className="px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8]">
+                    <td className="px-5 py-3.5 font-bold text-[#1D1D1B] whitespace-nowrap">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] whitespace-nowrap font-sans">
                         {slip.pay_period}
                       </span>
                     </td>
 
                     {/* Net Amount */}
-                    <td className="px-5 py-3.5 font-mono font-bold text-[#21845F] text-sm">
+                    <td className="px-5 py-3.5 font-mono font-bold text-[#21845F] text-sm whitespace-nowrap">
                       {slip.amount > 0 ? `₹${slip.amount.toLocaleString('en-IN')}` : '—'}
                     </td>
 
                     {/* Issued Date */}
-                    <td className="px-5 py-3.5 text-[#5E5A52] font-mono">
+                    <td className="px-5 py-3.5 text-[#5E5A52] font-mono whitespace-nowrap">
                       {slip.issued_date || '—'}
                     </td>
 
                     {/* Document link */}
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => setPreviewUrl(slip.file_url)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#536B8A] font-bold border border-[#E4DFD4] transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#536B8A] font-bold border border-[#E4DFD4] transition-colors cursor-pointer whitespace-nowrap"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Preview</span>

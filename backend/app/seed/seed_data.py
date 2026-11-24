@@ -70,7 +70,6 @@ BRANCHES_DATA = [
             {"id": 3, "name": "BASAVARAJ BARADDI", "designation": "Floor Manager", "department": "Showroom Management"},
             {"id": 4, "name": "MANJUNATH P S", "designation": "Floor Manager", "department": "Showroom Management"},
             {"id": 5, "name": "VIJAY SARATHY", "designation": "Operations Manager", "department": "Showroom Management"},
-            {"id": 6, "name": "GAGAN", "designation": "Assistant Manager", "department": "Showroom Management"},
             {"id": 8, "name": "SHYLAJA B N", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 22, "name": "SATISH ARKSALI", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 25, "name": "SANNIRAMMA", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
@@ -136,9 +135,6 @@ BRANCHES_DATA = [
             {"id": 90, "name": "SHASHANKA N", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 72, "name": "SANDEEP S", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 182, "name": "N LEELAVATHI", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
-            {"id": 191, "name": "KALPANA", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
-            {"id": 198, "name": "PUNITRAJKUMAR R", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
-            {"id": 199, "name": "SWATHI V", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 208, "name": "GAJENDRA S", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 209, "name": "H MAHESH KUMAR", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 217, "name": "SHRIDHAR ACHARYA", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
@@ -221,11 +217,12 @@ def seed_database():
 
         print("[SEED] Starting database seeding for 3 branches, 9 managers & 62 employees with verified IDs...")
 
-        # Collect valid new employee IDs
-        all_new_emp_ids = set()
+        # Collect valid new employee codes
+        all_new_emp_codes = set()
         for b_data in BRANCHES_DATA:
+            code_prefix = b_data["code_prefix"]
             for emp_info in b_data["employees"]:
-                all_new_emp_ids.add(emp_info["id"])
+                all_new_emp_codes.add(f"{code_prefix}{emp_info['id']:03d}")
 
         for b_data in BRANCHES_DATA:
             managers = b_data["managers"]
@@ -318,10 +315,11 @@ def seed_database():
                 designation = emp_item.get("designation", "Sales Executive")
                 department = emp_item.get("department", "Sales & Showroom Operations")
 
-                employee = db.query(Employee).filter(Employee.id == emp_id).first()
+                employee = db.query(Employee).filter(Employee.branch_id == branch.id, Employee.employee_code == emp_code).first()
+                if not employee:
+                    employee = db.query(Employee).filter(Employee.branch_id == branch.id, Employee.full_name == emp_name).first()
                 if not employee:
                     employee = Employee(
-                        id=emp_id,
                         branch_id=branch.id,
                         manager_id=first_manager_id,
                         employee_code=emp_code,
@@ -337,7 +335,7 @@ def seed_database():
                     )
                     db.add(employee)
                     db.commit()
-                    print(f"    * Created Employee [{emp_id} | {emp_code}]: {emp_name} for {branch.name}")
+                    print(f"    * Created Employee [{employee.id} | {emp_code}]: {emp_name} for {branch.name}")
                 else:
                     employee.branch_id = branch.id
                     if not employee.manager_id:
@@ -348,17 +346,17 @@ def seed_database():
                     employee.department = department
                     employee.status = "active"
                     db.commit()
-                    print(f"    * Updated Employee [{emp_id} | {emp_code}]: {emp_name} for {branch.name}")
+                    print(f"    * Updated Employee [{employee.id} | {emp_code}]: {emp_name} for {branch.name}")
 
-        # Clean up any legacy employees not in the official 62 list
-        legacy_employees = db.query(Employee).filter(~Employee.id.in_(all_new_emp_ids)).all()
+        # Clean up any legacy employees not in the official 66 list
+        legacy_employees = db.query(Employee).filter(~Employee.employee_code.in_(all_new_emp_codes)).all()
         if legacy_employees:
             for leg in legacy_employees:
                 print(f"  - Removing legacy employee record: ID {leg.id} - {leg.full_name} ({leg.employee_code})")
                 db.delete(leg)
             db.commit()
 
-        print("[SUCCESS] Database seeding completed successfully for all 3 branches, 9 managers, and 62 employees with verified IDs.")
+        print("[SUCCESS] Database seeding completed successfully for all 3 branches, 9 managers, and 66 employees with verified IDs.")
 
     except Exception as e:
         print(f"[ERROR] Error during seeding: {e}")

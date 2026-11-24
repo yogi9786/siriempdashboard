@@ -262,17 +262,17 @@ export const HrCustomersPage: React.FC = () => {
     Boolean(search.trim());
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="max-w-7xl mx-auto p-3.5 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
       {/* Top Banner */}
-      <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] flex items-center gap-1.5">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] flex items-center gap-1.5 whitespace-nowrap">
               <FileSpreadsheet className="w-3.5 h-3.5" />
               <span>Showroom Customer Directory</span>
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#1D1D1B] tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] tracking-tight">
             Customer Activity & Leads
           </h1>
           <p className="text-xs sm:text-sm text-[#5E5A52] font-medium mt-1">
@@ -280,13 +280,13 @@ export const HrCustomersPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
           <button
             onClick={handleExportCSV}
-            className="px-4 py-2.5 rounded-xl bg-white border border-[#C5E3D5] hover:border-[#21845F] text-[#21845F] hover:bg-[#E8F4EE] text-xs font-bold shadow-2xs flex items-center gap-2 cursor-pointer transition-all"
+            className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white border border-[#C5E3D5] hover:border-[#21845F] text-[#21845F] hover:bg-[#E8F4EE] text-xs font-bold shadow-2xs flex items-center gap-2 cursor-pointer transition-all whitespace-nowrap shrink-0"
             title="Export filtered or selected customer rows to CSV"
           >
-            <Download className="w-4 h-4 text-[#21845F]" />
+            <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#21845F]" />
             <span>
               {selectedIds.size > 0
                 ? `Export Selected (${selectedIds.size}) CSV`
@@ -295,10 +295,10 @@ export const HrCustomersPage: React.FC = () => {
           </button>
           <button
             onClick={fetchActivities}
-            className="p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors self-start md:self-auto cursor-pointer"
+            className="p-2 sm:p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer shrink-0"
             title="Refresh List"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
@@ -306,15 +306,15 @@ export const HrCustomersPage: React.FC = () => {
       {/* Segregated Branches & Filters Bar */}
       <div className="bg-white border border-[#E4DFD4] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3.5">
         {/* Row 1: Branches and Status */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Branch Buttons */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider px-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap w-full sm:w-auto">
+            <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider px-1 shrink-0 whitespace-nowrap">
               Branches:
             </span>
             <button
               onClick={() => setBranchFilter('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 branchFilter === 'ALL'
                   ? 'bg-[#18181B] text-white shadow-2xs'
                   : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
@@ -324,7 +324,7 @@ export const HrCustomersPage: React.FC = () => {
             </button>
             <button
               onClick={() => setBranchFilter('YELAHANKA')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0 ${
                 branchFilter === 'YELAHANKA'
                   ? 'bg-[#D97706] text-white shadow-2xs'
                   : 'bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] border border-[#FDE68A]'
@@ -335,7 +335,7 @@ export const HrCustomersPage: React.FC = () => {
             </button>
             <button
               onClick={() => setBranchFilter('KOLAR')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0 ${
                 branchFilter === 'KOLAR'
                   ? 'bg-[#0284C7] text-white shadow-2xs'
                   : 'bg-[#E0F2FE] hover:bg-[#BAE6FD] text-[#0369A1] border border-[#BAE6FD]'
@@ -346,7 +346,7 @@ export const HrCustomersPage: React.FC = () => {
             </button>
             <button
               onClick={() => setBranchFilter('UDUPI')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0 ${
                 branchFilter === 'UDUPI'
                   ? 'bg-[#059669] text-white shadow-2xs'
                   : 'bg-[#D1FAE5] hover:bg-[#A7F3D0] text-[#065F46] border border-[#A7F3D0]'
@@ -371,10 +371,10 @@ export const HrCustomersPage: React.FC = () => {
         </div>
 
         {/* Row 2: Date Filters & Employee Filter */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#F0ECE1]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#F0ECE1]">
           {/* Quick Date Presets */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-[#8A8479] mr-1 flex items-center gap-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap w-full sm:w-auto">
+            <span className="text-[11px] font-bold text-[#8A8479] mr-1 flex items-center gap-1 shrink-0 whitespace-nowrap">
               <Calendar className="w-3.5 h-3.5" />
               <span>Date:</span>
             </span>
@@ -392,7 +392,7 @@ export const HrCustomersPage: React.FC = () => {
                   setFromDate('');
                   setToDate('');
                 }}
-                className={`px-2.5 py-1 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-xl border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   dateFilter === p.id && !fromDate && !toDate
                     ? 'bg-[#21845F] border-[#21845F] text-white shadow-2xs'
                     : 'bg-[#FAF8F3] border-[#E4DFD4] text-[#5E5A52] hover:bg-white'
@@ -403,7 +403,7 @@ export const HrCustomersPage: React.FC = () => {
             ))}
 
             {/* Custom Range */}
-            <div className="flex items-center gap-1 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-2 py-0.5 ml-1">
+            <div className="flex items-center gap-1 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-2 py-0.5 ml-1 shrink-0">
               <input
                 type="date"
                 value={fromDate}
@@ -429,13 +429,13 @@ export const HrCustomersPage: React.FC = () => {
           </div>
 
           {/* Employee Filter & Reset */}
-          <div className="flex items-center gap-2 ml-auto flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-[#536B8A]" />
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
+            <div className="flex items-center gap-1.5 w-full sm:w-auto">
+              <User className="w-3.5 h-3.5 text-[#536B8A] shrink-0" />
               <select
                 value={employeeFilter}
                 onChange={(e) => setEmployeeFilter(e.target.value)}
-                className="text-xs font-bold px-3 py-1.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] cursor-pointer"
+                className="w-full sm:w-auto text-xs font-bold px-3 py-1.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] cursor-pointer"
                 title="Filter by Showroom Staff"
               >
                 <option value="ALL">All Showroom Staff</option>
@@ -564,9 +564,9 @@ export const HrCustomersPage: React.FC = () => {
                       </td>
 
                       {/* Outcome */}
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border whitespace-nowrap ${
                             outcome === 'Sold'
                               ? 'bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]'
                               : outcome === 'Exchange'
@@ -581,7 +581,7 @@ export const HrCustomersPage: React.FC = () => {
                       </td>
 
                       {/* Value */}
-                      <td className="px-5 py-3.5 font-mono font-bold text-sm">
+                      <td className="px-5 py-3.5 font-mono font-bold text-sm whitespace-nowrap">
                         {act.product_value && act.product_value > 0 ? (
                           <span className="text-[#21845F]">
                             ₹{act.product_value.toLocaleString('en-IN')}
@@ -592,9 +592,9 @@ export const HrCustomersPage: React.FC = () => {
                       </td>
 
                       {/* Verification */}
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${
                             isApproved
                               ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
                               : isPending

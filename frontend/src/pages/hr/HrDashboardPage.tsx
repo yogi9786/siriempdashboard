@@ -41,20 +41,20 @@ export const HrDashboardPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="max-w-7xl mx-auto p-3.5 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
       {/* Header Banner */}
-      <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-white border border-[#E4DFD4] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-[#B45309] flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full bg-[#FAF8F3] border border-[#E4DFD4] text-[#B45309] flex items-center gap-1.5 whitespace-nowrap">
               <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
               <span>HR Central Command</span>
             </span>
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F]">
+            <span className="text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] whitespace-nowrap">
               3 Showroom Branches
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#1D1D1B] tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] tracking-tight">
             Human Resources Management
           </h1>
           <p className="text-xs sm:text-sm text-[#5E5A52] font-medium mt-1">
@@ -62,57 +62,59 @@ export const HrDashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
           <button
             onClick={() => navigate('/hr/revenue')}
-            className="px-4 py-2.5 rounded-xl bg-[#1D1D1B] hover:bg-[#27272A] text-[#E5C378] font-extrabold text-xs shadow-sm flex items-center gap-2 cursor-pointer transition-all hover:scale-102 border border-[#3F3F46]"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#1D1D1B] hover:bg-[#27272A] text-[#E5C378] font-extrabold text-xs shadow-sm flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 border border-[#3F3F46] whitespace-nowrap shrink-0"
           >
-            <TrendingUp className="w-4 h-4 text-[#E5C378]" />
+            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#E5C378]" />
             <span>Revenue</span>
           </button>
           <button
             onClick={() => navigate('/hr/employees/add')}
-            className="px-4 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs shadow-sm flex items-center gap-2 cursor-pointer transition-all hover:scale-102"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 whitespace-nowrap shrink-0"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>+ Add Employee</span>
           </button>
           <button
             onClick={() => navigate('/hr/payslips')}
-            className="px-4 py-2.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white font-extrabold text-xs shadow-sm flex items-center gap-2 cursor-pointer transition-all hover:scale-102"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 whitespace-nowrap shrink-0"
           >
-            <Receipt className="w-4 h-4" />
+            <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>+ Add Pay Slip</span>
           </button>
           <button
             onClick={fetchStats}
-            className="p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer"
+            className="p-2 sm:p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer shrink-0"
             title="Refresh Stats"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Card 1: Total Employees */}
         <div
           onClick={() => navigate('/hr/employees')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#3B82F6] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+          className="bg-white border border-[#E4DFD4] hover:border-[#3B82F6] rounded-2xl p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider block mb-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Active Staff
               </span>
-              <div className="text-3xl font-black text-[#1D1D1B] font-mono">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate">
                 {stats?.total_employees ?? '—'}
               </div>
-              <span className="text-xs text-[#8A8479] font-medium mt-1 block">Across 3 Showrooms</span>
+              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+                Across 3 Showrooms
+              </span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#3B82F6] flex items-center justify-center shrink-0">
-              <Users className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#3B82F6] flex items-center justify-center shrink-0">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
@@ -120,20 +122,22 @@ export const HrDashboardPage: React.FC = () => {
         {/* Card 2: Branches Segregation */}
         <div
           onClick={() => navigate('/hr/employees?branch=YELAHANKA')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#D97706] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+          className="bg-white border border-[#E4DFD4] hover:border-[#D97706] rounded-2xl p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold text-[#D97706] uppercase tracking-wider block mb-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#D97706] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Branches
               </span>
-              <div className="text-3xl font-black text-[#1D1D1B] font-mono">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate">
                 {stats?.total_branches ?? 3}
               </div>
-              <span className="text-xs text-[#8A8479] font-medium mt-1 block">Yelahanka, Kolar, Udupi</span>
+              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+                Yelahanka, Kolar, Udupi
+              </span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
-              <Building2 className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
+              <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
@@ -141,20 +145,25 @@ export const HrDashboardPage: React.FC = () => {
         {/* Card 3: Gross Sold Revenue */}
         <div
           onClick={() => navigate('/hr/revenue')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#21845F] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+          className="bg-white border border-[#E4DFD4] hover:border-[#21845F] rounded-2xl p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Gross Revenue
               </span>
-              <div className="text-2xl sm:text-3xl font-black text-[#21845F] font-mono">
+              <div
+                className="text-xl sm:text-2xl lg:text-3xl font-black text-[#21845F] font-mono truncate"
+                title={stats?.total_revenue ? `₹${Number(stats.total_revenue).toLocaleString('en-IN')}` : '₹0'}
+              >
                 {stats?.total_revenue ? `₹${Number(stats.total_revenue).toLocaleString('en-IN')}` : '₹0'}
               </div>
-              <span className="text-xs text-[#8A8479] font-medium mt-1 block">Sold & Exchanges</span>
+              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+                Sold & Exchanges
+              </span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
-              <IndianRupee className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
+              <IndianRupee className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
@@ -162,20 +171,22 @@ export const HrDashboardPage: React.FC = () => {
         {/* Card 4: Pending Leave Requests */}
         <div
           onClick={() => navigate('/hr/leaves')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#EF4444] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+          className="bg-white border border-[#E4DFD4] hover:border-[#EF4444] rounded-2xl p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold text-[#EF4444] uppercase tracking-wider block mb-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#EF4444] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Pending Leaves
               </span>
-              <div className="text-3xl font-black text-[#EF4444] font-mono">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#EF4444] font-mono truncate">
                 {stats?.pending_leaves ?? 0}
               </div>
-              <span className="text-xs text-[#8A8479] font-medium mt-1 block">Awaiting Review</span>
+              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+                Awaiting Review
+              </span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-[#FEE2E2] border border-[#FECACA] text-[#EF4444] flex items-center justify-center shrink-0">
-              <CalendarDays className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#FEE2E2] border border-[#FECACA] text-[#EF4444] flex items-center justify-center shrink-0">
+              <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
@@ -183,20 +194,22 @@ export const HrDashboardPage: React.FC = () => {
         {/* Card 5: Total Pay Slips */}
         <div
           onClick={() => navigate('/hr/payslips')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#0284C7] rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+          className="col-span-2 md:col-span-1 bg-white border border-[#E4DFD4] hover:border-[#0284C7] rounded-2xl p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold text-[#0284C7] uppercase tracking-wider block mb-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#0284C7] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Issued Payslips
               </span>
-              <div className="text-3xl font-black text-[#1D1D1B] font-mono">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate">
                 {stats?.total_payslips ?? 0}
               </div>
-              <span className="text-xs text-[#8A8479] font-medium mt-1 block">Salary Slips</span>
+              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+                Salary Slips
+              </span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-[#E0F2FE] border border-[#BAE6FD] text-[#0284C7] flex items-center justify-center shrink-0">
-              <Receipt className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#E0F2FE] border border-[#BAE6FD] text-[#0284C7] flex items-center justify-center shrink-0">
+              <Receipt className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>

@@ -757,13 +757,13 @@ export const PendingCustomerActivityPage: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {isOutdoorActivity(act) && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0] flex items-center gap-1">
+                          <span className="whitespace-nowrap shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0]">
                             <Compass className="w-3 h-3 text-[#1B694C]" />
                             <span>Outdoor Marketing</span>
                           </span>
                         )}
                         {(!isOutdoorActivity(act) || (act.status && act.status !== 'Outdoor Marketing')) && (
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(act.status)}`}>
+                          <span className={`whitespace-nowrap shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(act.status)}`}>
                             {act.status === 'Walkin' ? 'Window Shopping' : (act.status || 'Window Shopping')}
                           </span>
                         )}
@@ -951,7 +951,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
 
             {/* Tablet & Desktop Table (hidden sm:block) */}
             <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full text-left text-xs text-[#1D1D1B]">
+              <table className="w-full min-w-[850px] text-left text-xs text-[#1D1D1B]">
               <thead className="bg-[#FAF8F3] text-[#6B6559] uppercase font-bold text-[11px] tracking-wider border-b border-[#E4DFD4]">
                 <tr>
                   <th className="px-4 py-3.5">Activity Date</th>
@@ -1060,14 +1060,14 @@ export const PendingCustomerActivityPage: React.FC = () => {
                       <td className="px-4 py-3.5">
                         <div className="flex flex-wrap items-center gap-1.5">
                           {isOutdoorActivity(act) && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0] text-[10px] font-bold shadow-2xs">
+                            <span className="whitespace-nowrap shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E8F4EE] text-[#1B694C] border border-[#A7F3D0] text-[10px] font-bold shadow-2xs">
                               <Compass className="w-3 h-3 text-[#1B694C]" />
                               <span>Outdoor Marketing</span>
                             </span>
                           )}
                           {(!isOutdoorActivity(act) || (act.status && act.status !== 'Outdoor Marketing')) && (
                             <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(
+                              className={`whitespace-nowrap shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(
                                 act.status
                               )}`}
                             >
@@ -1243,7 +1243,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full min-w-[800px] text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-[#FAF8F3] border-b border-[#EBE6DC] text-[#6B6559] uppercase font-bold text-[10px] tracking-wider">
                   <th className="px-5 py-3.5">Employee</th>

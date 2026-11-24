@@ -405,49 +405,49 @@ export const BranchRevenuePage: React.FC = () => {
       </div>
 
       {/* 4 Solid Colored KPI Summary Cards (Site Theme) */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Total Revenue */}
-        <div className="bg-[#E8F4EE] border border-[#C5E3D5] rounded-2xl p-5 shadow-xs">
-          <span className="text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1">
+        <div className="bg-[#E8F4EE] border border-[#C5E3D5] rounded-2xl p-3.5 sm:p-5 shadow-xs min-w-0 overflow-hidden">
+          <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1 truncate">
             Store Sales Revenue
           </span>
-          <div className="text-2xl sm:text-3xl font-black font-mono text-[#1D1D1B]">
+          <div className="text-lg sm:text-2xl lg:text-3xl font-black font-mono text-[#1D1D1B] truncate">
             ₹{totalSalesRevenue.toLocaleString('en-IN')}
           </div>
-          <span className="text-xs text-[#21845F] font-semibold mt-1 block">Closed Jewelry Deals</span>
+          <span className="text-[10px] sm:text-xs text-[#21845F] font-semibold mt-1 block truncate">Closed Jewelry Deals</span>
         </div>
 
         {/* Card 2: Sold Count */}
-        <div className="bg-[#FAF1EC] border border-[#ECCFC0] rounded-2xl p-5 shadow-xs">
-          <span className="text-[11px] font-bold text-[#B97855] uppercase tracking-wider block mb-1">
+        <div className="bg-[#FAF1EC] border border-[#ECCFC0] rounded-2xl p-3.5 sm:p-5 shadow-xs min-w-0 overflow-hidden">
+          <span className="text-[10px] sm:text-[11px] font-bold text-[#B97855] uppercase tracking-wider block mb-1 truncate">
             Items / Deals Sold
           </span>
-          <div className="text-2xl sm:text-3xl font-black font-mono text-[#1D1D1B]">
+          <div className="text-lg sm:text-2xl lg:text-3xl font-black font-mono text-[#1D1D1B] truncate">
             {filteredSold.length}
           </div>
-          <span className="text-xs text-[#B97855] font-semibold mt-1 block">Purchasing Customers</span>
+          <span className="text-[10px] sm:text-xs text-[#B97855] font-semibold mt-1 block truncate">Purchasing Customers</span>
         </div>
 
         {/* Card 3: Total Schemes Enrolled */}
-        <div className="bg-[#FEF3C7] border border-[#FDE68A] rounded-2xl p-5 shadow-xs">
-          <span className="text-[11px] font-bold text-[#92400E] uppercase tracking-wider block mb-1">
+        <div className="bg-[#FEF3C7] border border-[#FDE68A] rounded-2xl p-3.5 sm:p-5 shadow-xs min-w-0 overflow-hidden">
+          <span className="text-[10px] sm:text-[11px] font-bold text-[#92400E] uppercase tracking-wider block mb-1 truncate">
             Schemes Enrolled
           </span>
-          <div className="text-2xl sm:text-3xl font-black font-mono text-[#1D1D1B]">
+          <div className="text-lg sm:text-2xl lg:text-3xl font-black font-mono text-[#1D1D1B] truncate">
             {filteredSchemes.length}
           </div>
-          <span className="text-xs text-[#92400E] font-semibold mt-1 block">Active Savings Accounts</span>
+          <span className="text-[10px] sm:text-xs text-[#92400E] font-semibold mt-1 block truncate">Active Savings Accounts</span>
         </div>
 
         {/* Card 4: Schemes Monthly Volume */}
-        <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl p-5 shadow-xs">
-          <span className="text-[11px] font-bold text-[#1D4ED8] uppercase tracking-wider block mb-1">
+        <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl p-3.5 sm:p-5 shadow-xs min-w-0 overflow-hidden">
+          <span className="text-[10px] sm:text-[11px] font-bold text-[#1D4ED8] uppercase tracking-wider block mb-1 truncate">
             Monthly Schemes Volume
           </span>
-          <div className="text-2xl sm:text-3xl font-black font-mono text-[#1D1D1B]">
+          <div className="text-lg sm:text-2xl lg:text-3xl font-black font-mono text-[#1D1D1B] truncate">
             ₹{totalSchemesVolume.toLocaleString('en-IN')}
           </div>
-          <span className="text-xs text-[#1D4ED8] font-semibold mt-1 block">Monthly Recurring Commitment</span>
+          <span className="text-[10px] sm:text-xs text-[#1D4ED8] font-semibold mt-1 block truncate">Monthly Recurring Commitment</span>
         </div>
       </div>
 
@@ -497,8 +497,8 @@ export const BranchRevenuePage: React.FC = () => {
         {/* Filter Controls Row */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#F0ECE1]">
           {/* Quick Date Presets */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-[#8A8479] mr-1 flex items-center gap-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap w-full sm:w-auto">
+            <span className="text-[11px] font-bold text-[#8A8479] mr-1 flex items-center gap-1 shrink-0 whitespace-nowrap">
               <Calendar className="w-3.5 h-3.5" />
               <span>Date:</span>
             </span>
@@ -517,7 +517,7 @@ export const BranchRevenuePage: React.FC = () => {
                   setFromDate('');
                   setToDate('');
                 }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   dateFilter === p.id && !fromDate && !toDate
                     ? 'bg-[#21845F] border-[#21845F] text-white shadow-2xs'
                     : 'bg-[#FAF8F3] border-[#E4DFD4] text-[#5E5A52] hover:bg-white'
@@ -529,8 +529,8 @@ export const BranchRevenuePage: React.FC = () => {
           </div>
 
           {/* Custom Date Pickers */}
-          <div className="flex items-center gap-1.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-2.5 py-1">
-            <span className="text-[11px] font-bold text-[#8A8479]">From:</span>
+          <div className="flex items-center gap-1.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl px-2.5 py-1 w-full sm:w-auto">
+            <span className="text-[11px] font-bold text-[#8A8479] shrink-0">From:</span>
             <input
               type="date"
               value={fromDate}
@@ -538,9 +538,9 @@ export const BranchRevenuePage: React.FC = () => {
                 setFromDate(e.target.value);
                 setDateFilter('custom');
               }}
-              className="px-1.5 py-0.5 text-xs bg-white border border-[#E4DFD4] rounded-lg font-medium text-[#1D1D1B] focus:outline-none focus:border-[#21845F]"
+              className="px-1.5 py-0.5 text-xs bg-white border border-[#E4DFD4] rounded-lg font-medium text-[#1D1D1B] focus:outline-none focus:border-[#21845F] w-full sm:w-auto"
             />
-            <span className="text-[11px] font-bold text-[#8A8479]">To:</span>
+            <span className="text-[11px] font-bold text-[#8A8479] shrink-0">To:</span>
             <input
               type="date"
               value={toDate}
@@ -548,17 +548,17 @@ export const BranchRevenuePage: React.FC = () => {
                 setToDate(e.target.value);
                 setDateFilter('custom');
               }}
-              className="px-1.5 py-0.5 text-xs bg-white border border-[#E4DFD4] rounded-lg font-medium text-[#1D1D1B] focus:outline-none focus:border-[#21845F]"
+              className="px-1.5 py-0.5 text-xs bg-white border border-[#E4DFD4] rounded-lg font-medium text-[#1D1D1B] focus:outline-none focus:border-[#21845F] w-full sm:w-auto"
             />
           </div>
 
           {/* Employee Filter */}
-          <div className="flex items-center gap-1.5 ml-auto">
-            <User className="w-3.5 h-3.5 text-[#8A8479]" />
+          <div className="flex items-center gap-1.5 w-full sm:w-auto sm:ml-auto">
+            <User className="w-3.5 h-3.5 text-[#8A8479] shrink-0" />
             <select
               value={selectedEmployee}
               onChange={(e) => setSelectedEmployee(e.target.value)}
-              className="text-xs font-semibold px-3 py-1.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] cursor-pointer"
+              className="text-xs font-semibold px-3 py-1.5 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-[#1D1D1B] focus:outline-none focus:border-[#21845F] cursor-pointer w-full sm:w-auto"
             >
               <option value="ALL">All Staff Members</option>
               {employees.map((emp) => (
@@ -573,29 +573,29 @@ export const BranchRevenuePage: React.FC = () => {
 
       {/* Main Tab Toggle: Sold Purchases vs Jewellery Schemes */}
       <div className="bg-white border border-[#E4DFD4] rounded-2xl p-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full sm:w-auto">
           <button
             onClick={() => setActiveTab('SOLD')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
               activeTab === 'SOLD'
                 ? 'bg-[#21845F] text-white shadow-2xs'
                 : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
             }`}
           >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Sold Ornaments & Purchases ({filteredSold.length})</span>
+            <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Sold Ornaments & Purchases ({filteredSold.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('SCHEMES')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
               activeTab === 'SCHEMES'
                 ? 'bg-[#D97706] text-white shadow-2xs'
                 : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
             }`}
           >
-            <Award className="w-3.5 h-3.5" />
-            <span>Jewellery Savings Schemes ({filteredSchemes.length})</span>
+            <Award className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Jewellery Savings Schemes ({filteredSchemes.length})</span>
           </button>
         </div>
 
@@ -616,7 +616,7 @@ export const BranchRevenuePage: React.FC = () => {
       {activeTab === 'SOLD' && (
         <div className="bg-white border border-[#E4DFD4] rounded-3xl overflow-hidden shadow-[0_4px_18px_rgba(40,35,25,0.045)]">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full min-w-[780px] text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-[#FAF8F3] border-b border-[#EBE6DC] text-[#6B6559] uppercase font-bold text-[10px] tracking-wider">
                   <th className="px-5 py-3.5">Sold Date</th>
@@ -786,7 +786,7 @@ export const BranchRevenuePage: React.FC = () => {
 
           <div className="bg-white border border-[#E4DFD4] rounded-3xl overflow-hidden shadow-[0_4px_18px_rgba(40,35,25,0.045)]">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full min-w-[780px] text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-[#FAF8F3] border-b border-[#EBE6DC] text-[#6B6559] uppercase font-bold text-[10px] tracking-wider">
                     <th className="px-5 py-3.5">Enrolled Date</th>

@@ -481,59 +481,59 @@ export const GoogleReviewsPage: React.FC = () => {
       {/* 2. KPI Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Points Awarded */}
-        <div className="bg-white border border-[#E4DFD4] hover:border-[#F59E0B] rounded-2xl p-4 shadow-2xs transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#92400E] uppercase tracking-wider">
+        <div className="bg-white border border-[#E4DFD4] hover:border-[#F59E0B] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-colors min-w-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#92400E] uppercase tracking-wider truncate">
               Total Points Awarded
             </span>
-            <Trophy className="w-4 h-4 text-[#D97706]" />
+            <Trophy className="w-4 h-4 text-[#D97706] shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-[#D97706] tabular-nums mt-1">
+          <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#D97706] tabular-nums mt-1 truncate">
             {totalShowroomPoints} <span className="text-xs font-bold text-[#92400E]">Pts</span>
           </div>
-          <span className="text-[10px] text-[#8A8479]">Showroom lifetime points</span>
+          <span className="text-[10px] text-[#8A8479] block truncate">Showroom lifetime points</span>
         </div>
 
         {/* Google Review Points */}
-        <div className="bg-white border border-[#E4DFD4] hover:border-[#D97706] rounded-2xl p-4 shadow-2xs transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#7E22CE] uppercase tracking-wider">
+        <div className="bg-white border border-[#E4DFD4] hover:border-[#D97706] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-colors min-w-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#7E22CE] uppercase tracking-wider truncate">
               Google Maps Points
             </span>
-            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+            <Star className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-[#7E22CE] tabular-nums mt-1">
+          <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#7E22CE] tabular-nums mt-1 truncate">
             {totalApprovedGooglePoints} <span className="text-xs font-bold text-[#7E22CE]">Pts</span>
           </div>
-          <span className="text-[10px] text-[#8A8479]">1 verified review = 1 point</span>
+          <span className="text-[10px] text-[#8A8479] block truncate">1 verified review = 1 point</span>
         </div>
 
         {/* Video Review Points */}
-        <div className="bg-white border border-[#E4DFD4] hover:border-[#2563EB] rounded-2xl p-4 shadow-2xs transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#1E40AF] uppercase tracking-wider">
+        <div className="bg-white border border-[#E4DFD4] hover:border-[#2563EB] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-colors min-w-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#1E40AF] uppercase tracking-wider truncate">
               Video Review Points
             </span>
-            <Video className="w-4 h-4 text-[#2563EB]" />
+            <Video className="w-4 h-4 text-[#2563EB] shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-[#1E40AF] tabular-nums mt-1">
+          <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1E40AF] tabular-nums mt-1 truncate">
             {totalApprovedVideoPoints} <span className="text-xs font-bold text-[#1E40AF]">Pts</span>
           </div>
-          <span className="text-[10px] text-[#8A8479]">1 video review = 5 points</span>
+          <span className="text-[10px] text-[#8A8479] block truncate">1 video review = 5 points</span>
         </div>
 
         {/* Top Performer #1 */}
-        <div className="bg-linear-to-br from-[#FFFBEB] to-[#FEF3C7] border border-[#FDE68A] rounded-2xl p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-[11px] font-extrabold text-[#92400E] uppercase tracking-wider">
+        <div className="bg-linear-to-br from-[#FFFBEB] to-[#FEF3C7] border border-[#FDE68A] rounded-2xl p-3.5 sm:p-4 shadow-2xs min-w-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-[11px] font-extrabold text-[#92400E] uppercase tracking-wider truncate">
               Showroom #1 Leader
             </span>
-            <Sparkles className="w-4 h-4 text-[#D97706]" />
+            <Sparkles className="w-4 h-4 text-[#D97706] shrink-0" />
           </div>
           <div className="text-lg sm:text-xl font-black text-[#1D1D1B] truncate mt-1">
             {topPerformer ? topPerformer.full_name : 'No points yet'}
           </div>
-          <span className="text-[10px] font-bold text-[#D97706]">
+          <span className="text-[10px] font-bold text-[#D97706] block truncate">
             {topPerformer ? `${getEmployeeTotalPoints(topPerformer)} Points Earned` : 'Showroom staff points'}
           </span>
         </div>
@@ -554,7 +554,7 @@ export const GoogleReviewsPage: React.FC = () => {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 justify-start sm:justify-end w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-nowrap py-0.5 justify-start sm:justify-end w-full sm:w-auto pb-1 sm:pb-0">
           {[
             { id: 'all', label: `All Staff (${employees.length})` },
             { id: 'with_points', label: 'With Points Only' },

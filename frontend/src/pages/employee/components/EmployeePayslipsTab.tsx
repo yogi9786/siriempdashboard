@@ -90,7 +90,7 @@ export const EmployeePayslipsTab: React.FC<EmployeePayslipsTabProps> = ({
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="px-2.5 py-1 rounded-full bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5] text-[11px] font-extrabold uppercase tracking-wide">
+                      <span className="whitespace-nowrap inline-flex items-center shrink-0 px-2.5 py-1 rounded-full bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5] text-[11px] font-extrabold uppercase tracking-wide">
                         {slip.month} {slip.year}
                       </span>
                       <div className="text-xl font-bold font-mono text-[#1D1D1B] mt-2">

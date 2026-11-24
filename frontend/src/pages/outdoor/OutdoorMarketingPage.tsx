@@ -1336,7 +1336,7 @@ export const OutdoorMarketingPage: React.FC = () => {
       {/* ----------------------------------------------------
           2. FIVE TAB NAVIGATION (SELECT & ASSIGN STAFF IS FIRST)
       ---------------------------------------------------- */}
-      <div className="flex items-center gap-2 border-b border-[#C5E3D5] pb-2 overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-2 border-b border-[#C5E3D5] pb-2 overflow-x-auto scrollbar-none flex-nowrap w-full">
         {/* TAB 1: Select & Assign Staff (FIRST by Default) */}
         <button
           onClick={() => setActiveTab('assign')}

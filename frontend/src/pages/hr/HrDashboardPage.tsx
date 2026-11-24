@@ -62,27 +62,27 @@ export const HrDashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto overflow-x-auto scrollbar-none flex-nowrap pb-1 sm:pb-0">
           <button
             onClick={() => navigate('/hr/revenue')}
             className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#1D1D1B] hover:bg-[#27272A] text-[#E5C378] font-extrabold text-xs shadow-sm flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 border border-[#3F3F46] whitespace-nowrap shrink-0"
           >
-            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#E5C378]" />
-            <span>Revenue</span>
+            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#E5C378] shrink-0" />
+            <span className="whitespace-nowrap">Revenue</span>
           </button>
           <button
             onClick={() => navigate('/hr/employees/add')}
             className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 whitespace-nowrap shrink-0"
           >
-            <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>+ Add Employee</span>
+            <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="whitespace-nowrap">+ Add Employee</span>
           </button>
           <button
             onClick={() => navigate('/hr/payslips')}
             className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 whitespace-nowrap shrink-0"
           >
-            <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>+ Add Pay Slip</span>
+            <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="whitespace-nowrap">+ Add Pay Slip</span>
           </button>
           <button
             onClick={fetchStats}

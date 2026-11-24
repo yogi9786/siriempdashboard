@@ -634,90 +634,90 @@ export const HrRevenuePage: React.FC = () => {
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Gross Revenue */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden">
+          <div className="flex items-start justify-between gap-1.5 sm:gap-2">
+            <div className="min-w-0 flex-1 overflow-hidden">
               <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Gross Sold Revenue
               </span>
               <div
-                className="text-lg sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
+                className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
                 title={`₹${totalRevenue.toLocaleString('en-IN')}`}
               >
                 ₹{totalRevenue.toLocaleString('en-IN')}
               </div>
-              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+              <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
                 {selectedBranch === 'ALL' ? 'Across all 3 showrooms' : `${selectedBranch} branch`}
               </span>
             </div>
-            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
-              <IndianRupee className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
+              <IndianRupee className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
 
         {/* Card 2: Sold Transactions */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden">
+          <div className="flex items-start justify-between gap-1.5 sm:gap-2">
+            <div className="min-w-0 flex-1 overflow-hidden">
               <span className="text-[10px] sm:text-[11px] font-bold text-[#D97706] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Completed Purchases
               </span>
-              <div className="text-lg sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate">
+              <div className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate">
                 {filteredSold.length}
               </div>
-              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+              <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
                 Sold & Exchange orders
               </span>
             </div>
-            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
-              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
 
         {/* Card 3: Jewellery Savings Schemes */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden">
+          <div className="flex items-start justify-between gap-1.5 sm:gap-2">
+            <div className="min-w-0 flex-1 overflow-hidden">
               <span className="text-[10px] sm:text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Monthly Schemes Volume
               </span>
               <div
-                className="text-lg sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
+                className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
                 title={`₹${totalSchemesVolume.toLocaleString('en-IN')}`}
               >
                 ₹{totalSchemesVolume.toLocaleString('en-IN')}
               </div>
-              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+              <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
                 {filteredSchemes.length} Active Accounts
               </span>
             </div>
-            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#3B82F6] flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#3B82F6] flex items-center justify-center shrink-0">
+              <Sparkles className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>
 
         {/* Card 4: Average Order Value */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden">
+          <div className="flex items-start justify-between gap-1.5 sm:gap-2">
+            <div className="min-w-0 flex-1 overflow-hidden">
               <span className="text-[10px] sm:text-[11px] font-bold text-[#8B5CF6] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                 Avg Ticket Size
               </span>
               <div
-                className="text-lg sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
+                className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
                 title={`₹${avgOrderValue.toLocaleString('en-IN')}`}
               >
                 ₹{avgOrderValue.toLocaleString('en-IN')}
               </div>
-              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+              <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
                 Per customer transaction
               </span>
             </div>
-            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] flex items-center justify-center shrink-0">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] flex items-center justify-center shrink-0">
+              <TrendingUp className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
         </div>

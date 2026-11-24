@@ -464,7 +464,7 @@ export const HrCustomersPage: React.FC = () => {
       {/* Customer Activities Table */}
       <div className="bg-white border border-[#E4DFD4] rounded-3xl overflow-hidden shadow-[0_4px_18px_rgba(40,35,25,0.045)]">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[850px] text-left border-collapse text-xs">
             <thead>
               <tr className="bg-[#FAF8F3] border-b border-[#EBE6DC] text-[#6B6559] uppercase font-bold text-[10px] tracking-wider">
                 {/* Select All Checkbox */}
@@ -566,7 +566,7 @@ export const HrCustomersPage: React.FC = () => {
                       {/* Outcome */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border whitespace-nowrap ${
+                          className={`whitespace-nowrap inline-flex items-center shrink-0 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${
                             outcome === 'Sold'
                               ? 'bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]'
                               : outcome === 'Exchange'

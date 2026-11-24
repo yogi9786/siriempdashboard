@@ -240,7 +240,7 @@ export const DashboardPage: React.FC = () => {
             <button
               onClick={fetchDashboardData}
               title="Refresh all dashboard statistics and latest metrics"
-              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#7E22CE] ${isLoading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
@@ -248,7 +248,7 @@ export const DashboardPage: React.FC = () => {
 
             <button
               onClick={() => navigate('/employees')}
-              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#7E22CE]" />
               <span className="truncate">Staff ({totalEmployees})</span>
@@ -256,7 +256,7 @@ export const DashboardPage: React.FC = () => {
 
             <button
               onClick={() => navigate('/employees/add')}
-              className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 rounded-xl bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02]"
+              className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2.5 rounded-xl bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02] whitespace-nowrap shrink-0"
             >
               <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
               <span>+ Add Employee</span>
@@ -272,32 +272,32 @@ export const DashboardPage: React.FC = () => {
         {/* Card 1: Showroom Staff (Purple/Lavender Accent #7E22CE) */}
         <div
           onClick={() => navigate('/employees')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#C084FC] rounded-2xl p-5 sm:p-6 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+          className="bg-white border border-[#E4DFD4] hover:border-[#C084FC] rounded-2xl p-5 sm:p-6 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between min-w-0"
         >
           <div>
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1 truncate">
                   Showroom Staff
                 </span>
-                <div className="text-3xl font-bold text-[#1D1D1B] tracking-tight">
+                <div className="text-2xl sm:text-3xl font-bold text-[#1D1D1B] tracking-tight truncate">
                   {totalEmployees}
                 </div>
-                <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Staff Members</span>
+                <span className="text-xs text-[#8A8479] font-medium mt-0.5 block truncate">Staff Members</span>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                <Users className="w-5 h-5 text-[#7E22CE]" />
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[#7E22CE]" />
               </div>
             </div>
 
             {/* Mini Visual: Active Staff Ratio */}
             <div className="mt-4 pt-3 border-t border-[#EBE6DC] space-y-1.5">
               <div className="flex justify-between text-[11px] font-semibold text-[#8A8479]">
-                <span className="flex items-center gap-1.5 text-[#7E22CE]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#7E22CE]" />
+                <span className="flex items-center gap-1.5 text-[#7E22CE] truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#7E22CE] shrink-0" />
                   {activeEmployees} Active on Floor
                 </span>
-                <span className="text-[#1D1D1B] font-bold">
+                <span className="text-[#1D1D1B] font-bold shrink-0">
                   {totalEmployees > 0 ? Math.round((activeEmployees / totalEmployees) * 100) : 100}%
                 </span>
               </div>
@@ -314,21 +314,21 @@ export const DashboardPage: React.FC = () => {
         {/* Card 2: Customer Footfall (Muted Slate Blue Accent #526F91) */}
         <div
           onClick={() => navigate('/employees')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#C6D4E3] rounded-2xl p-5 sm:p-6 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+          className="bg-white border border-[#E4DFD4] hover:border-[#C6D4E3] rounded-2xl p-5 sm:p-6 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between min-w-0"
         >
           <div>
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1 truncate">
                   Customer Footfall
                 </span>
-                <div className="text-3xl font-bold text-[#1D1D1B] tracking-tight">
+                <div className="text-2xl sm:text-3xl font-bold text-[#1D1D1B] tracking-tight truncate">
                   {totalCustomersAttended}
                 </div>
-                <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Walk-ins Logged</span>
+                <span className="text-xs text-[#8A8479] font-medium mt-0.5 block truncate">Walk-ins Logged</span>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-[#EDF2F8] border border-[#C6D4E3] text-[#526F91] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                <UserCheck className="w-5 h-5" />
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-[#EDF2F8] border border-[#C6D4E3] text-[#526F91] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </div>
 
@@ -354,29 +354,29 @@ export const DashboardPage: React.FC = () => {
         {/* Card 3: Schemes Closed (Purple & Gold Accent #7E22CE) */}
         <div
           onClick={() => navigate('/employees')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#C084FC] rounded-2xl p-5 sm:p-6 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+          className="bg-white border border-[#E4DFD4] hover:border-[#C084FC] rounded-2xl p-5 sm:p-6 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between min-w-0"
         >
           <div>
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1 truncate">
                   Schemes Closed
                 </span>
-                <div className="text-3xl font-bold text-[#1D1D1B] tracking-tight">
+                <div className="text-2xl sm:text-3xl font-bold text-[#1D1D1B] tracking-tight truncate">
                   {totalSchemesClosed}
                 </div>
-                <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Gold Savings Plans</span>
+                <span className="text-xs text-[#8A8479] font-medium mt-0.5 block truncate">Gold Savings Plans</span>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                <Award className="w-5 h-5 text-[#7E22CE]" />
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <Award className="w-4 h-4 sm:w-5 sm:h-5 text-[#7E22CE]" />
               </div>
             </div>
 
             {/* Mini Visual: Value & Target Progress */}
             <div className="mt-4 pt-3 border-t border-[#EBE6DC] space-y-1.5">
               <div className="flex justify-between text-[11px] font-bold">
-                <span className="text-[#7E22CE]">₹{totalSchemesAmount.toLocaleString('en-IN')} Total</span>
-                <span className="text-[#8A8479] font-semibold text-[10px]">Monthly Goal</span>
+                <span className="text-[#7E22CE] truncate">₹{totalSchemesAmount.toLocaleString('en-IN')} Total</span>
+                <span className="text-[#8A8479] font-semibold text-[10px] shrink-0">Monthly Goal</span>
               </div>
               <div className="w-full h-1.5 bg-[#F3E8FF] rounded-full overflow-hidden">
                 <div
@@ -391,22 +391,22 @@ export const DashboardPage: React.FC = () => {
         {/* Card 4: Showroom Rating (Warm Terracotta Accent #B97855) */}
         <div
           onClick={() => navigate('/google-reviews')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#ECCFC0] rounded-2xl p-5 sm:p-6 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+          className="bg-white border border-[#E4DFD4] hover:border-[#ECCFC0] rounded-2xl p-5 sm:p-6 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between min-w-0"
         >
           <div>
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1 truncate">
                   Showroom Rating
                 </span>
-                <div className="text-3xl font-bold text-[#1D1D1B] tracking-tight flex items-center gap-1.5">
+                <div className="text-2xl sm:text-3xl font-bold text-[#1D1D1B] tracking-tight flex items-center gap-1.5 truncate">
                   <span>{avgRating.toFixed(1)}</span>
                   <span className="text-sm font-semibold text-[#8A8479]">/ 5.0</span>
                 </div>
-                <span className="text-xs text-[#8A8479] font-medium mt-0.5 block">Customer Feedback</span>
+                <span className="text-xs text-[#8A8479] font-medium mt-0.5 block truncate">Customer Feedback</span>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-[#FAF1EC] border border-[#ECCFC0] text-[#B97855] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                <Star className="w-5 h-5 fill-[#B97855]" />
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-[#FAF1EC] border border-[#ECCFC0] text-[#B97855] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-[#B97855]" />
               </div>
             </div>
 
@@ -417,7 +417,7 @@ export const DashboardPage: React.FC = () => {
                   <Star key={i} className="w-3.5 h-3.5 fill-[#B8943D]" />
                 ))}
               </div>
-              <span className="text-[11px] font-bold text-[#21845F] bg-[#E8F4EE] px-2.5 py-0.5 rounded-full border border-[#C5E3D5]">
+              <span className="text-[11px] font-bold text-[#21845F] bg-[#E8F4EE] px-2.5 py-0.5 rounded-full border border-[#C5E3D5] shrink-0">
                 {totalReviewsCount} Verified
               </span>
             </div>

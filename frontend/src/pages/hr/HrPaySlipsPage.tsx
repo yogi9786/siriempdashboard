@@ -651,16 +651,16 @@ export const HrPaySlipsPage: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[760px] text-left border-collapse text-xs">
             <thead>
               <tr className="bg-[#FAF8F3] border-b border-[#EBE6DC] text-[#6B6559] uppercase font-bold text-[10px] tracking-wider">
-                <th className="px-5 py-3.5">Employee</th>
-                <th className="px-5 py-3.5">Branch</th>
-                <th className="px-5 py-3.5">Pay Period</th>
-                <th className="px-5 py-3.5">Net Salary (₹)</th>
-                <th className="px-5 py-3.5">Issued Date</th>
-                <th className="px-5 py-3.5">Document</th>
-                <th className="px-5 py-3.5 text-right">Actions</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">Employee</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">Branch</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">Pay Period</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">Net Salary (₹)</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">Issued Date</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">Document</th>
+                <th className="px-5 py-3.5 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F0ECE1]">
@@ -682,21 +682,21 @@ export const HrPaySlipsPage: React.FC = () => {
                 filteredPayslips.map((slip) => (
                   <tr key={slip.id} className="hover:bg-[#FAF9F5] transition-colors">
                     {/* Employee */}
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 whitespace-nowrap">
                       <div className="font-extrabold text-[#1D1D1B] text-sm">{slip.employee_name}</div>
                       <div className="text-[11px] font-mono text-[#536B8A]">{slip.employee_code}</div>
                     </td>
 
                     {/* Branch */}
-                    <td className="px-5 py-3.5">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF8F3] border border-[#E4DFD4] text-[#536B8A]">
+                    <td className="px-5 py-3.5 whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF8F3] border border-[#E4DFD4] text-[#536B8A] whitespace-nowrap">
                         {slip.branch_name || 'Showroom'}
                       </span>
                     </td>
 
                     {/* Period */}
                     <td className="px-5 py-3.5 font-bold text-[#1D1D1B] whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] whitespace-nowrap font-sans">
+                      <span className="whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] font-sans shrink-0 leading-normal">
                         {slip.pay_period}
                       </span>
                     </td>

@@ -304,14 +304,14 @@ export const CustomerActivityPage: React.FC = () => {
     switch (status) {
       case 'Sold':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]">
+          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5] shrink-0">
             <CheckCircle2 className="w-3 h-3 text-[#21845F]" />
             <span>Sold</span>
           </span>
         );
       case 'Exchange':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EDF2F7] text-[#536B8A] border border-[#C5D5E6]">
+          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EDF2F7] text-[#536B8A] border border-[#C5D5E6] shrink-0">
             <ArrowUpDown className="w-3 h-3 text-[#536B8A]" />
             <span>Exchange</span>
           </span>
@@ -320,14 +320,14 @@ export const CustomerActivityPage: React.FC = () => {
       case 'In Hold':
       case 'Follow Up':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FAF1EC] text-[#B97855] border border-[#ECCFC0]">
+          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FAF1EC] text-[#B97855] border border-[#ECCFC0] shrink-0">
             <Clock className="w-3 h-3 text-[#B97855]" />
             <span>In Hold / Follow Up</span>
           </span>
         );
       case 'Lost':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FDECEC] text-[#C24141] border border-[#F9C3C3]">
+          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FDECEC] text-[#C24141] border border-[#F9C3C3] shrink-0">
             <XCircle className="w-3 h-3 text-[#C24141]" />
             <span>Lost</span>
           </span>
@@ -336,7 +336,7 @@ export const CustomerActivityPage: React.FC = () => {
       case 'Walkin':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FAF8F3] text-[#8A8479] border border-[#E4DFD4]">
+          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FAF8F3] text-[#8A8479] border border-[#E4DFD4] shrink-0">
             <Users className="w-3 h-3 text-[#8A8479]" />
             <span>Window Shopping</span>
           </span>
@@ -407,76 +407,76 @@ export const CustomerActivityPage: React.FC = () => {
       {/* 2. Metric KPI Cards (Cohesive Slate Sapphire & Gold Layout) */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Total Footfall */}
-        <div className="bg-white border border-[#C5D5E6] hover:border-[#536B8A] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors">
-          <div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#536B8A] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#C5D5E6] hover:border-[#536B8A] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#536B8A] uppercase tracking-wider block mb-1 truncate">
               Total Footfall
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#1D1D1B]">{totalFootfall}</div>
-            <span className="text-[10px] text-[#536B8A] font-medium">Attended Visitors</span>
+            <div className="text-xl sm:text-2xl font-bold text-[#1D1D1B] truncate">{totalFootfall}</div>
+            <span className="text-[10px] text-[#536B8A] font-medium block truncate">Attended Visitors</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] flex items-center justify-center font-bold shrink-0">
             <Users className="w-4 h-4" />
           </div>
         </div>
 
         {/* Sold / Closed (Green Accent) */}
-        <div className="bg-white border border-[#E4DFD4] hover:border-[#C5E3D5] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors">
-          <div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#E4DFD4] hover:border-[#C5E3D5] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-1 truncate">
               Sold / Closed
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#21845F]">{totalSold}</div>
-            <span className="text-[10px] text-[#21845F] font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#21845F]" />
-              {totalFootfall > 0 ? Math.round((totalSold / totalFootfall) * 100) : 0}% Conversion
+            <div className="text-xl sm:text-2xl font-bold text-[#21845F] truncate">{totalSold}</div>
+            <span className="text-[10px] text-[#21845F] font-semibold flex items-center gap-1 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#21845F] shrink-0" />
+              <span>{totalFootfall > 0 ? Math.round((totalSold / totalFootfall) * 100) : 0}% Conversion</span>
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center font-bold shrink-0">
             <CheckCircle2 className="w-4 h-4" />
           </div>
         </div>
 
         {/* Exchange (Slate Sapphire) */}
-        <div className="bg-white border border-[#E4DFD4] hover:border-[#C5D5E6] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors">
-          <div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#536B8A] uppercase tracking-wider block mb-1">
-              Exchange (Gold / Diamond / Silver)
+        <div className="bg-white border border-[#E4DFD4] hover:border-[#C5D5E6] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#536B8A] uppercase tracking-wider block mb-1 truncate">
+              Exchange
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#536B8A]">{totalExchange}</div>
-            <span className="text-[10px] text-[#536B8A] font-semibold">Exchanged Pieces</span>
+            <div className="text-xl sm:text-2xl font-bold text-[#536B8A] truncate">{totalExchange}</div>
+            <span className="text-[10px] text-[#536B8A] font-semibold block truncate">Exchanged Pieces</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] flex items-center justify-center font-bold shrink-0">
             <ArrowUpDown className="w-4 h-4 text-[#536B8A]" />
           </div>
         </div>
 
         {/* In Hold / Follow Up */}
-        <div className="bg-white border border-[#E4DFD4] hover:border-[#ECCFC0] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors">
-          <div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#B97855] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#E4DFD4] hover:border-[#ECCFC0] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#B97855] uppercase tracking-wider block mb-1 truncate">
               In Hold / Follow Up
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#B97855]">{totalInHold}</div>
-            <span className="text-[10px] text-[#B97855] font-semibold">Active Leads</span>
+            <div className="text-xl sm:text-2xl font-bold text-[#B97855] truncate">{totalInHold}</div>
+            <span className="text-[10px] text-[#B97855] font-semibold block truncate">Active Leads</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#FAF1EC] border border-[#ECCFC0] text-[#B97855] flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-[#FAF1EC] border border-[#ECCFC0] text-[#B97855] flex items-center justify-center font-bold shrink-0">
             <Clock className="w-4 h-4 text-[#B97855]" />
           </div>
         </div>
 
         {/* Deals Value (₹) */}
-        <div className="bg-white border border-[#E4DFD4] hover:border-[#C5D5E6] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between col-span-2 sm:col-span-2 lg:col-span-1 transition-colors">
-          <div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#E4DFD4] hover:border-[#C5D5E6] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between col-span-2 sm:col-span-2 lg:col-span-1 transition-colors min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1 truncate">
               Deals Value
             </span>
             <div className="text-xl sm:text-2xl font-bold text-[#1D1D1B] font-mono truncate">
               ₹{totalProductValue.toLocaleString('en-IN')}
             </div>
-            <span className="text-[10px] text-[#8A8479] font-medium">Closed Purchases</span>
+            <span className="text-[10px] text-[#8A8479] font-medium block truncate">Closed Purchases</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-[#8A8479] flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-[#8A8479] flex items-center justify-center font-bold shrink-0">
             <IndianRupee className="w-4 h-4 text-[#536B8A]" />
           </div>
         </div>
@@ -484,7 +484,7 @@ export const CustomerActivityPage: React.FC = () => {
 
       {/* Status Filter Pills (Requirement 6: Lost, Interested, Sold across all employees) */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-[#FAF8F5] border border-[#E6E1D6] p-2.5 sm:p-3 rounded-2xl shadow-2xs">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto flex-nowrap scrollbar-none pb-1 sm:pb-0 py-0.5">
           <span className="text-xs font-bold text-[#6B6559] mr-1 uppercase tracking-wider text-[10px] shrink-0">Filter Status:</span>
           {[
             { id: 'all', label: 'All Customers', count: activities.length, color: 'text-[#1D1D1B] bg-white border-[#CBD5E1]' },

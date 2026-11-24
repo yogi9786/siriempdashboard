@@ -152,10 +152,10 @@ export const EmployeeListPage: React.FC = () => {
           <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
             <button
               onClick={() => navigate('/employees/add')}
-              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#536B8A] hover:bg-[#40546D] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02]"
+              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#536B8A] hover:bg-[#40546D] text-white text-xs font-bold shadow-sm transition-all cursor-pointer hover:scale-[1.02] whitespace-nowrap shrink-0"
             >
               <UserPlus className="w-4 h-4 text-white shrink-0" />
-              <span>+ Add Employee</span>
+              <span className="whitespace-nowrap">+ Add Employee</span>
             </button>
           </div>
         </div>
@@ -164,60 +164,60 @@ export const EmployeeListPage: React.FC = () => {
       {/* 2. Workforce Metric KPI Cards (Clean Light Surfaces on #F6F3EC) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Staff (Slate Blue Accent) */}
-        <div className="bg-white border border-[#C5D5E6] hover:border-[#536B8A] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors">
-          <div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#536B8A] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#C5D5E6] hover:border-[#536B8A] rounded-2xl p-3.5 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors min-w-0 overflow-hidden">
+          <div className="min-w-0 flex-1 truncate">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#536B8A] uppercase tracking-wider block mb-1 truncate">
               Total Staff
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#1D1D1B]">{totalCount}</div>
-            <span className="text-[10px] text-[#536B8A] font-medium">Registered Personnel</span>
+            <div className="text-xl sm:text-2xl font-bold text-[#1D1D1B] truncate">{totalCount}</div>
+            <span className="text-[10px] text-[#536B8A] font-medium block truncate">Registered Personnel</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] flex items-center justify-center font-bold">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] flex items-center justify-center font-bold shrink-0 ml-1.5">
             <Users className="w-4 h-4" />
           </div>
         </div>
 
         {/* Active on Duty (Green Accent) */}
-        <div className="bg-white border border-[#E4DFD4] hover:border-[#C5E3D5] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors">
-          <div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#E4DFD4] hover:border-[#C5E3D5] rounded-2xl p-3.5 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors min-w-0 overflow-hidden">
+          <div className="min-w-0 flex-1 truncate">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1 truncate">
               Active on Duty
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#21845F]">{activeCount}</div>
-            <span className="text-[10px] text-[#21845F] font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#21845F]" />
-              {totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 100}% Active
+            <div className="text-xl sm:text-2xl font-bold text-[#21845F] truncate">{activeCount}</div>
+            <span className="text-[10px] text-[#21845F] font-semibold flex items-center gap-1 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#21845F] shrink-0" />
+              <span className="truncate">{totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 100}% Active</span>
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center font-bold">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center font-bold shrink-0 ml-1.5">
             <CheckCircle2 className="w-4 h-4" />
           </div>
         </div>
 
         {/* Outdoor Marketers (Slate Blue / Gold Accent) */}
-        <div className="bg-white border border-[#E4DFD4] hover:border-[#C5D5E6] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors">
-          <div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#536B8A] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#E4DFD4] hover:border-[#C5D5E6] rounded-2xl p-3.5 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between transition-colors min-w-0 overflow-hidden">
+          <div className="min-w-0 flex-1 truncate">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#536B8A] uppercase tracking-wider block mb-1 truncate">
               Field Marketers
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#536B8A]">{outdoorCount}</div>
-            <span className="text-[10px] text-[#536B8A] font-semibold">Outdoor Staff</span>
+            <div className="text-xl sm:text-2xl font-bold text-[#536B8A] truncate">{outdoorCount}</div>
+            <span className="text-[10px] text-[#536B8A] font-semibold block truncate">Outdoor Staff</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] flex items-center justify-center font-bold">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] flex items-center justify-center font-bold shrink-0 ml-1.5">
             <Compass className="w-4 h-4 text-[#536B8A]" />
           </div>
         </div>
 
         {/* Inactive / Available */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-4 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between">
-          <div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] flex items-center justify-between min-w-0 overflow-hidden">
+          <div className="min-w-0 flex-1 truncate">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#8A8479] uppercase tracking-wider block mb-1 truncate">
               Inactive
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#8A8479]">{inactiveCount}</div>
-            <span className="text-[10px] text-[#8A8479] font-medium">On Leave / Rest</span>
+            <div className="text-xl sm:text-2xl font-bold text-[#8A8479] truncate">{inactiveCount}</div>
+            <span className="text-[10px] text-[#8A8479] font-medium block truncate">On Leave / Rest</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-[#8A8479] flex items-center justify-center font-bold">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#FAF8F3] border border-[#E4DFD4] text-[#8A8479] flex items-center justify-center font-bold shrink-0 ml-1.5">
             <Users className="w-4 h-4" />
           </div>
         </div>

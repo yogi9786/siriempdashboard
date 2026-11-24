@@ -24,7 +24,7 @@ export const DashboardLayout: React.FC = () => {
       {/* Main Content */}
       <div className="flex flex-col flex-1 h-full min-w-0 overflow-hidden">
         <Header onOpenMobileMenu={() => setIsMobileDrawerOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8 bg-[#F6F3EC]">
+        <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8 pb-20 lg:pb-8 bg-[#F6F3EC]">
           <div className="max-w-384 mx-auto">
             <Outlet />
           </div>

@@ -1578,7 +1578,7 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Block 1: Total Points Earned (Warm Terracotta #FAF1EC & #B97855 - matching Manager Rating card) */}
             <div
               onClick={() => setActiveTab('REVIEWS')}
-              className="bg-[#FAF1EC] border border-[#ECCFC0] hover:border-[#B97855] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#FAF1EC] border border-[#ECCFC0] hover:border-[#B97855] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-w-0"
             >
               <div>
                 <div className="flex items-start justify-between gap-1">
@@ -1586,7 +1586,7 @@ export const EmployeePortalPage: React.FC = () => {
                     <span className="text-[10px] sm:text-[11px] font-bold text-[#B97855] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Points Earned
                     </span>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none truncate">
                       {dashboardSummary?.total_points ?? 0}
                     </div>
                     <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">Review Rewards</span>
@@ -1607,7 +1607,7 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Block 2: Total Customer Logs (Purple #F3E8FF & #7E22CE - matching Manager Staff card) */}
             <div
               onClick={() => setActiveTab('CUSTOMERS')}
-              className="bg-[#F3E8FF] border border-[#D8B4FE] hover:border-[#7E22CE] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#F3E8FF] border border-[#D8B4FE] hover:border-[#7E22CE] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-w-0"
             >
               <div>
                 <div className="flex items-start justify-between gap-1">
@@ -1615,7 +1615,7 @@ export const EmployeePortalPage: React.FC = () => {
                     <span className="text-[10px] sm:text-[11px] font-bold text-[#7E22CE] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Customer Logs
                     </span>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none truncate">
                       {dashboardSummary?.total_customer_activities ?? customerActivities.length}
                     </div>
                     <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">Walk-ins Logged</span>
@@ -1635,7 +1635,7 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Block 3: Outdoor Entries (Emerald Green #E8F4EE & #21845F - matching Outdoor Marketing theme) */}
             <div
               onClick={() => setActiveTab('OUTDOOR')}
-              className="bg-[#E8F4EE] border border-[#C5E3D5] hover:border-[#21845F] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#E8F4EE] border border-[#C5E3D5] hover:border-[#21845F] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-w-0"
             >
               <div>
                 <div className="flex items-start justify-between gap-1">
@@ -1643,7 +1643,7 @@ export const EmployeePortalPage: React.FC = () => {
                     <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Outdoor Entry
                     </span>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none truncate">
                       {dashboardSummary?.total_outdoor_customers ?? outdoorDuty?.customers?.length ?? 0}
                     </div>
                     <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">Field Leads</span>
@@ -1654,7 +1654,7 @@ export const EmployeePortalPage: React.FC = () => {
                 </div>
 
                 <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-2.5 border-t border-[#C5E3D5] flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-[#21845F]">
-                  <span>Field Interactions</span>
+                  <span>Field Leads</span>
                   <span className="font-mono">{outdoorDuty?.status || 'Active'}</span>
                 </div>
               </div>
@@ -1663,7 +1663,7 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Block 4: Call Activities (Slate Blue #EDF2F8 & #526F91 - matching Manager Footfall card) */}
             <div
               onClick={() => setActiveTab('CALLS')}
-              className="bg-[#EDF2F8] border border-[#C6D4E3] hover:border-[#526F91] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#EDF2F8] border border-[#C6D4E3] hover:border-[#526F91] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-w-0"
             >
               <div>
                 <div className="flex items-start justify-between gap-1">
@@ -1671,7 +1671,7 @@ export const EmployeePortalPage: React.FC = () => {
                     <span className="text-[10px] sm:text-[11px] font-bold text-[#526F91] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Call Activities
                     </span>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none truncate">
                       {dashboardSummary?.total_calls ?? callLogs.length}
                     </div>
                     <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">Client Outreach</span>
@@ -1684,7 +1684,7 @@ export const EmployeePortalPage: React.FC = () => {
                 <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-2.5 border-t border-[#C6D4E3] flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-[#526F91] flex-wrap gap-x-1 leading-tight">
                   <span className="truncate">{dashboardSummary?.completed_calls ?? 0} Done</span>
                   <span className="hidden xs:inline">•</span>
-                  <span className="truncate">{dashboardSummary?.pending_calls ?? 0} Scheduled</span>
+                  <span className="truncate">{dashboardSummary?.pending_calls ?? 0} Sched</span>
                 </div>
               </div>
             </div>
@@ -1695,7 +1695,7 @@ export const EmployeePortalPage: React.FC = () => {
                 setActiveTab('CUSTOMERS');
                 setCustomerApprovalFilter('PENDING');
               }}
-              className="bg-[#FEFCE8] border border-[#EAB308] hover:border-[#CA8A04] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#FEFCE8] border border-[#EAB308] hover:border-[#CA8A04] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-w-0"
             >
               <div>
                 <div className="flex items-start justify-between gap-1">
@@ -1703,10 +1703,10 @@ export const EmployeePortalPage: React.FC = () => {
                     <span className="text-[10px] sm:text-[11px] font-bold text-[#854D0E] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Pending Review
                     </span>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#854D0E] font-mono tracking-tight leading-none">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#854D0E] font-mono tracking-tight leading-none truncate">
                       {dashboardSummary?.pending_customer_activities ?? customerActivities.filter(a => a.approval_status === 'PENDING').length}
                     </div>
-                    <span className="text-[10px] sm:text-xs text-[#854D0E] font-medium mt-0.5 sm:mt-1 block truncate">Awaiting Verification</span>
+                    <span className="text-[10px] sm:text-xs text-[#854D0E] font-medium mt-0.5 sm:mt-1 block truncate">Awaiting Verify</span>
                   </div>
                   <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl bg-white border border-[#EAB308] text-[#CA8A04] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                     <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#CA8A04]" />
@@ -1726,7 +1726,7 @@ export const EmployeePortalPage: React.FC = () => {
                 setActiveTab('CUSTOMERS');
                 setCustomerApprovalFilter('APPROVED');
               }}
-              className="bg-[#E8F4EE] border border-[#C5E3D5] hover:border-[#21845F] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-[#E8F4EE] border border-[#C5E3D5] hover:border-[#21845F] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-w-0"
             >
               <div>
                 <div className="flex items-start justify-between gap-1">
@@ -1734,10 +1734,10 @@ export const EmployeePortalPage: React.FC = () => {
                     <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Approved Logs
                     </span>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#21845F] font-mono tracking-tight leading-none">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#21845F] font-mono tracking-tight leading-none truncate">
                       {dashboardSummary?.approved_customer_activities ?? customerActivities.filter(a => a.approval_status === 'APPROVED').length}
                     </div>
-                    <span className="text-[10px] sm:text-xs text-[#21845F] font-medium mt-0.5 sm:mt-1 block truncate">Manager Approved</span>
+                    <span className="text-[10px] sm:text-xs text-[#21845F] font-medium mt-0.5 sm:mt-1 block truncate">Manager Verified</span>
                   </div>
                   <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl bg-white border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                     <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#21845F]" />
@@ -1755,19 +1755,18 @@ export const EmployeePortalPage: React.FC = () => {
 
         {/* Tab Selection & Main Action Header */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-[#E6E1D6] pb-4">
-          <div className="w-full sm:w-auto grid grid-cols-2 sm:grid-cols-3 lg:flex items-center gap-1.5 p-1.5 bg-white border border-[#D8B4FE]/70 rounded-2xl shadow-xs">
+          <div className="w-full lg:w-auto flex items-center gap-1.5 p-1.5 bg-white border border-[#D8B4FE]/70 rounded-2xl shadow-xs overflow-x-auto flex-nowrap scrollbar-none max-w-full pb-1 sm:pb-1.5">
             {/* Tab 1: Customer Logs */}
             <button
               onClick={() => setActiveTab('CUSTOMERS')}
-              className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'CUSTOMERS'
                   ? 'bg-[#7E22CE] text-white shadow-xs scale-[1.01]'
                   : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FAF5FF]'
               }`}
             >
               <Users className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">Customer Logs</span>
-              <span className="sm:hidden text-[11px] truncate">Customers</span>
+              <span>Customer Logs</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
                 activeTab === 'CUSTOMERS'
                   ? 'bg-white/20 text-white'
@@ -1780,15 +1779,14 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Tab 2: Call Activities */}
             <button
               onClick={() => setActiveTab('CALLS')}
-              className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'CALLS'
                   ? 'bg-[#526F91] text-white shadow-xs scale-[1.01]'
                   : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#EDF2F8]'
               }`}
             >
               <PhoneCall className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">Call Activities</span>
-              <span className="sm:hidden text-[11px] truncate">Calls</span>
+              <span>Call Activities</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
                 activeTab === 'CALLS'
                   ? 'bg-white/20 text-white'
@@ -1801,15 +1799,14 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Tab 3: Review Points */}
             <button
               onClick={() => setActiveTab('REVIEWS')}
-              className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'REVIEWS'
                   ? 'bg-[#7E22CE] text-white shadow-xs scale-[1.01]'
                   : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FAF5FF]'
               }`}
             >
               <Award className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">Review Points</span>
-              <span className="sm:hidden text-[11px] truncate">Points</span>
+              <span>Review Points</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
                 activeTab === 'REVIEWS'
                   ? 'bg-white/20 text-white'
@@ -1822,15 +1819,14 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Tab 4: Outdoor Entry */}
             <button
               onClick={() => setActiveTab('OUTDOOR')}
-              className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'OUTDOOR'
                   ? 'bg-[#23815F] text-white shadow-xs scale-[1.01]'
                   : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#E8F4EE]'
               }`}
             >
               <Compass className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">Outdoor Entry</span>
-              <span className="sm:hidden text-[11px] truncate">Outdoor</span>
+              <span>Outdoor Entry</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
                 activeTab === 'OUTDOOR'
                   ? 'bg-white/20 text-white'
@@ -1846,15 +1842,14 @@ export const EmployeePortalPage: React.FC = () => {
                 setActiveTab('PAYSLIPS');
                 fetchMyPayslips();
               }}
-              className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'PAYSLIPS'
                   ? 'bg-[#21845F] text-white shadow-xs scale-[1.01]'
                   : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#E8F4EE]'
               }`}
             >
               <Receipt className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">Pay Slips</span>
-              <span className="sm:hidden text-[11px] truncate">Slips</span>
+              <span>Pay Slips</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
                 activeTab === 'PAYSLIPS'
                   ? 'bg-white/20 text-white'
@@ -1870,15 +1865,14 @@ export const EmployeePortalPage: React.FC = () => {
                 setActiveTab('LEAVES');
                 fetchMyLeaves();
               }}
-              className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'LEAVES'
                   ? 'bg-[#D97706] text-white shadow-xs scale-[1.01]'
                   : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FFFBEB]'
               }`}
             >
               <CalendarDays className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">Leave Update</span>
-              <span className="sm:hidden text-[11px] truncate">Leaves</span>
+              <span>Leave Update</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
                 activeTab === 'LEAVES'
                   ? 'bg-white/20 text-white'
@@ -1957,7 +1951,7 @@ export const EmployeePortalPage: React.FC = () => {
           <div className="space-y-4">
             {/* Customer Status Quick Filter Bar (Requirement 6: Lost, Interested, Sold) */}
             <div className="bg-white border border-[#E4DFD4] p-2.5 sm:p-3.5 rounded-2xl shadow-xs">
-              <div className="flex flex-wrap items-center gap-1.5 py-0.5">
+              <div className="flex items-center gap-1.5 py-0.5 overflow-x-auto flex-nowrap scrollbar-none pb-1 sm:pb-0">
                 <span className="text-xs font-black text-[#3B0764] mr-1 uppercase tracking-wider text-[11px] flex items-center gap-1.5 shrink-0">
                   <Filter className="w-3.5 h-3.5 text-[#7E22CE]" />
                   <span>Customer Status:</span>
@@ -2116,7 +2110,7 @@ export const EmployeePortalPage: React.FC = () => {
                             )}
                             {(!isOutdoorActivity(act) || (act.status && act.status !== 'Outdoor Marketing')) && (
                               <span
-                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap inline-flex items-center shrink-0 ${
                                   act.status === 'Sold'
                                     ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
                                     : act.status === 'Exchange'
@@ -2386,7 +2380,7 @@ export const EmployeePortalPage: React.FC = () => {
                                 )}
                                 {(!isOutdoorActivity(act) || (act.status && act.status !== 'Outdoor Marketing')) && (
                                   <span
-                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap inline-flex items-center shrink-0 ${
                                       act.status === 'Sold'
                                         ? 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
                                         : act.status === 'Exchange'

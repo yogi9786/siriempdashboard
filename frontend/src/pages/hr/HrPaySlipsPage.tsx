@@ -696,7 +696,7 @@ export const HrPaySlipsPage: React.FC = () => {
 
                     {/* Period */}
                     <td className="px-5 py-3.5 font-bold text-[#1D1D1B] whitespace-nowrap">
-                      <span className="whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] font-sans shrink-0 leading-normal">
+                      <span className="whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] font-sans shrink-0 leading-normal text-xs font-bold">
                         {slip.pay_period}
                       </span>
                     </td>
@@ -715,7 +715,13 @@ export const HrPaySlipsPage: React.FC = () => {
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <button
                         type="button"
-                        onClick={() => setPreviewUrl(slip.file_url)}
+                        onClick={() => {
+                          if (!slip.file_url) {
+                            toastError('No document file attached to this payslip record.');
+                            return;
+                          }
+                          setPreviewUrl(slip.file_url);
+                        }}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#536B8A] font-bold border border-[#E4DFD4] transition-colors cursor-pointer whitespace-nowrap"
                       >
                         <Eye className="w-3.5 h-3.5" />
@@ -736,12 +742,16 @@ export const HrPaySlipsPage: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            if (!slip.file_url) {
+                              toastError('No document attached to this payslip.');
+                              return;
+                            }
                             triggerFileDownload(
                               slip.file_url,
                               `Payslip_${slip.employee_code || slip.employee_name}_${slip.month}_${slip.year}`
-                            )
-                          }
+                            );
+                          }}
                           className="p-1.5 text-[#536B8A] hover:text-[#1D1D1B] hover:bg-[#FAF8F3] rounded-lg transition-colors cursor-pointer"
                           title="Download Document"
                         >
@@ -936,10 +946,10 @@ export const HrPaySlipsPage: React.FC = () => {
               </div>
             </div>
             <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-[#18181B]">
-              {previewUrl.toLowerCase().endsWith('.pdf') ? (
-                <iframe src={getMediaUrl(previewUrl)} className="w-full h-[70vh] rounded-xl" title="Payslip PDF" />
+              {previewUrl.toLowerCase().split('?')[0].endsWith('.pdf') || previewUrl.toLowerCase().includes('.pdf') ? (
+                <iframe src={getMediaUrl(previewUrl)} className="w-full h-[70vh] rounded-xl bg-white" title="Payslip PDF" />
               ) : (
-                <img src={getMediaUrl(previewUrl)} alt="Payslip Preview" className="max-h-[75vh] object-contain rounded-xl shadow-lg" />
+                <img src={getMediaUrl(previewUrl)} alt="Payslip Preview" className="max-h-[75vh] object-contain rounded-xl shadow-lg bg-white" />
               )}
             </div>
           </div>

@@ -183,7 +183,7 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
                       )}
                       {outcome !== 'Outdoor Marketing' && (
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                          className={`whitespace-nowrap inline-flex items-center shrink-0 leading-normal px-2.5 py-1 rounded-full text-[11px] font-bold border ${
                             outcome === 'Sold'
                               ? 'bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]'
                               : outcome === 'Exchange'
@@ -199,7 +199,7 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
                         </span>
                       )}
                       {outcome === 'Exchange' && cust.exchange_type && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#EFF6FF] text-[#1D4ED8] border border-[#93C5FD]">
+                        <span className="whitespace-nowrap inline-flex items-center shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black bg-[#EFF6FF] text-[#1D4ED8] border border-[#93C5FD]">
                           {cust.exchange_type}
                         </span>
                       )}
@@ -252,23 +252,23 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
                     </div>
                   </div>
 
-                  {/* Sold Item Photo Proof Card */}
-                  {cust.sold_image_url && (
+                  {/* Sold Item / Field Marketing Photo Proof Card */}
+                  {(cust.sold_image_url || cust.photo_url || (cust as any).field_photo_url) && (
                     <div className="p-3 rounded-xl bg-[#E8F4EE] border border-[#A7F3D0]">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-[#166534] flex items-center gap-1.5">
                           <Sparkles className="w-3.5 h-3.5 text-[#21845F]" />
-                          Sold Item Ornament / Invoice Photo
+                          {(cust.photo_url || (cust as any).field_photo_url) ? 'Field Marketing / Interaction Photo' : 'Sold Item Ornament / Invoice Photo'}
                         </span>
                         <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                          Closed Deal
+                          {(cust.photo_url || (cust as any).field_photo_url) ? 'Field Proof' : 'Closed Deal'}
                         </span>
                       </div>
                       <div className="w-full max-w-xs rounded-xl overflow-hidden border border-[#86EFAC] bg-white p-1">
                         <img
-                          src={getMediaUrl(cust.sold_image_url)}
-                          alt="Sold Ornament"
-                          onClick={() => setLightboxUrl(getMediaUrl(cust.sold_image_url))}
+                          src={getMediaUrl(cust.photo_url || (cust as any).field_photo_url || cust.sold_image_url)}
+                          alt="Photo Proof"
+                          onClick={() => setLightboxUrl(getMediaUrl(cust.photo_url || (cust as any).field_photo_url || cust.sold_image_url))}
                           className="w-full max-h-48 object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                           title="Click to view full image"
                         />

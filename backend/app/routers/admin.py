@@ -1775,6 +1775,7 @@ def list_admin_customer_activities(
     branch_id: Optional[int] = Query(None),
     employee_id: Optional[int] = Query(None),
     status_val: Optional[str] = Query(None, alias="status"),
+    approval_status: Optional[str] = Query(None, description="Filter: PENDING, APPROVED, REJECTED, all"),
     from_date: Optional[date] = Query(None),
     to_date: Optional[date] = Query(None),
     date_filter: Optional[str] = Query(None),
@@ -1790,6 +1791,8 @@ def list_admin_customer_activities(
         q = q.filter(CustomerActivity.employee_id == employee_id)
     if status_val and status_val != "all":
         q = q.filter(CustomerActivity.status == status_val)
+    if approval_status and approval_status.lower() != "all":
+        q = q.filter(CustomerActivity.approval_status == approval_status.upper())
 
     # Date filter presets
     today_dt = date.today()

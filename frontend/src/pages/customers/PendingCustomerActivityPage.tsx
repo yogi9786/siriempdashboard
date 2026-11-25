@@ -63,6 +63,7 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
   let videoScreenshot = '';
   let videoUrl = '';
   let soldImageUrl = '';
+  let fieldPhotoUrl = '';
   let exchangeType = '';
   let productId = '';
   let noteNotificationDate = '';
@@ -74,6 +75,12 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
         for (const item of parsed) {
           if (!productId && item.product_id) productId = item.product_id;
           if (!soldImageUrl && item.sold_image_url) soldImageUrl = item.sold_image_url;
+          if (!fieldPhotoUrl && (item.photo_url || item.field_photo_url || item.outdoor_photo_url)) {
+            fieldPhotoUrl = item.photo_url || item.field_photo_url || item.outdoor_photo_url;
+          }
+          if (!soldImageUrl && (item.photo_url || item.field_photo_url)) {
+            soldImageUrl = item.photo_url || item.field_photo_url;
+          }
           if (!exchangeType && item.exchange_type) exchangeType = item.exchange_type;
           if (!noteNotificationDate && item.note_notification_date) noteNotificationDate = item.note_notification_date;
           if (!hasScheme && (item.has_scheme || item.scheme_name)) {
@@ -136,6 +143,7 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
     videoScreenshot,
     videoUrl,
     soldImageUrl,
+    fieldPhotoUrl,
     exchangeType,
     productId,
     noteNotificationDate,
@@ -189,6 +197,9 @@ export const PendingCustomerActivityPage: React.FC = () => {
   const [customerOutcomeFilter, setCustomerOutcomeFilter] = useState<'ALL' | 'Sold' | 'Exchange' | 'In Hold' | 'Interested' | 'Lost' | 'Window Shopping' | 'Outdoor Marketing'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'this_week' | 'this_month' | 'last_month' | 'custom'>('all');
+  const [customFromDate, setCustomFromDate] = useState<string>('');
+  const [customToDate, setCustomToDate] = useState<string>('');
 
   // Status counts for the top 4 filter cards
   const [counts, setCounts] = useState({
@@ -275,6 +286,13 @@ export const PendingCustomerActivityPage: React.FC = () => {
       if (selectedEmployeeId && selectedEmployeeId !== 'all') {
         allParams.employee_id = parseInt(selectedEmployeeId, 10);
       }
+      if (dateFilter !== 'all' && dateFilter !== 'custom') {
+        allParams.date_filter = dateFilter;
+      }
+      if (dateFilter === 'custom') {
+        if (customFromDate) allParams.from_date = customFromDate;
+        if (customToDate) allParams.to_date = customToDate;
+      }
 
       // Fetch all customer submissions for this branch & employee to compute all filter card counts cleanly with 0 network errors
       const [allActRes, empRes] = await Promise.all([
@@ -331,7 +349,7 @@ export const PendingCustomerActivityPage: React.FC = () => {
 
   useEffect(() => {
     fetchActivities();
-  }, [statusFilter, selectedEmployeeId]);
+  }, [statusFilter, selectedEmployeeId, dateFilter, customFromDate, customToDate]);
 
   const handleOpenReview = (activity: CustomerActivity, action: 'APPROVE' | 'REJECT') => {
     setSelectedForReview(activity);
@@ -625,6 +643,78 @@ export const PendingCustomerActivityPage: React.FC = () => {
 
       {sectionMode === 'ACTIVITIES' ? (
         <>
+      {/* Date Period Filter Controls */}
+      <div className="bg-white border border-[#E4DFD4] p-3 rounded-2xl shadow-2xs space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#5E5A52]">
+            <Calendar className="w-3.5 h-3.5 text-[#21845F]" />
+            <span>Activity Date Filter:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[
+              { id: 'all', label: 'All Time' },
+              { id: 'today', label: 'Today' },
+              { id: 'yesterday', label: 'Yesterday' },
+              { id: 'this_week', label: 'This Week' },
+              { id: 'this_month', label: 'This Month' },
+              { id: 'last_month', label: 'Last Month' },
+              { id: 'custom', label: 'Custom' },
+            ].map((p) => {
+              const active = dateFilter === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setDateFilter(p.id as any)}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    active
+                      ? 'bg-[#1D1D1B] text-white shadow-2xs'
+                      : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {dateFilter === 'custom' && (
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#F0ECE1]">
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="font-semibold text-[#5E5A52]">From:</span>
+              <input
+                type="date"
+                value={customFromDate}
+                onChange={(e) => setCustomFromDate(e.target.value)}
+                className="px-2.5 py-1 rounded-lg border border-[#C5D5E6] bg-white text-xs font-medium text-[#1D1D1B]"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="font-semibold text-[#5E5A52]">To:</span>
+              <input
+                type="date"
+                value={customToDate}
+                onChange={(e) => setCustomToDate(e.target.value)}
+                className="px-2.5 py-1 rounded-lg border border-[#C5D5E6] bg-white text-xs font-medium text-[#1D1D1B]"
+              />
+            </div>
+            {(customFromDate || customToDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomFromDate('');
+                  setCustomToDate('');
+                }}
+                className="px-2.5 py-1 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 cursor-pointer"
+              >
+                Clear Range
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Customer Status Quick Filters (Requirement 6: Lost, Interested, Sold, All) */}
       <div className="bg-[#FAF8F3] border border-[#E4DFD4] p-2.5 sm:p-3 rounded-2xl shadow-2xs">
         <div className="flex flex-wrap items-center gap-1.5 py-0.5">
@@ -1539,23 +1629,23 @@ export const PendingCustomerActivityPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Sold Item Image Card */}
-                    {b.soldImageUrl && (
+                    {/* Sold Item / Field Marketing Proof Photo Card */}
+                    {(b.fieldPhotoUrl || b.soldImageUrl) && (
                       <div className="p-3.5 rounded-2xl bg-[#E8F4EE] border border-[#A7F3D0]">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-bold text-[#166534] flex items-center gap-1.5">
                             <Sparkles className="w-4 h-4 text-[#21845F]" />
-                            Sold Ornament / Item Photo
+                            {b.fieldPhotoUrl ? 'Field Marketing / Interaction Photo' : 'Sold Ornament / Item Photo'}
                           </span>
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                            Closed Sale
+                            {b.fieldPhotoUrl ? 'Field Proof' : 'Closed Sale'}
                           </span>
                         </div>
                         <div className="w-full max-w-xs rounded-xl overflow-hidden border border-[#86EFAC] bg-white p-1">
                           <img
-                            src={getMediaUrl(b.soldImageUrl)}
-                            alt="Sold Item"
-                            onClick={() => setViewProofUrl(getMediaUrl(b.soldImageUrl))}
+                            src={getMediaUrl(b.fieldPhotoUrl || b.soldImageUrl)}
+                            alt="Photo Proof"
+                            onClick={() => setViewProofUrl(getMediaUrl(b.fieldPhotoUrl || b.soldImageUrl))}
                             className="w-full max-h-52 object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                             title="Click to view full image"
                           />

@@ -13,6 +13,7 @@ import {
   XCircle,
   ArrowUpDown,
   Sparkles,
+  Tag,
   UserCheck,
   Check,
   Award,
@@ -39,6 +40,176 @@ const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' 
     <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.97.53 1.83.812 2.796.813 3.179 0 5.767-2.587 5.768-5.766.001-3.181-2.587-5.766-5.768-5.766zm3.376 8.212c-.144.405-.837.774-1.17.824-.312.045-.717.067-1.168-.08-.288-.094-.658-.236-1.144-.45-2.072-.913-3.414-3.033-3.518-3.173-.104-.14-1.01-1.344-1.01-2.564 0-1.22.637-1.82.863-2.066.226-.246.495-.308.66-.308.165 0 .33.003.475.01.153.008.358-.058.56.427.207.497.708 1.724.77 1.849.062.125.104.271.021.437-.083.165-.124.27-.247.416-.124.145-.262.325-.374.436-.125.124-.255.26-.11.51.145.249.645 1.062 1.385 1.722.953.849 1.756 1.112 2.004 1.237.248.125.394.104.539-.063.145-.166.621-.726.786-.975.166-.249.331-.208.558-.125.228.083 1.446.682 1.694.807.248.124.414.186.475.29.063.104.063.602-.081 1.007zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.98-1.306A9.957 9.957 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" />
   </svg>
 );
+
+interface ProductLookupItem {
+  id: number;
+  tag_no: string;
+  item_name: string;
+  item_type?: string;
+  gross_weight?: number;
+  net_weight?: number;
+  making_charges?: number;
+  counter?: string;
+  is_sold?: boolean;
+}
+
+const ProductTagSelector: React.FC<{
+  productId?: string;
+  productName?: string;
+  onSelect: (productId: string, productName: string) => void;
+  onClear: () => void;
+  onChangeText: (text: string) => void;
+}> = ({ productId, productName, onSelect, onClear, onChangeText }) => {
+  const [query, setQuery] = useState(productId || '');
+  const [suggestions, setSuggestions] = useState<ProductLookupItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    setQuery(productId || '');
+  }, [productId]);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2 || (productName && trimmed === productId)) {
+      setSuggestions([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const res = await api.get<ProductLookupItem[]>('/api/v1/products/lookup', {
+          params: { q: trimmed, limit: 10 },
+        });
+        setSuggestions(res.data || []);
+        setShowDropdown(true);
+      } catch (err) {
+        console.error('Error fetching stock products:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query, productId, productName]);
+
+  const handleSelect = (item: ProductLookupItem) => {
+    setQuery(item.tag_no);
+    setShowDropdown(false);
+    onSelect(item.tag_no, item.item_name);
+  };
+
+  const handleBlur = () => {
+    setTimeout(async () => {
+      setShowDropdown(false);
+      const trimmed = query.trim();
+      if (trimmed && !productName) {
+        try {
+          const res = await api.get<ProductLookupItem>(`/api/v1/products/${encodeURIComponent(trimmed)}`);
+          if (res.data?.item_name) {
+            onSelect(res.data.tag_no, res.data.item_name);
+          }
+        } catch {
+          // Keep manually entered product id
+        }
+      }
+    }, 200);
+  };
+
+  return (
+    <div className="relative">
+      <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center justify-between">
+        <span className="flex items-center gap-1">
+          <Tag className="w-3 h-3 text-[#D97706]" />
+          <span>Product ID / Tag Number (Optional)</span>
+        </span>
+        {productName && (
+          <span className="text-[10px] text-[#21845F] font-bold">Catalog Linked</span>
+        )}
+      </label>
+
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            onChangeText(e.target.value);
+          }}
+          onFocus={() => {
+            if (suggestions.length > 0) setShowDropdown(true);
+          }}
+          onBlur={handleBlur}
+          placeholder="Type Tag No (e.g. 7231412)"
+          className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2 font-mono uppercase pr-8"
+        />
+        {isSearching && (
+          <Loader2 className="w-3.5 h-3.5 text-[#D97706] animate-spin absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        )}
+      </div>
+
+      {/* Autocomplete Dropdown */}
+      {showDropdown && suggestions.length > 0 && (
+        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-[#E8E4D9] rounded-xl shadow-xl max-h-56 overflow-y-auto divide-y divide-[#F0ECE1]">
+          {suggestions.map((s) => (
+            <div
+              key={s.id}
+              onMouseDown={() => handleSelect(s)}
+              className="p-2.5 hover:bg-[#FAF8F3] cursor-pointer flex items-center justify-between text-xs transition-colors"
+            >
+              <div>
+                <div className="font-mono font-bold text-[#1D1D1B] flex items-center gap-1.5">
+                  <span className="text-[#D97706]">#{s.tag_no}</span>
+                  <span>—</span>
+                  <span className="font-sans font-extrabold">{s.item_name}</span>
+                  {s.item_type && (
+                    <span className="text-[10px] text-[#8A8479]">({s.item_type})</span>
+                  )}
+                </div>
+                {(s.gross_weight || s.making_charges) && (
+                  <div className="text-[10px] text-[#8A8479] mt-0.5">
+                    {s.gross_weight ? `G.Wt: ${s.gross_weight}g` : ''}
+                    {s.net_weight ? ` | N.Wt: ${s.net_weight}g` : ''}
+                    {s.counter ? ` | Counter: ${s.counter}` : ''}
+                  </div>
+                )}
+              </div>
+              {s.is_sold && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">
+                  Sold
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Verified Product Badge */}
+      {productName && (
+        <div className="mt-1.5 flex items-center justify-between p-2 rounded-xl bg-[#FAF8F3] border border-[#E8E4D9]">
+          <div className="flex items-center gap-1.5 overflow-hidden">
+            <Sparkles className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
+            <div className="truncate text-xs">
+              <span className="font-mono font-bold text-[#1D1D1B] mr-1.5">Tag: {productId}</span>
+              <span className="font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded-md border border-[#FDE68A]">
+                {productName}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-[10px] text-[#DC2626] hover:underline font-bold ml-2 shrink-0 cursor-pointer"
+          >
+            ✕ Clear
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface CustomerActivityModalProps {
   isOpen: boolean;
@@ -1059,22 +1230,25 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                         </div>
                       )}
 
-                      {/* Product ID / Tag */}
-                      <div>
-                        <label className="text-[11px] font-bold text-[#536B8A] mb-1 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-[#D97706]" />
-                          <span>Product ID / Code (Optional)</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={item.product_id || ''}
-                          onChange={(e) =>
-                            handleCustomerFieldChange(idx, 'product_id', e.target.value)
+                      {/* Product ID / Tag with Auto Stock Lookup */}
+                      <ProductTagSelector
+                        productId={item.product_id || ''}
+                        productName={item.product_name || ''}
+                        onSelect={(prodId, prodName) => {
+                          handleCustomerFieldChange(idx, 'product_id', prodId);
+                          handleCustomerFieldChange(idx, 'product_name', prodName);
+                        }}
+                        onClear={() => {
+                          handleCustomerFieldChange(idx, 'product_id', '');
+                          handleCustomerFieldChange(idx, 'product_name', '');
+                        }}
+                        onChangeText={(txt) => {
+                          handleCustomerFieldChange(idx, 'product_id', txt);
+                          if (item.product_name && txt !== item.product_id) {
+                            handleCustomerFieldChange(idx, 'product_name', '');
                           }
-                          placeholder="e.g. 22KT-NK-101"
-                          className="w-full text-xs input-luxury-beige rounded-xl px-2.5 py-2 font-mono uppercase"
-                        />
-                      </div>
+                        }}
+                      />
 
                       {/* Product Value (₹) */}
                       <div>

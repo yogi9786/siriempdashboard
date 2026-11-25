@@ -20,12 +20,14 @@ import {
   Clock,
   Layers,
   ArrowUpRight,
+  Tag,
 } from 'lucide-react';
 import api from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import { CustomerActivity, CustomerDetailItem, Employee } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
 import { CustomerActivityViewModal } from '../../components/customers/CustomerActivityViewModal';
+import { SoldStockInventoryTable } from '../../components/revenue/SoldStockInventoryTable';
 
 export const HrRevenuePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,8 +38,8 @@ export const HrRevenuePage: React.FC = () => {
   const [branchBreakdown, setBranchBreakdown] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Tabs: Sold Customer Purchases vs Jewellery Savings Schemes
-  const [activeTab, setActiveTab] = useState<'SOLD' | 'SCHEMES'>('SOLD');
+  // Tabs: Sold Customer Purchases vs Jewellery Savings Schemes vs Sold Stock Inventory
+  const [activeTab, setActiveTab] = useState<'SOLD' | 'SCHEMES' | 'INVENTORY'>('SOLD');
   const [schemeCategory, setSchemeCategory] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
 
@@ -175,6 +177,7 @@ export const HrRevenuePage: React.FC = () => {
       status: string;
       exchangeType?: string;
       productId: string;
+      productName?: string;
       productValue: number;
       employeeName: string;
       employeeCode: string;
@@ -211,7 +214,8 @@ export const HrRevenuePage: React.FC = () => {
             phone: item.phone || act.phone_number || '',
             status: itemStatus === 'Sold' ? 'Sold' : itemStatus === 'Exchange' ? 'Exchange' : 'Sold',
             exchangeType: item.exchange_type,
-            productId: item.product_id || '',
+            productId: item.product_id || (act as any).product_id || '',
+            productName: item.product_name || (act as any).product_name || '',
             productValue: val > 0 ? val : Number(act.product_value) || 0,
             employeeName: act.employee_name || 'Showroom Staff',
             employeeCode: act.employee_code || '',
@@ -634,91 +638,91 @@ export const HrRevenuePage: React.FC = () => {
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Gross Revenue */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden">
-          <div className="flex items-start justify-between gap-1.5 sm:gap-2">
-            <div className="min-w-0 flex-1 overflow-hidden">
-              <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
-                Gross Sold Revenue
-              </span>
-              <div
-                className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
-                title={`₹${totalRevenue.toLocaleString('en-IN')}`}
-              >
-                ₹{totalRevenue.toLocaleString('en-IN')}
-              </div>
-              <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
-                {selectedBranch === 'ALL' ? 'Across all 3 showrooms' : `${selectedBranch} branch`}
-              </span>
-            </div>
-            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider truncate">
+              Gross Sold Revenue
+            </span>
+            <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
               <IndianRupee className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
+          </div>
+          <div className="min-w-0">
+            <div
+              className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
+              title={`₹${totalRevenue.toLocaleString('en-IN')}`}
+            >
+              ₹{totalRevenue.toLocaleString('en-IN')}
+            </div>
+            <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+              {selectedBranch === 'ALL' ? 'Across all 3 showrooms' : `${selectedBranch} branch`}
+            </span>
           </div>
         </div>
 
         {/* Card 2: Sold Transactions */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden">
-          <div className="flex items-start justify-between gap-1.5 sm:gap-2">
-            <div className="min-w-0 flex-1 overflow-hidden">
-              <span className="text-[10px] sm:text-[11px] font-bold text-[#D97706] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
-                Completed Purchases
-              </span>
-              <div className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate">
-                {filteredSold.length}
-              </div>
-              <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
-                Sold & Exchange orders
-              </span>
-            </div>
-            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#D97706] uppercase tracking-wider truncate">
+              Completed Purchases
+            </span>
+            <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
               <ShoppingBag className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
+          </div>
+          <div className="min-w-0">
+            <div className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate">
+              {filteredSold.length}
+            </div>
+            <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+              Sold & Exchange orders
+            </span>
           </div>
         </div>
 
         {/* Card 3: Jewellery Savings Schemes */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden">
-          <div className="flex items-start justify-between gap-1.5 sm:gap-2">
-            <div className="min-w-0 flex-1 overflow-hidden">
-              <span className="text-[10px] sm:text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
-                Monthly Schemes Volume
-              </span>
-              <div
-                className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
-                title={`₹${totalSchemesVolume.toLocaleString('en-IN')}`}
-              >
-                ₹{totalSchemesVolume.toLocaleString('en-IN')}
-              </div>
-              <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
-                {filteredSchemes.length} Active Accounts
-              </span>
-            </div>
-            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#3B82F6] flex items-center justify-center shrink-0">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider truncate">
+              Monthly Schemes Volume
+            </span>
+            <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#3B82F6] flex items-center justify-center shrink-0">
               <Sparkles className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
+          </div>
+          <div className="min-w-0">
+            <div
+              className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
+              title={`₹${totalSchemesVolume.toLocaleString('en-IN')}`}
+            >
+              ₹{totalSchemesVolume.toLocaleString('en-IN')}
+            </div>
+            <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+              {filteredSchemes.length} Active Accounts
+            </span>
           </div>
         </div>
 
         {/* Card 4: Average Order Value */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden">
-          <div className="flex items-start justify-between gap-1.5 sm:gap-2">
-            <div className="min-w-0 flex-1 overflow-hidden">
-              <span className="text-[10px] sm:text-[11px] font-bold text-[#8B5CF6] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
-                Avg Ticket Size
-              </span>
-              <div
-                className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
-                title={`₹${avgOrderValue.toLocaleString('en-IN')}`}
-              >
-                ₹{avgOrderValue.toLocaleString('en-IN')}
-              </div>
-              <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
-                Per customer transaction
-              </span>
-            </div>
-            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] flex items-center justify-center shrink-0">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#8B5CF6] uppercase tracking-wider truncate">
+              Avg Ticket Size
+            </span>
+            <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] flex items-center justify-center shrink-0">
               <TrendingUp className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
+          </div>
+          <div className="min-w-0">
+            <div
+              className="text-base sm:text-2xl lg:text-3xl font-black text-[#1D1D1B] font-mono truncate"
+              title={`₹${avgOrderValue.toLocaleString('en-IN')}`}
+            >
+              ₹{avgOrderValue.toLocaleString('en-IN')}
+            </div>
+            <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
+              Per customer transaction
+            </span>
           </div>
         </div>
       </div>
@@ -802,10 +806,10 @@ export const HrRevenuePage: React.FC = () => {
         {/* Search Bar & Tabs Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#F0ECE1]">
           {/* Main Tabs */}
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('SOLD')}
-              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
                 activeTab === 'SOLD'
                   ? 'bg-[#21845F] text-white shadow-xs'
                   : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#F2EDE4] border border-[#E4DFD4]'
@@ -817,7 +821,7 @@ export const HrRevenuePage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('SCHEMES')}
-              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
                 activeTab === 'SCHEMES'
                   ? 'bg-[#D97706] text-white shadow-xs'
                   : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#F2EDE4] border border-[#E4DFD4]'
@@ -825,6 +829,18 @@ export const HrRevenuePage: React.FC = () => {
             >
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">Savings Schemes ({filteredSchemes.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('INVENTORY')}
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
+                activeTab === 'INVENTORY'
+                  ? 'bg-[#1D1D1B] text-[#E5C378] shadow-xs border border-[#3F3F46]'
+                  : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#F2EDE4] border border-[#E4DFD4]'
+              }`}
+            >
+              <Tag className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
+              <span className="truncate">Sold Stock Inventory</span>
             </button>
           </div>
 
@@ -870,66 +886,98 @@ export const HrRevenuePage: React.FC = () => {
       </div>
 
       {/* Main Data Tables Section */}
-      <div className="bg-white border border-[#E4DFD4] rounded-3xl overflow-hidden shadow-[0_4px_18px_rgba(40,35,25,0.045)]">
-        {activeTab === 'SOLD' ? (
-          /* TAB 1: CUSTOMER PURCHASES (SOLD) */
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-[#FAF8F3] border-b border-[#EBE6DC] text-[#6B6559] uppercase font-bold text-[10px] tracking-wider">
-                  <th className="px-5 py-3.5">Visit Date</th>
-                  <th className="px-5 py-3.5">Customer & Contact</th>
-                  <th className="px-5 py-3.5">Showroom Branch</th>
-                  <th className="px-5 py-3.5">Attended By Staff</th>
-                  <th className="px-5 py-3.5">Outcome</th>
-                  <th className="px-5 py-3.5">Purchase Value (₹)</th>
-                  <th className="px-5 py-3.5">Notes / Breakdown</th>
-                  <th className="px-5 py-3.5 text-right">View</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F0ECE1]">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center text-[#8A8479]">
-                      <RefreshCw className="w-5 h-5 animate-spin mx-auto text-[#21845F]" />
-                      <span className="block mt-2 font-semibold">Loading revenue transactions...</span>
-                    </td>
+      {activeTab === 'INVENTORY' ? (
+        <SoldStockInventoryTable
+          branchCode={selectedBranch}
+          dateFilter={dateFilter}
+          fromDate={fromDate}
+          toDate={toDate}
+          initialSearch={search}
+        />
+      ) : (
+        <div className="bg-white border border-[#E4DFD4] rounded-3xl overflow-hidden shadow-[0_4px_18px_rgba(40,35,25,0.045)]">
+          {activeTab === 'SOLD' ? (
+            /* TAB 1: CUSTOMER PURCHASES (SOLD) */
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-[#FAF8F3] border-b border-[#EBE6DC] text-[#6B6559] uppercase font-bold text-[10px] tracking-wider whitespace-nowrap">
+                    <th className="px-5 py-3.5">Visit Date</th>
+                    <th className="px-5 py-3.5">Customer & Contact</th>
+                    <th className="px-5 py-3.5">Product (Tag & Name)</th>
+                    <th className="px-5 py-3.5">Showroom Branch</th>
+                    <th className="px-5 py-3.5">Attended By Staff</th>
+                    <th className="px-5 py-3.5">Outcome</th>
+                    <th className="px-5 py-3.5">Purchase Value (₹)</th>
+                    <th className="px-5 py-3.5">Notes / Breakdown</th>
+                    <th className="px-5 py-3.5 text-right">View</th>
                   </tr>
-                ) : filteredSold.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center text-[#8A8479]">
-                      <p className="font-bold text-sm text-[#1D1D1B]">No sold purchases found.</p>
-                      <p className="text-xs mt-1">
-                        Try adjusting the showroom branch, date filters, or search terms.
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredSold.map((item) => (
-                    <tr key={item.id} className="hover:bg-[#FAF9F5] transition-colors">
-                      {/* Date */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 font-bold text-[#1D1D1B]">
-                          <Calendar className="w-3.5 h-3.5 text-[#536B8A]" />
-                          <span>{item.date}</span>
-                        </div>
-                        <span className="text-[10px] font-mono text-[#8A8479]">#{item.activityId}</span>
+                </thead>
+                <tbody className="divide-y divide-[#F0ECE1]">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={9} className="px-5 py-12 text-center text-[#8A8479]">
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto text-[#21845F]" />
+                        <span className="block mt-2 font-semibold">Loading revenue transactions...</span>
                       </td>
-
-                      {/* Customer */}
-                      <td className="px-5 py-3.5">
-                        <div className="font-extrabold text-[#1D1D1B] text-sm">
-                          {item.customerName}
-                        </div>
-                        {item.phone ? (
-                          <div className="text-[11px] font-mono text-[#536B8A] flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-[#21845F]" />
-                            <span>{item.phone}</span>
+                    </tr>
+                  ) : filteredSold.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-5 py-12 text-center text-[#8A8479]">
+                        <p className="font-bold text-sm text-[#1D1D1B]">No sold purchases found.</p>
+                        <p className="text-xs mt-1">
+                          Try adjusting the showroom branch, date filters, or search terms.
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredSold.map((item) => (
+                      <tr key={item.id} className="hover:bg-[#FAF9F5] transition-colors">
+                        {/* Date */}
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 font-bold text-[#1D1D1B]">
+                            <Calendar className="w-3.5 h-3.5 text-[#536B8A]" />
+                            <span>{item.date}</span>
                           </div>
-                        ) : (
-                          <span className="text-[10px] text-[#8A8479] italic">No phone</span>
-                        )}
-                      </td>
+                          <span className="text-[10px] font-mono text-[#8A8479]">#{item.activityId}</span>
+                        </td>
+
+                        {/* Customer */}
+                        <td className="px-5 py-3.5">
+                          <div className="font-extrabold text-[#1D1D1B] text-sm">
+                            {item.customerName}
+                          </div>
+                          {item.phone ? (
+                            <div className="text-[11px] font-mono text-[#536B8A] flex items-center gap-1">
+                              <Phone className="w-3 h-3 text-[#21845F]" />
+                              <span>{item.phone}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-[#8A8479] italic">No phone</span>
+                          )}
+                        </td>
+
+                        {/* Product (Tag & Item Name) */}
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          {item.productId ? (
+                            <div>
+                              <div className="font-mono font-bold text-xs text-[#1D1D1B] flex items-center gap-1">
+                                <Tag className="w-3 h-3 text-[#D97706]" />
+                                <span>#{item.productId}</span>
+                              </div>
+                              {item.productName && (
+                                <div
+                                  className="text-[11px] font-semibold text-[#D97706] mt-0.5 max-w-[150px] truncate"
+                                  title={item.productName}
+                                >
+                                  {item.productName}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-[#8A8479] italic">—</span>
+                          )}
+                        </td>
 
                       {/* Branch */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
@@ -1133,9 +1181,10 @@ export const HrRevenuePage: React.FC = () => {
                 )}
               </tbody>
             </table>
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Customer Activity View Modal */}
       <CustomerActivityViewModal

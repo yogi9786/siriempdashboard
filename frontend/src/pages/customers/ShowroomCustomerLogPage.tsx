@@ -659,7 +659,7 @@ export const ShowroomCustomerLogPage: React.FC = () => {
                 <tr>
                   <th className="px-4 py-3.5">Customer Contact & Dates</th>
                   <th className="px-4 py-3.5">Attending Salesperson</th>
-                  <th className="px-4 py-3.5">Showroom Outcome / Value</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap">Showroom Outcome / Value</th>
                   <th className="px-4 py-3.5">Enrolled Jewellery Scheme</th>
                   <th className="px-4 py-3.5">Google Review / Feedback</th>
                   <th className="px-4 py-3.5">Interaction Notes</th>
@@ -758,16 +758,16 @@ export const ShowroomCustomerLogPage: React.FC = () => {
                     </td>
 
                     {/* 3. Outcome & Product Value */}
-                    <td className="px-4 py-3.5 align-top">
+                    <td className="px-4 py-3.5 align-top whitespace-nowrap">
                       <div className="flex flex-col gap-1 items-start">
                         {row.isOutdoor && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F4EE] border border-[#A7F3D0] text-[#1B694C]">
+                          <span className="whitespace-nowrap shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F4EE] border border-[#A7F3D0] text-[#1B694C] leading-normal">
                             <Compass className="w-3 h-3 text-[#1B694C]" />
                             <span>Outdoor Marketing</span>
                           </span>
                         )}
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                          className={`whitespace-nowrap shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border leading-normal ${
                             row.status.toLowerCase().includes('converted') || row.status.toLowerCase().includes('billing')
                               ? 'bg-[#E8F4EE] border-[#C5E3D5] text-[#21845F]'
                               : row.status.toLowerCase().includes('interested')

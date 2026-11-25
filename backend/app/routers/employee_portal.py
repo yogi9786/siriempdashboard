@@ -507,7 +507,7 @@ def delete_employee_customer_activity(
             CustomerFeedback.notes.like(f"%{tag}%")
         ).delete(synchronize_session=False)
     except Exception as cleanup_err:
-        print(f"Warning cleaning subrecords for activity #{record.id}: {cleanup_err}")
+        logger.warning(f"Cleaning subrecords for activity #{record.id}: {cleanup_err}")
 
     db.delete(record)
     db.commit()
@@ -1195,6 +1195,57 @@ def get_employee_notifications(
             )
         )
 
+    # 6. Leave Requests submitted by this employee (Approval / Rejection Status)
+    leave_requests = (
+        db.query(EmployeeLeaveRequest)
+        .filter(EmployeeLeaveRequest.employee_id == current_emp.id)
+        .order_by(EmployeeLeaveRequest.created_at.desc(), EmployeeLeaveRequest.id.desc())
+        .limit(20)
+        .all()
+    )
+    for lr in leave_requests:
+        st_raw = (lr.status or "PENDING").upper()
+        reviewer = (lr.reviewed_by_name or "").strip()
+        if "HR" in reviewer.upper():
+            approver_str = "HR"
+            approver_approved_tag = "HR Approved"
+        elif reviewer:
+            clean_mgr = re.sub(r"^Manager\s*\(?|\)?$", "", reviewer).strip()
+            approver_str = f"Manager {clean_mgr}"
+            approver_approved_tag = f"Approved by Manager {clean_mgr}"
+        else:
+            approver_str = f"Manager {branch_mgr}"
+            approver_approved_tag = f"Approved by Manager {branch_mgr}"
+
+        if st_raw == "APPROVED":
+            st = "APPROVED"
+            color = "green"
+            msg = f"Leave request for {lr.leave_type} ({lr.days_count} day(s): {lr.from_date} to {lr.to_date}) was {approver_approved_tag}."
+        elif st_raw == "REJECTED":
+            st = "REJECTED"
+            color = "red"
+            rej = (lr.rejection_reason or "").strip()
+            reason = f" (Reason: {rej})" if rej else ""
+            msg = f"Leave request for {lr.leave_type} was REJECTED by {approver_str}{reason}."
+        else:
+            st = "PENDING"
+            color = "amber"
+            msg = f"Leave request for {lr.leave_type} ({lr.days_count} day(s): {lr.from_date} to {lr.to_date}) is pending review by Showroom Manager / HR."
+
+        l_date = lr.from_date.strftime("%d %b %Y") if hasattr(lr.from_date, "strftime") else str(lr.from_date)
+        notifications.append(
+            EmployeeNotificationItem(
+                id=f"leave_{lr.id}",
+                category="leave",
+                title=f"Leave Request: {st.title()}",
+                status=st,
+                message=msg,
+                date=l_date,
+                created_at=lr.created_at.isoformat() if lr.created_at else None,
+                badge_color=color,
+            )
+        )
+
     # Sort notifications by created_at descending
     notifications.sort(key=lambda x: x.created_at or x.date or "", reverse=True)
 
@@ -1743,6 +1794,43 @@ def delete_individual_outdoor_customer(
 
     db.commit()
     return {"message": "Outdoor customer deleted successfully"}
+
+
+@router.post("/outdoor/customer/{customer_id}/send-whatsapp", summary="Send WhatsApp message to outdoor customer lead via AiSensy")
+def send_employee_outdoor_customer_whatsapp(
+    customer_id: int,
+    current_emp: Employee = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    cust = (
+        db.query(OutdoorMarketingCustomer)
+        .filter(
+            OutdoorMarketingCustomer.id == customer_id,
+            OutdoorMarketingCustomer.marketing_employee_id == current_emp.id,
+        )
+        .first()
+    )
+    if not cust:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outdoor customer lead not found in your assigned records.")
+    if not cust.phone or len(re.sub(r"\D", "", cust.phone)) < 10:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Customer does not have a valid 10-digit phone number for WhatsApp.")
+
+    branch = db.query(Branch).filter(Branch.id == cust.branch_id).first()
+
+    result = AiSensyService.send_outdoor_lead_whatsapp(
+        customer_name=cust.customer_name,
+        phone_number=cust.phone,
+        branch_name=branch.name if branch else "Siri Samruddhi Gold Palace",
+        employee_name=current_emp.full_name,
+    )
+    return {
+        "success": result.get("success", False),
+        "customer_id": cust.id,
+        "customer_name": cust.customer_name,
+        "phone": cust.phone,
+        "result": result,
+    }
+
 
 
 # -------------------------------------------------------------------------

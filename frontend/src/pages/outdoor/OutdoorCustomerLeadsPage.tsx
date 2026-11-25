@@ -32,6 +32,7 @@ import {
   FileText,
   Check,
   Loader2,
+  MessageSquare,
 } from 'lucide-react';
 import { OutdoorMarketingCustomer, Employee } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -484,6 +485,23 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
     setToDate('');
   };
 
+  const handleSendWhatsApp = async (customer: OutdoorMarketingCustomer) => {
+    if (!customer.phone || customer.phone.replace(/\D/g, '').length < 10) {
+      toastError('Customer does not have a valid 10-digit phone number.');
+      return;
+    }
+    try {
+      const res = await api.post(`/api/v1/outdoor-marketing/customers/${customer.id}/send-whatsapp`);
+      if (res.data?.success) {
+        success(`WhatsApp outreach sent successfully to ${customer.customer_name}!`);
+      } else {
+        toastError(res.data?.result?.error || 'WhatsApp message simulated/queued. Template ID can be customized in .env.');
+      }
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to dispatch WhatsApp message.');
+    }
+  };
+
   return (
     <div className="space-y-6 pb-16">
       {/* 1. Header Banner */}
@@ -845,6 +863,28 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Field Photo Proof */}
+                  {c.photo_url && (
+                    <div className="flex items-center gap-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-2">
+                      <img
+                        src={getMediaUrl(c.photo_url)}
+                        alt="Field Photo"
+                        className="w-11 h-11 object-cover rounded-lg border border-[#86EFAC] shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[11px] font-bold text-[#166534] block truncate">Field Interaction Photo</span>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewProofUrl(c.photo_url!)}
+                          className="inline-flex items-center gap-1 text-[10px] text-[#21845F] font-bold hover:underline cursor-pointer mt-0.5"
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>View Full Photo</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Review Proofs / Feedback Badges */}
                   {(c.has_google_review || c.has_video_review || c.has_customer_feedback) && (
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -910,7 +950,16 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                   )}
 
                   {/* Actions Row */}
-                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#F0EFEA]">
+                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#F0EFEA] flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSendWhatsApp(c)}
+                      leftIcon={<MessageSquare className="w-3.5 h-3.5 text-[#16A34A]" />}
+                      className="font-bold text-xs border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100"
+                    >
+                      WhatsApp
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -994,6 +1043,25 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                               <span>Anniv: {c.anniversary_date}</span>
                             </span>
                           )}
+                        </div>
+                      )}
+
+                      {/* Field Interaction Photo */}
+                      {c.photo_url && (
+                        <div className="flex items-center gap-1.5 mt-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg p-1 w-fit">
+                          <img
+                            src={getMediaUrl(c.photo_url)}
+                            alt="Lead Photo"
+                            className="w-7 h-7 rounded object-cover border border-[#86EFAC] shrink-0"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setPreviewProofUrl(c.photo_url!)}
+                            className="text-[10px] text-[#21845F] font-bold hover:underline cursor-pointer pr-1 flex items-center gap-0.5"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Photo</span>
+                          </button>
                         </div>
                       )}
                     </td>
@@ -1197,6 +1265,14 @@ export const OutdoorCustomerLeadsPage: React.FC = () => {
                     {/* 7. Actions */}
                     <td className="px-4 py-3.5 align-top text-right shrink-0">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleSendWhatsApp(c)}
+                          title="Send WhatsApp Outreach Message"
+                          className="p-1.5 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => openEditModal(c)}
                           title="Edit Customer Lead"

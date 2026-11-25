@@ -62,31 +62,31 @@ export const HrDashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto overflow-x-auto scrollbar-none flex-nowrap pb-1 sm:pb-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
           <button
             onClick={() => navigate('/hr/revenue')}
-            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#1D1D1B] hover:bg-[#27272A] text-[#E5C378] font-extrabold text-xs shadow-sm flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 border border-[#3F3F46] whitespace-nowrap shrink-0"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#1D1D1B] hover:bg-[#27272A] text-[#E5C378] font-extrabold text-xs shadow-sm inline-flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 border border-[#3F3F46] whitespace-nowrap min-w-max"
           >
             <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#E5C378] shrink-0" />
-            <span className="whitespace-nowrap">Revenue</span>
+            <span>Revenue</span>
           </button>
           <button
             onClick={() => navigate('/hr/employees/add')}
-            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 whitespace-nowrap shrink-0"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs shadow-sm inline-flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 whitespace-nowrap min-w-max"
           >
             <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="whitespace-nowrap">+ Add Employee</span>
+            <span>+ Add Employee</span>
           </button>
           <button
             onClick={() => navigate('/hr/payslips')}
-            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 whitespace-nowrap shrink-0"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white font-extrabold text-xs shadow-sm inline-flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:scale-102 whitespace-nowrap min-w-max"
           >
             <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="whitespace-nowrap">+ Add Pay Slip</span>
+            <span>+ Add Pay Slip</span>
           </button>
           <button
             onClick={fetchStats}
-            className="p-2 sm:p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer shrink-0"
+            className="p-2 sm:p-2.5 rounded-xl bg-white border border-[#E4DFD4] hover:bg-[#FAF8F3] text-[#536B8A] transition-colors cursor-pointer shrink-0 ml-auto sm:ml-0"
             title="Refresh Stats"
           >
             <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -94,8 +94,8 @@ export const HrDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      {/* KPI Stats Cards - 4 Standard Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Total Employees */}
         <div
           onClick={() => navigate('/hr/employees')}
@@ -142,33 +142,7 @@ export const HrDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 3: Gross Sold Revenue */}
-        <div
-          onClick={() => navigate('/hr/revenue')}
-          className="bg-white border border-[#E4DFD4] hover:border-[#21845F] rounded-2xl p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
-                Gross Revenue
-              </span>
-              <div
-                className="text-xl sm:text-2xl lg:text-3xl font-black text-[#21845F] font-mono truncate"
-                title={stats?.total_revenue ? `₹${Number(stats.total_revenue).toLocaleString('en-IN')}` : '₹0'}
-              >
-                {stats?.total_revenue ? `₹${Number(stats.total_revenue).toLocaleString('en-IN')}` : '₹0'}
-              </div>
-              <span className="text-[11px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">
-                Sold & Exchanges
-              </span>
-            </div>
-            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
-              <IndianRupee className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-          </div>
-        </div>
-
-        {/* Card 4: Pending Leave Requests */}
+        {/* Card 3: Pending Leave Requests */}
         <div
           onClick={() => navigate('/hr/leaves')}
           className="bg-white border border-[#E4DFD4] hover:border-[#EF4444] rounded-2xl p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
@@ -191,10 +165,10 @@ export const HrDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 5: Total Pay Slips */}
+        {/* Card 4: Total Pay Slips */}
         <div
           onClick={() => navigate('/hr/payslips')}
-          className="col-span-2 md:col-span-1 bg-white border border-[#E4DFD4] hover:border-[#0284C7] rounded-2xl p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+          className="bg-white border border-[#E4DFD4] hover:border-[#0284C7] rounded-2xl p-3.5 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
@@ -321,8 +295,8 @@ export const HrDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Action Modules Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Quick Action Modules Grid - 2 Core Modules */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Module 1: Add / Issue Pay Slips */}
         <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4">
           <div>
@@ -359,26 +333,6 @@ export const HrDashboardPage: React.FC = () => {
             className="w-full py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs"
           >
             <span>View All Customer Logs</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Module 3: Showroom Revenue & Sales */}
-        <div className="bg-white border border-[#E4DFD4] rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4">
-          <div>
-            <div className="w-10 h-10 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center mb-3">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <h3 className="text-lg font-bold text-[#1D1D1B]">Showroom Revenue & Sales</h3>
-            <p className="text-xs text-[#5E5A52] mt-1 leading-relaxed">
-              Real-time revenue monitoring, customer jewellery purchases, and savings schemes segregation across Yelahanka, Kolar, and Udupi showrooms.
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/hr/revenue')}
-            className="w-full py-2.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs"
-          >
-            <span>View Revenue Breakdown</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

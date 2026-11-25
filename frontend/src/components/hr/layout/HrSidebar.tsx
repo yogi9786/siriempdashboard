@@ -124,91 +124,70 @@ export const HrSidebar: React.FC<HrSidebarProps> = ({ onCloseMobile }) => {
           )}
         </NavLink>
 
-        {/* 2. Segregated Branches Section (Yelahanka and the other 2) */}
-        <div>
-          <button
-            onClick={() => setBranchesOpen(!branchesOpen)}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-[#D4D4D8] hover:text-white hover:bg-white/5 transition-colors cursor-pointer group"
+        {/* 2. Showroom Branches Links (Directly accessible without redundant title header) */}
+        <div className="px-1 py-1 space-y-1">
+          {/* Branch 1: Yelahanka (Main Showroom) */}
+          <NavLink
+            to="/hr/employees?branch=YELAHANKA"
+            onClick={onCloseMobile}
+            className={({ isActive }) =>
+              `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                location.search.includes('YELAHANKA')
+                  ? 'bg-[#E5C378]/20 text-[#E5C378] font-bold border border-[#E5C378]/40'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
+              }`
+            }
           >
-            <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-lg bg-[#27272A] text-[#E5C378] flex items-center justify-center shrink-0 group-hover:bg-[#3F3F46]">
-                <Building2 className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-[11px] uppercase tracking-wider font-bold text-[#E5C378]">Branches</span>
+            <div className="flex items-center gap-2.5 truncate">
+              <MapPin className="w-3.5 h-3.5 text-[#E5C378] shrink-0" />
+              <span className="truncate">Yelahanka Branch</span>
             </div>
-            {branchesOpen ? (
-              <ChevronDown className="w-3.5 h-3.5 text-[#A1A1AA]" />
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5 text-[#A1A1AA]" />
-            )}
-          </button>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#27272A] text-[#E5C378] border border-[#3F3F46] shrink-0">
+              {branchCounts['YELAHANKA'] ?? 23} Staff
+            </span>
+          </NavLink>
 
-          {branchesOpen && (
-            <div className="pl-6 pr-1 py-1 space-y-1 transition-all">
-              {/* Branch 1: Yelahanka (Main Showroom) */}
-              <NavLink
-                to="/hr/employees?branch=YELAHANKA"
-                onClick={onCloseMobile}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    location.search.includes('YELAHANKA')
-                      ? 'bg-[#E5C378]/20 text-[#E5C378] font-bold border border-[#E5C378]/40'
-                      : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <MapPin className="w-3 h-3 text-[#E5C378] shrink-0" />
-                  <span className="truncate">Yelahanka Branch</span>
-                </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#27272A] text-[#E5C378] border border-[#3F3F46]">
-                  {branchCounts['YELAHANKA'] ?? 23} Staff
-                </span>
-              </NavLink>
-
-              {/* Branch 2: Kolar */}
-              <NavLink
-                to="/hr/employees?branch=KOLAR"
-                onClick={onCloseMobile}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    location.search.includes('KOLAR')
-                      ? 'bg-[#38BDF8]/20 text-[#38BDF8] font-bold border border-[#38BDF8]/40'
-                      : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <MapPin className="w-3 h-3 text-[#38BDF8] shrink-0" />
-                  <span className="truncate">Kolar Branch</span>
-                </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#27272A] text-[#38BDF8] border border-[#3F3F46]">
-                  {branchCounts['KOLAR'] ?? 12} Staff
-                </span>
-              </NavLink>
-
-              {/* Branch 3: Udupi */}
-              <NavLink
-                to="/hr/employees?branch=UDUPI"
-                onClick={onCloseMobile}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    location.search.includes('UDUPI')
-                      ? 'bg-[#34D399]/20 text-[#34D399] font-bold border border-[#34D399]/40'
-                      : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <MapPin className="w-3 h-3 text-[#34D399] shrink-0" />
-                  <span className="truncate">Udupi Branch</span>
-                </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#27272A] text-[#34D399] border border-[#3F3F46]">
-                  {branchCounts['UDUPI'] ?? 20} Staff
-                </span>
-              </NavLink>
+          {/* Branch 2: Kolar */}
+          <NavLink
+            to="/hr/employees?branch=KOLAR"
+            onClick={onCloseMobile}
+            className={({ isActive }) =>
+              `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                location.search.includes('KOLAR')
+                  ? 'bg-[#38BDF8]/20 text-[#38BDF8] font-bold border border-[#38BDF8]/40'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            <div className="flex items-center gap-2.5 truncate">
+              <MapPin className="w-3.5 h-3.5 text-[#38BDF8] shrink-0" />
+              <span className="truncate">Kolar Branch</span>
             </div>
-          )}
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#27272A] text-[#38BDF8] border border-[#3F3F46] shrink-0">
+              {branchCounts['KOLAR'] ?? 12} Staff
+            </span>
+          </NavLink>
+
+          {/* Branch 3: Udupi */}
+          <NavLink
+            to="/hr/employees?branch=UDUPI"
+            onClick={onCloseMobile}
+            className={({ isActive }) =>
+              `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                location.search.includes('UDUPI')
+                  ? 'bg-[#34D399]/20 text-[#34D399] font-bold border border-[#34D399]/40'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            <div className="flex items-center gap-2.5 truncate">
+              <MapPin className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
+              <span className="truncate">Udupi Branch</span>
+            </div>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#27272A] text-[#34D399] border border-[#3F3F46] shrink-0">
+              {branchCounts['UDUPI'] ?? 20} Staff
+            </span>
+          </NavLink>
         </div>
 
         {/* 3. Employees Management */}

@@ -126,7 +126,10 @@ export interface CustomerDetailItem {
   status: 'Sold' | 'Exchange' | 'Lost' | 'Walkin' | 'Window Shopping' | 'In Hold / Follow Up' | 'In Hold' | 'Follow Up' | string;
   exchange_type?: 'Gold' | 'Diamond' | 'Silver' | 'Cashback' | string;
   sold_image_url?: string;
+  photo_url?: string;
+  field_photo_url?: string;
   product_id?: string;
+  product_name?: string;
   product_value?: number | string;
   notes?: string;
   // Schemes Closed
@@ -168,6 +171,8 @@ export interface CustomerActivity {
   dob?: string;
   anniversary?: string;
   product_value?: number;
+  product_id?: string;
+  product_name?: string;
   activity_date: string;
   status: string; // 'Sold' | 'Exchange' | 'Lost' | 'Walkin' | 'In Hold / Follow Up' | 'Attended' | 'Closed'
   approval_status?: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
@@ -177,7 +182,6 @@ export interface CustomerActivity {
   reviewed_by_id?: number;
   reviewed_at?: string;
   reviewed_by_name?: string | null;
-  product_id?: string;
   sold_image_url?: string;
   notes?: string;
   created_at?: string;
@@ -1117,5 +1121,38 @@ export interface EmployeeLeaveRequest {
   rejection_reason?: string | null;
   created_at: string;
   updated_at?: string;
+}
+
+export interface StockProductCatalogItem {
+  id: number;
+  tag_no: string;
+  item_id?: string;
+  item_name: string;
+  sub_item?: string;
+  item_type?: string;
+  pcs?: number;
+  gross_weight?: number;
+  net_weight?: number;
+  wastage_percent?: number;
+  wastage?: number;
+  mc_per_gram?: number;
+  making_charges?: number;
+  dia_pcs?: number;
+  dia_weight?: number;
+  dia_amount?: number;
+  stn_pcs?: number;
+  stn_weight?: number;
+  stn_amount?: number;
+  counter?: string;
+  size?: string;
+  rec_date?: string;
+  is_sold: boolean;
+  sold_date?: string;
+  sold_customer_name?: string;
+  sold_phone?: string;
+  sold_value?: number;
+  sold_branch_code?: string;
+  sold_employee_name?: string;
+  sold_activity_id?: number;
 }
 

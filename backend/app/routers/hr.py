@@ -4,6 +4,7 @@ import json
 from datetime import datetime, date, timezone, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, status, Body
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, or_
 
@@ -526,7 +527,8 @@ def get_hr_customers(
             )
         )
 
-    activities = query.order_by(desc(CustomerActivity.activity_date), desc(CustomerActivity.id)).limit(limit).all()
+    actual_limit = int(limit.default if hasattr(limit, "default") else limit)
+    activities = query.order_by(desc(CustomerActivity.activity_date), desc(CustomerActivity.id)).limit(actual_limit).all()
 
     branches_map = {b.id: b for b in db.query(Branch).all()}
     employees_map = {e.id: e for e in db.query(Employee).all()}
@@ -643,7 +645,8 @@ def get_hr_revenue(
             )
         )
 
-    activities = query.order_by(desc(CustomerActivity.activity_date), desc(CustomerActivity.id)).limit(limit).all()
+    actual_limit = int(limit.default if hasattr(limit, "default") else limit)
+    activities = query.order_by(desc(CustomerActivity.activity_date), desc(CustomerActivity.id)).limit(actual_limit).all()
 
     branches_map = {b.id: b for b in db.query(Branch).all()}
     employees_map = {e.id: e for e in db.query(Employee).all()}
@@ -702,6 +705,22 @@ def get_hr_revenue(
             except Exception:
                 pass
 
+        # Extract product_id and product_name if available in breakdown
+        prod_id = ""
+        prod_name = ""
+        if act.breakdown:
+            try:
+                items = json.loads(act.breakdown)
+                if isinstance(items, list):
+                    for it in items:
+                        if isinstance(it, dict):
+                            if it.get("product_id") and not prod_id:
+                                prod_id = str(it.get("product_id"))
+                            if it.get("product_name") and not prod_name:
+                                prod_name = str(it.get("product_name"))
+            except Exception:
+                pass
+
         formatted_activities.append({
             "id": act.id,
             "branch_id": act.branch_id,
@@ -715,7 +734,8 @@ def get_hr_revenue(
             "activity_date": act.activity_date.isoformat() if act.activity_date else "",
             "status": act.status or "Walkin",
             "product_value": val,
-            "product_id": "",
+            "product_id": prod_id,
+            "product_name": prod_name,
             "approval_status": act.approval_status or "PENDING",
             "approved_by_name": rev.full_name if rev else "",
             "notes": act.notes or "",
@@ -915,6 +935,46 @@ def delete_hr_payslip(
     return {"message": "Pay slip deleted successfully.", "id": slip_id}
 
 
+@router.get("/payslips/{slip_id}/file", summary="Stream or download payslip file directly")
+def download_hr_payslip_file(
+    slip_id: int,
+    download: bool = Query(False, description="Set to true to force attachment download"),
+    db: Session = Depends(get_db),
+    current_hr: User = Depends(get_current_hr),
+):
+    slip = db.query(EmployeePaySlip).filter(EmployeePaySlip.id == slip_id).first()
+    if not slip:
+        raise HTTPException(status_code=404, detail="Pay slip record not found.")
+
+    file_url = (slip.file_url or "").strip()
+    if not file_url:
+        raise HTTPException(status_code=404, detail="No file attached to this payslip.")
+
+    fname = file_url.split("/")[-1].split("?")[0]
+    file_path = os.path.join(settings.MEDIA_DIR, fname)
+    if not os.path.isfile(file_path):
+        rel_path = file_url.lstrip("/")
+        if os.path.isfile(rel_path):
+            file_path = rel_path
+        else:
+            raise HTTPException(status_code=404, detail="Payslip file does not exist on server storage.")
+
+    media_type = "application/pdf" if file_path.lower().endswith(".pdf") else "image/jpeg"
+    emp = db.query(Employee).filter(Employee.id == slip.employee_id).first()
+    clean_name = (emp.employee_code or emp.full_name if emp else "Employee").replace(" ", "_")
+    clean_period = (slip.pay_period or f"{slip.month}_{slip.year}").replace(" ", "_")
+    ext = file_path.split(".")[-1]
+    download_filename = f"Payslip_{clean_name}_{clean_period}.{ext}"
+
+    headers = {}
+    if download:
+        headers["Content-Disposition"] = f'attachment; filename="{download_filename}"'
+    else:
+        headers["Content-Disposition"] = f'inline; filename="{download_filename}"'
+
+    return FileResponse(file_path, media_type=media_type, headers=headers)
+
+
 # -------------------------------------------------------------------------
 # Leave Requests Queue & Approvals (HR)
 # -------------------------------------------------------------------------
@@ -922,6 +982,9 @@ def delete_hr_payslip(
 def get_hr_leaves(
     branch_id: Optional[int] = None,
     status_filter: Optional[str] = None,
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
+    date_filter: Optional[str] = None,
     db: Session = Depends(get_db),
     current_hr: User = Depends(get_current_hr),
 ):
@@ -931,6 +994,29 @@ def get_hr_leaves(
         query = query.filter(EmployeeLeaveRequest.branch_id == branch_id)
     if status_filter and status_filter.lower() != "all":
         query = query.filter(EmployeeLeaveRequest.status == status_filter.upper())
+
+    today_dt = date.today()
+    if date_filter == "today":
+        query = query.filter(EmployeeLeaveRequest.from_date == today_dt)
+    elif date_filter == "yesterday":
+        query = query.filter(EmployeeLeaveRequest.from_date == today_dt - timedelta(days=1))
+    elif date_filter == "this_week":
+        query = query.filter(EmployeeLeaveRequest.from_date >= today_dt - timedelta(days=7))
+    elif date_filter == "this_month":
+        query = query.filter(EmployeeLeaveRequest.from_date >= today_dt.replace(day=1))
+    elif date_filter == "last_month":
+        first_this_month = today_dt.replace(day=1)
+        last_prev_month = first_this_month - timedelta(days=1)
+        first_prev_month = last_prev_month.replace(day=1)
+        query = query.filter(
+            EmployeeLeaveRequest.from_date >= first_prev_month,
+            EmployeeLeaveRequest.from_date <= last_prev_month,
+        )
+
+    if from_date:
+        query = query.filter(EmployeeLeaveRequest.from_date >= from_date)
+    if to_date:
+        query = query.filter(EmployeeLeaveRequest.from_date <= to_date)
 
     records = query.order_by(
         desc(EmployeeLeaveRequest.status == "PENDING"),

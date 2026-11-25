@@ -208,17 +208,17 @@ export const EmployeePayslipsTab: React.FC<EmployeePayslipsTabProps> = ({
               </div>
             </div>
             <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-[#18181B]">
-              {previewUrl.toLowerCase().endsWith('.pdf') ? (
+              {previewUrl.toLowerCase().split('?')[0].endsWith('.pdf') || previewUrl.toLowerCase().includes('.pdf') ? (
                 <iframe
                   src={getMediaUrl(previewUrl)}
-                  className="w-full h-[70vh] rounded-xl"
+                  className="w-full h-[70vh] rounded-xl bg-white"
                   title="Payslip PDF"
                 />
               ) : (
                 <img
                   src={getMediaUrl(previewUrl)}
                   alt="Payslip Preview"
-                  className="max-h-[75vh] object-contain rounded-xl shadow-lg"
+                  className="max-h-[75vh] object-contain rounded-xl shadow-lg bg-white"
                 />
               )}
             </div>

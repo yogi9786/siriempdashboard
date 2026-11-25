@@ -108,6 +108,7 @@ def auto_migrate_db_schema():
     from backend.app.models.feedback import CustomerFeedback
     from backend.app.models.whatsapp import WhatsAppTemplate, WhatsAppMessageLog
     from backend.app.models.hr import EmployeePaySlip, EmployeeLeaveRequest
+    from backend.app.models.product import StockProduct
 
     Base.metadata.create_all(bind=engine)
     inspector = inspect(engine)

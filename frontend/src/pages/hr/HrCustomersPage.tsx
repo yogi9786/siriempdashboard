@@ -566,13 +566,15 @@ export const HrCustomersPage: React.FC = () => {
                       {/* Outcome */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         <span
-                          className={`whitespace-nowrap inline-flex items-center shrink-0 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${
+                          className={`whitespace-nowrap inline-flex items-center justify-center shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold leading-normal border ${
                             outcome === 'Sold'
                               ? 'bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]'
                               : outcome === 'Exchange'
                               ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]'
                               : outcome === 'Window Shopping'
                               ? 'bg-[#FAF8F3] text-[#5E5A52] border-[#E4DFD4]'
+                              : outcome === 'Lost'
+                              ? 'bg-[#FEE2E2] text-[#DC2626] border-[#FECACA]'
                               : 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]'
                           }`}
                         >

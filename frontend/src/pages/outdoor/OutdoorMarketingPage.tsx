@@ -54,6 +54,7 @@ import {
   OutdoorCustomerDetail,
 } from '../../types';
 import api from '../../api/client';
+import { getMediaUrl } from '../../utils/media';
 
 // ----------------------------------------------------
 // Data Interfaces
@@ -1791,7 +1792,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                                     {cust.photo_url ? (
                                       <div className="flex items-center gap-2 bg-white border border-[#C5E3D5] rounded-xl p-1.5 shadow-2xs">
                                         <img
-                                          src={cust.photo_url.startsWith('http') ? cust.photo_url : `/api/media/${cust.photo_url.replace(/^uploads\//, '')}`}
+                                          src={getMediaUrl(cust.photo_url)}
                                           alt="Customer Photo Proof"
                                           className="w-10 h-10 object-cover rounded-lg border border-[#E6E1D6] shrink-0"
                                         />
@@ -2960,7 +2961,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                     className="relative w-18 h-18 rounded-2xl overflow-hidden border border-[#C5E3D5] bg-black/5 cursor-pointer group shadow-2xs"
                   >
                     <img
-                      src={viewDetailDuty.photo_url}
+                      src={getMediaUrl(viewDetailDuty.photo_url)}
                       alt="Proof"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
@@ -3188,7 +3189,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                   className="relative w-28 h-28 rounded-xl overflow-hidden border border-[#C5E3D5] cursor-pointer group shadow-2xs"
                 >
                   <img
-                    src={selectedCustView.photo_url.startsWith('http') ? selectedCustView.photo_url : `/api/media/${selectedCustView.photo_url.replace(/^uploads\//, '')}`}
+                    src={getMediaUrl(selectedCustView.photo_url)}
                     alt="Proof"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                   />

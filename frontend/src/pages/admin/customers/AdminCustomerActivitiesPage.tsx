@@ -40,6 +40,7 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
     selectedBranchId ? selectedBranchId.toString() : 'all'
   );
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [approvalFilter, setApprovalFilter] = useState<string>('all');
   const [schemeFilter, setSchemeFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [fromDate, setFromDate] = useState<string>('');
@@ -61,6 +62,7 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
       if (searchTerm.trim()) params.search = searchTerm.trim();
       if (branchFilter !== 'all') params.branch_id = parseInt(branchFilter);
       if (statusFilter !== 'all') params.status = statusFilter;
+      if (approvalFilter !== 'all') params.approval_status = approvalFilter;
       if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom') {
         params.date_filter = dateFilter;
       }
@@ -81,12 +83,13 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
 
   useEffect(() => {
     fetchActivities();
-  }, [searchTerm, branchFilter, statusFilter, dateFilter, fromDate, toDate]);
+  }, [searchTerm, branchFilter, statusFilter, approvalFilter, schemeFilter, dateFilter, fromDate, toDate]);
 
   const handleClearFilters = () => {
     setSearchTerm('');
     setBranchFilter('all');
     setStatusFilter('all');
+    setApprovalFilter('all');
     setSchemeFilter('all');
     setDateFilter('all');
     setFromDate('');
@@ -132,14 +135,14 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
     switch (status) {
       case 'Sold':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]">
+          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5] shrink-0 leading-normal">
             <CheckCircle2 className="w-3 h-3 text-[#21845F]" />
             <span>Sold</span>
           </span>
         );
       case 'Exchange':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]">
+          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] shrink-0 leading-normal">
             <ArrowUpDown className="w-3 h-3 text-[#2563EB]" />
             <span>Exchange</span>
           </span>
@@ -148,14 +151,14 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
       case 'In Hold':
       case 'Follow Up':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
+          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] shrink-0 leading-normal">
             <Clock className="w-3 h-3 text-[#D97706]" />
             <span>In Hold / Follow Up</span>
           </span>
         );
       case 'Lost':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA]">
+          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] shrink-0 leading-normal">
             <XCircle className="w-3 h-3 text-[#DC2626]" />
             <span>Lost</span>
           </span>
@@ -164,7 +167,7 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
       case 'Walkin':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F4F4F5] text-[#52525B] border border-[#E4E4E7]">
+          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F4F4F5] text-[#52525B] border border-[#E4E4E7] shrink-0 leading-normal">
             <Users className="w-3 h-3 text-[#71717A]" />
             <span>Window Shopping</span>
           </span>
@@ -302,6 +305,18 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
             <option value="In Hold / Follow Up">In Hold / Follow Up</option>
             <option value="Walkin">Walkin</option>
             <option value="Lost">Lost</option>
+          </select>
+
+          {/* Verification / Approval Status Filter */}
+          <select
+            value={approvalFilter}
+            onChange={(e) => setApprovalFilter(e.target.value)}
+            className="px-3 py-2 bg-[#FAF8F3] border border-[#E4DFD4] rounded-xl text-xs font-bold text-[#D97706] focus:outline-none cursor-pointer"
+          >
+            <option value="all">All Verifications</option>
+            <option value="PENDING">⏳ Pending Review</option>
+            <option value="APPROVED">✓ Approved</option>
+            <option value="REJECTED">✕ Rejected</option>
           </select>
 
           {/* Scheme Filter (3 Schemes + None) */}
@@ -469,7 +484,7 @@ export const AdminCustomerActivitiesPage: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-3.5 whitespace-nowrap">
                         <div className="space-y-1">
                           <div>{getStatusBadge(a.status)}</div>
                           {customerItems.length > 1 && (

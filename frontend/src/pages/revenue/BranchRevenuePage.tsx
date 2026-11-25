@@ -25,6 +25,7 @@ import { useToast } from '../../context/ToastContext';
 import { CustomerActivity, CustomerDetailItem, Employee } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
 import { CustomerActivityViewModal } from '../../components/customers/CustomerActivityViewModal';
+import { SoldStockInventoryTable } from '../../components/revenue/SoldStockInventoryTable';
 
 export const BranchRevenuePage: React.FC = () => {
   const { user, selectedBranch } = useAuth();
@@ -33,7 +34,7 @@ export const BranchRevenuePage: React.FC = () => {
   const [activities, setActivities] = useState<CustomerActivity[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'SOLD' | 'SCHEMES'>('SOLD');
+  const [activeTab, setActiveTab] = useState<'SOLD' | 'SCHEMES' | 'INVENTORY'>('SOLD');
   const [schemeCategory, setSchemeCategory] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
   
@@ -129,6 +130,7 @@ export const BranchRevenuePage: React.FC = () => {
       customerName: string;
       phone: string;
       productId: string;
+      productName?: string;
       productValue: number;
       soldImageUrl?: string;
       employeeName: string;
@@ -161,6 +163,7 @@ export const BranchRevenuePage: React.FC = () => {
             customerName: item.name || act.customer_name || `Customer #${idx + 1}`,
             phone: item.phone || act.phone_number || '',
             productId: item.product_id || act.product_id || 'JEWELRY-ITEM',
+            productName: item.product_name || (act as any).product_name || '',
             productValue: val,
             soldImageUrl: item.sold_image_url || act.sold_image_url,
             employeeName: act.employee_name || 'Showroom Staff',
@@ -573,10 +576,10 @@ export const BranchRevenuePage: React.FC = () => {
 
       {/* Main Tab Toggle: Sold Purchases vs Jewellery Schemes */}
       <div className="bg-white border border-[#E4DFD4] rounded-2xl p-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setActiveTab('SOLD')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
               activeTab === 'SOLD'
                 ? 'bg-[#21845F] text-white shadow-2xs'
                 : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
@@ -588,7 +591,7 @@ export const BranchRevenuePage: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('SCHEMES')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
               activeTab === 'SCHEMES'
                 ? 'bg-[#D97706] text-white shadow-2xs'
                 : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
@@ -596,6 +599,18 @@ export const BranchRevenuePage: React.FC = () => {
           >
             <Award className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">Jewellery Savings Schemes ({filteredSchemes.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('INVENTORY')}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
+              activeTab === 'INVENTORY'
+                ? 'bg-[#1D1D1B] text-[#E5C378] shadow-2xs border border-[#3F3F46]'
+                : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
+            }`}
+          >
+            <Tag className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
+            <span className="truncate">Sold Stock Inventory</span>
           </button>
         </div>
 
@@ -621,7 +636,7 @@ export const BranchRevenuePage: React.FC = () => {
                 <tr className="bg-[#FAF8F3] border-b border-[#EBE6DC] text-[#6B6559] uppercase font-bold text-[10px] tracking-wider">
                   <th className="px-5 py-3.5">Sold Date</th>
                   <th className="px-5 py-3.5">Customer & Mobile</th>
-                  <th className="px-5 py-3.5">Product ID / Item Code</th>
+                  <th className="px-5 py-3.5">Product (Tag & Name)</th>
                   <th className="px-5 py-3.5">Sold Value (₹)</th>
                   <th className="px-5 py-3.5">Sold By Employee</th>
                   <th className="px-5 py-3.5">Proof Photo</th>
@@ -668,11 +683,20 @@ export const BranchRevenuePage: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Product ID */}
-                      <td className="px-5 py-3.5">
-                        <span className="font-mono font-bold px-2 py-0.5 rounded-md bg-[#FAF8F3] border border-[#E4DFD4] text-[#536B8A]">
-                          {item.productId || 'JEWELRY-ITEM'}
-                        </span>
+                      {/* Product ID & Name */}
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <div className="font-mono font-bold text-xs text-[#1D1D1B] flex items-center gap-1">
+                          <Tag className="w-3 h-3 text-[#D97706]" />
+                          <span>#{item.productId || 'JEWELRY-ITEM'}</span>
+                        </div>
+                        {item.productName && (
+                          <div
+                            className="text-[11px] font-semibold text-[#D97706] mt-0.5 max-w-[150px] truncate"
+                            title={item.productName}
+                          >
+                            {item.productName}
+                          </div>
+                        )}
                       </td>
 
                       {/* Value */}
@@ -887,6 +911,17 @@ export const BranchRevenuePage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB 3: SOLD STOCK INVENTORY TABLE */}
+      {activeTab === 'INVENTORY' && (
+        <SoldStockInventoryTable
+          branchCode={selectedBranch?.code || user?.branch_code || ''}
+          dateFilter={dateFilter}
+          fromDate={fromDate}
+          toDate={toDate}
+          initialSearch={search}
+        />
       )}
 
       {/* Customer View Modal */}

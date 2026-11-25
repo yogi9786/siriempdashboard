@@ -59,7 +59,7 @@ import {
   EmployeePaySlip,
   EmployeeLeaveRequest,
 } from '../../types';
-import { getMediaUrl } from '../../utils/media';
+import { getMediaUrl, triggerFileDownload } from '../../utils/media';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -4549,23 +4549,29 @@ export const EmployeePortalPage: React.FC = () => {
               </button>
             </div>
             <div className="flex-1 overflow-auto flex items-center justify-center bg-[#FAF8F3] rounded-2xl p-2">
-              <img
-                src={payslipPreviewUrl}
-                alt="Pay Slip Document"
-                className="max-h-[70vh] object-contain rounded-xl"
-              />
+              {payslipPreviewUrl.toLowerCase().split('?')[0].endsWith('.pdf') || payslipPreviewUrl.toLowerCase().includes('.pdf') ? (
+                <iframe
+                  src={getMediaUrl(payslipPreviewUrl)}
+                  className="w-full h-[70vh] rounded-xl bg-white"
+                  title="Pay Slip Document"
+                />
+              ) : (
+                <img
+                  src={getMediaUrl(payslipPreviewUrl)}
+                  alt="Pay Slip Document"
+                  className="max-h-[70vh] object-contain rounded-xl"
+                />
+              )}
             </div>
             <div className="flex items-center justify-end gap-2 pt-1">
-              <a
-                href={payslipPreviewUrl}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 rounded-xl bg-[#21845F] text-white text-xs font-bold flex items-center gap-1.5"
+              <button
+                type="button"
+                onClick={() => triggerFileDownload(payslipPreviewUrl, 'payslip_document')}
+                className="px-4 py-2 rounded-xl bg-[#21845F] hover:bg-[#1A6B4C] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>Download Document</span>
-              </a>
+              </button>
             </div>
           </div>
         </div>

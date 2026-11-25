@@ -255,7 +255,21 @@ export const EmployeeLeavesTab: React.FC<EmployeeLeavesTabProps> = ({
                         {isPending && <Clock className="w-3 h-3" />}
                         {isApproved && <CheckCircle2 className="w-3 h-3" />}
                         {isRejected && <XCircle className="w-3 h-3" />}
-                        <span>{leave.status}</span>
+                        <span>
+                          {isPending
+                            ? 'PENDING'
+                            : isApproved
+                            ? (leave.reviewed_by_name?.toUpperCase().includes('HR')
+                                ? 'HR APPROVED'
+                                : leave.reviewed_by_name
+                                ? `APPROVED BY ${leave.reviewed_by_name.toUpperCase()}`
+                                : 'APPROVED')
+                            : (leave.reviewed_by_name?.toUpperCase().includes('HR')
+                                ? 'HR REJECTED'
+                                : leave.reviewed_by_name
+                                ? `REJECTED BY ${leave.reviewed_by_name.toUpperCase()}`
+                                : 'REJECTED')}
+                        </span>
                       </span>
                     </div>
 
@@ -267,7 +281,7 @@ export const EmployeeLeavesTab: React.FC<EmployeeLeavesTabProps> = ({
 
                     {leave.rejection_reason && (
                       <div className="text-[11px] p-2 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B]">
-                        <span className="font-bold">Manager Remark: </span>
+                        <span className="font-bold">Review Remark: </span>
                         {leave.rejection_reason}
                       </div>
                     )}
@@ -275,7 +289,13 @@ export const EmployeeLeavesTab: React.FC<EmployeeLeavesTabProps> = ({
                     <div className="text-[10px] text-[#8A8479] flex items-center justify-between border-t border-[#F0ECE1] pt-2">
                       <span>Submitted: {leave.created_at?.slice(0, 10)}</span>
                       {leave.reviewed_by_name && (
-                        <span>Reviewed by: {leave.reviewed_by_name}</span>
+                        <span className={`font-bold ${isRejected ? 'text-[#DC2626]' : 'text-[#21845F]'}`}>
+                          {leave.reviewed_by_name.toUpperCase().includes('HR')
+                            ? (isRejected ? '✕ Rejected by HR' : '✓ HR Approved')
+                            : (isRejected
+                                ? `✕ Rejected by Manager: ${leave.reviewed_by_name}`
+                                : `✓ Approved by Manager: ${leave.reviewed_by_name}`)}
+                        </span>
                       )}
                     </div>
                   </div>

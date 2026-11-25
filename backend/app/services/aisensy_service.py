@@ -105,6 +105,15 @@ class AiSensyService:
             key = (getattr(settings, "AISENSY_API_KEY_LOST", None) or master_key).strip()
             return camp, key, "Customer Appreciation (Lost/Inquiry)"
 
+        if status_norm in ["outdoor", "outdoor marketing", "lead", "outdoor lead", "outdoor interaction"]:
+            camp = (
+                getattr(settings, "AISENSY_CAMPAIGN_OUTDOOR", None)
+                or getattr(settings, "AISENSY_TEMPLATE_OUTDOOR", None)
+                or "outdoor_lead_outreach"
+            ).strip()
+            key = (getattr(settings, "AISENSY_API_KEY_OUTDOOR", None) or master_key).strip()
+            return camp, key, "Outdoor Marketing Lead"
+
         # Default fallback is Walkin (Showroom Visit)
         camp = (
             getattr(settings, "AISENSY_CAMPAIGN_WALKIN", None)
@@ -131,6 +140,8 @@ class AiSensyService:
             url = getattr(settings, "AISENSY_MEDIA_URL_IN_HOLD", None)
         elif status_norm in ["lost", "not interested", "left", "cancelled"]:
             url = getattr(settings, "AISENSY_MEDIA_URL_LOST", None)
+        elif status_norm in ["outdoor", "outdoor marketing", "lead", "outdoor lead", "outdoor interaction"]:
+            url = getattr(settings, "AISENSY_MEDIA_URL_OUTDOOR", None)
         else:
             # Default / Walk-in
             url = getattr(settings, "AISENSY_MEDIA_URL_WALKIN", None)
@@ -501,3 +512,30 @@ class AiSensyService:
                 results.append(res)
 
         return results
+
+    @classmethod
+    def send_outdoor_lead_whatsapp(
+        cls,
+        customer_name: str,
+        phone_number: str,
+        branch_name: Optional[str] = None,
+        employee_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Dispatches WhatsApp outreach to an outdoor customer lead using AISENSY_CAMPAIGN_OUTDOOR
+        or AISENSY_TEMPLATE_OUTDOOR configured in .env.
+        """
+        camp, key, label = cls.get_campaign_config_for_status("outdoor")
+        media = cls.get_media_url_for_status("outdoor")
+        params = [customer_name or "Valued Customer", branch_name or "Siri Samruddhi Gold Palace"]
+        if employee_name:
+            params.append(employee_name)
+        return cls.send_whatsapp_message(
+            destination=phone_number,
+            user_name=customer_name or "Customer",
+            template_name=camp,
+            template_params=params,
+            api_key=key,
+            media_url=media,
+        )
+

@@ -93,12 +93,16 @@ class Settings(BaseSettings):
     AISENSY_CAMPAIGN_LOST: str = "Thankyouforvisiting"
     AISENSY_TEMPLATE_LOST: str = "thank_you_for_visiting"
 
+    AISENSY_CAMPAIGN_OUTDOOR: str = "outdoor-camp"
+    AISENSY_TEMPLATE_OUTDOOR: str = "outdoor_lead_outreach"
+
     # Optional Per-Campaign API Keys
     AISENSY_API_KEY_SOLD: Optional[str] = None
     AISENSY_API_KEY_EXCHANGE: Optional[str] = None
     AISENSY_API_KEY_IN_HOLD: Optional[str] = None
     AISENSY_API_KEY_WALKIN: Optional[str] = None
     AISENSY_API_KEY_LOST: Optional[str] = None
+    AISENSY_API_KEY_OUTDOOR: Optional[str] = None
 
     # Media URLs for templates with image/media headers
     AISENSY_DEFAULT_MEDIA_URL: str = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png"
@@ -108,6 +112,7 @@ class Settings(BaseSettings):
     AISENSY_MEDIA_URL_IN_HOLD: Optional[str] = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/ad1d7745-d1a5-4b43-8054-08aef85fa48d_hold jwellery.png"
     AISENSY_MEDIA_URL_WALKIN: Optional[str] = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png"
     AISENSY_MEDIA_URL_LOST: Optional[str] = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png"
+    AISENSY_MEDIA_URL_OUTDOOR: Optional[str] = "https://d3jt6ku4g6z5l8.cloudfront.net/IMAGE/694e6eaf5782001bc725098b/3fed3ccc-ace0-4842-819d-f6bc7955a9be_Thank you for visiting.png"
 
     # =========================================================================
     # Super Admin Authentication (ENV-Configured Identity — ZERO Database Storage)

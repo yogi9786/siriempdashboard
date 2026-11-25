@@ -16,6 +16,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -41,6 +42,7 @@ from backend.app.routers import (
     video_reviews,
     whatsapp,
     hr,
+    products,
 )
 
 # Setup structured logging
@@ -64,10 +66,12 @@ async def lifespan(app: FastAPI):
     try:
         from backend.app.core.database import SessionLocal
         from backend.app.services.auth_service import sync_managers_from_env
+        from backend.app.services.stock_service import StockService
         with SessionLocal() as db_session:
             sync_managers_from_env(db_session)
+            StockService.load_stock_excel_if_needed(db_session)
     except Exception as e:
-        logger.warning(f"Manager sync note: {e}")
+        logger.warning(f"Manager / Stock sync note: {e}")
     yield
     logger.info(f"Shutting down {settings.APP_NAME}...")
 
@@ -98,6 +102,10 @@ _configured_origins = [
     "http://ssgpdashboard.in",
     "https://www.ssgpdashboard.in",
     "http://www.ssgpdashboard.in",
+    "https://sirisamruddhigold.com",
+    "http://sirisamruddhigold.com",
+    "https://www.sirisamruddhigold.com",
+    "http://www.sirisamruddhigold.com",
 ]
 if isinstance(settings.CORS_ORIGINS, list):
     for o in settings.CORS_ORIGINS:
@@ -107,7 +115,7 @@ if isinstance(settings.CORS_ORIGINS, list):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_configured_origins,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|(.*\.)?ssgpdashboard\.in)(:\d+)?$",
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|(.*\.)?ssgpdashboard\.in|(.*\.)?sirisamruddhigold\.com)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -150,11 +158,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         field_loc = " -> ".join([str(loc) for loc in err["loc"] if loc != "body"])
         error_details.append(f"{field_loc}: {err['msg']}")
 
-    msg = "Validation failed: " + "; ".join(error_details)
+    msg = "Validation failed: " + "; ".join(error_details) if error_details else "Invalid request data."
     logger.warning(f"Validation error on {request.url.path}: {msg}")
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": msg, "errors": exc.errors()},
+        content={"detail": msg, "errors": jsonable_encoder(exc.errors())},
     )
 
 
@@ -176,7 +184,8 @@ async def generic_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Health check endpoint
+# Health check endpoints
+@app.get("/health", tags=["Health"])
 @app.get("/api/health", tags=["Health"])
 def health_check():
     return {
@@ -206,4 +215,5 @@ app.include_router(feedback.router)
 app.include_router(employee_portal.router)
 app.include_router(whatsapp.router)
 app.include_router(hr.router)
+app.include_router(products.router)
 

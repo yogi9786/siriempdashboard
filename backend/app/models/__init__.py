@@ -21,6 +21,7 @@ from backend.app.models.attendance import EmployeeAttendance
 from backend.app.models.feedback import CustomerFeedback
 from backend.app.models.whatsapp import WhatsAppTemplate, WhatsAppMessageLog
 from backend.app.models.hr import EmployeePaySlip, EmployeeLeaveRequest
+from backend.app.models.product import StockProduct
 
 __all__ = [
     "Base",
@@ -46,5 +47,6 @@ __all__ = [
     "WhatsAppMessageLog",
     "EmployeePaySlip",
     "EmployeeLeaveRequest",
+    "StockProduct",
 ]
 

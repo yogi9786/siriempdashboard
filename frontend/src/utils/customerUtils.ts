@@ -35,6 +35,7 @@ export const parseCustomerBreakdown = (
           exchange_type: item.exchange_type || (item.status === 'Exchange' ? 'Gold' : undefined),
           sold_image_url: item.sold_image_url || '',
           product_id: item.product_id || '',
+          product_name: item.product_name || '',
           product_value: item.product_value !== undefined && item.product_value !== null ? item.product_value : '',
           notes: item.notes || '',
           // Schemes Closed

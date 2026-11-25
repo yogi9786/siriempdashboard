@@ -27,6 +27,9 @@ export const HrLeavesPage: React.FC = () => {
     searchParams.get('branch')?.toUpperCase() || 'ALL'
   );
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
   const [search, setSearch] = useState<string>('');
 
   useEffect(() => {
@@ -44,7 +47,14 @@ export const HrLeavesPage: React.FC = () => {
   const fetchLeaves = async () => {
     try {
       setIsLoading(true);
-      const res = await api.get('/api/v1/hr/leaves');
+      const params: Record<string, any> = {};
+      if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom') {
+        params.date_filter = dateFilter;
+      }
+      if (fromDate) params.from_date = fromDate;
+      if (toDate) params.to_date = toDate;
+
+      const res = await api.get('/api/v1/hr/leaves', { params });
       setLeaves(res.data || []);
     } catch (err: any) {
       console.error('Failed to load leaves for HR:', err);
@@ -56,7 +66,7 @@ export const HrLeavesPage: React.FC = () => {
 
   useEffect(() => {
     fetchLeaves();
-  }, []);
+  }, [dateFilter, fromDate, toDate]);
 
   const handleApprove = async (leave: EmployeeLeaveRequest) => {
     try {
@@ -210,6 +220,74 @@ export const HrLeavesPage: React.FC = () => {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Date Filter Row */}
+        <div className="pt-2 border-t border-[#F0ECE1] flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none flex-nowrap w-full md:w-auto">
+            <span className="text-[11px] font-bold text-[#8A8479] uppercase tracking-wider px-1 shrink-0 whitespace-nowrap flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-[#8A8479]" />
+              <span>Period:</span>
+            </span>
+            {[
+              { id: 'all', label: 'All Time' },
+              { id: 'today', label: 'Today' },
+              { id: 'yesterday', label: 'Yesterday' },
+              { id: 'this_week', label: 'This Week' },
+              { id: 'this_month', label: 'This Month' },
+              { id: 'last_month', label: 'Last Month' },
+              { id: 'custom', label: 'Custom' },
+            ].map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setDateFilter(p.id)}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  dateFilter === p.id
+                    ? 'bg-[#18181B] text-white shadow-2xs'
+                    : 'bg-[#FAF8F3] hover:bg-[#F2EDE4] text-[#5E5A52] border border-[#E4DFD4]'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Date Pickers */}
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase font-bold text-[#8A8479]">From:</span>
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="px-2.5 py-1 text-xs font-mono font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-lg text-[#1D1D1B] focus:outline-none focus:border-[#21845F]"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase font-bold text-[#8A8479]">To:</span>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="px-2.5 py-1 text-xs font-mono font-bold bg-[#FAF8F3] border border-[#E4DFD4] rounded-lg text-[#1D1D1B] focus:outline-none focus:border-[#21845F]"
+                />
+              </div>
+              {(fromDate || toDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFromDate('');
+                    setToDate('');
+                  }}
+                  className="text-[11px] font-bold text-red-600 hover:underline px-1 cursor-pointer"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Search */}

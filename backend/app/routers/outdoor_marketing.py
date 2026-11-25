@@ -8,12 +8,14 @@ from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
+import re
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
-from backend.app.models.branch import User
+from backend.app.models.branch import User, Branch
 from backend.app.models.employee import Employee
 from backend.app.models.activity import CustomerActivity
 from backend.app.schemas.activity import CustomerApprovalAction
+from backend.app.services.aisensy_service import AiSensyService
 from backend.app.models.outdoor_marketing import (
     OutdoorMarketingArea,
     OutdoorMarketingDuty,
@@ -1178,6 +1180,43 @@ def review_outdoor_customer(
         created_at=customer.created_at,
         updated_at=customer.updated_at,
     )
+
+
+@router.post("/customers/{customer_id}/send-whatsapp", summary="Send WhatsApp outreach message to outdoor customer lead via AiSensy")
+def send_outdoor_customer_whatsapp(
+    customer_id: int,
+    current_user: User = Depends(get_current_manager),
+    db: Session = Depends(get_db),
+):
+    cust = (
+        db.query(OutdoorMarketingCustomer)
+        .filter(
+            OutdoorMarketingCustomer.id == customer_id,
+            OutdoorMarketingCustomer.branch_id == current_user.branch_id,
+        )
+        .first()
+    )
+    if not cust:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outdoor customer lead not found in your showroom branch.")
+    if not cust.phone or len(re.sub(r"\D", "", cust.phone)) < 10:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Customer does not have a valid 10-digit phone number for WhatsApp.")
+
+    branch = db.query(Branch).filter(Branch.id == cust.branch_id).first()
+    emp = db.query(Employee).filter(Employee.id == cust.marketing_employee_id).first() if cust.marketing_employee_id else None
+
+    result = AiSensyService.send_outdoor_lead_whatsapp(
+        customer_name=cust.customer_name,
+        phone_number=cust.phone,
+        branch_name=branch.name if branch else "Siri Samruddhi Gold Palace",
+        employee_name=emp.full_name if emp else None,
+    )
+    return {
+        "success": result.get("success", False),
+        "customer_id": cust.id,
+        "customer_name": cust.customer_name,
+        "phone": cust.phone,
+        "result": result,
+    }
 
 
 @router.delete("/customers/{customer_id}", status_code=status.HTTP_200_OK, summary="Delete outdoor customer lead")

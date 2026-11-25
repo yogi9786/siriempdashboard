@@ -595,9 +595,16 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
             except Exception as oc_err:
                 pass
 
+        # 6. Auto-sync sold product IDs with StockProduct inventory
+        try:
+            from backend.app.services.stock_service import StockService
+            StockService.sync_activity_sold_products(db, record)
+        except Exception as stock_err:
+            pass
+
         db.commit()
     except Exception as err:
-        print(f"Warning: Failed to sync activity subrecords: {err}")
+        logger.warning(f"Failed to sync activity subrecords: {err}")
 
 
 def _apply_activity_update(record: CustomerActivity, update_data: CustomerActivityUpdate, current_user_id: Optional[int] = None) -> None:
@@ -840,7 +847,7 @@ def delete_customer_activity(
             SchemePaymentReminder.customer_activity_id == record.id
         ).delete(synchronize_session=False)
     except Exception as cleanup_err:
-        print(f"Warning cleaning subrecords for activity #{record.id}: {cleanup_err}")
+        logger.warning(f"Cleaning subrecords for activity #{record.id}: {cleanup_err}")
 
     try:
         db.delete(record)

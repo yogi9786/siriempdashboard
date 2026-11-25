@@ -26,7 +26,7 @@ def sync_all_employees():
             {"branch_code": "YELAHANKA", "code": "EMP-YEL-003", "name": "BASAVARAJ BARADDI", "designation": "Floor Manager", "dept": "Showroom Management"},
             {"branch_code": "YELAHANKA", "code": "EMP-YEL-004", "name": "MANJUNATH P S", "designation": "Floor Manager", "dept": "Showroom Management"},
             {"branch_code": "YELAHANKA", "code": "EMP-YEL-005", "name": "VIJAY SARATHY", "designation": "Operations Manager", "dept": "Showroom Management"},
-            {"branch_code": "YELAHANKA", "code": "EMP-YEL-214", "name": "THAGGELLAPPA", "designation": "Sales Executive", "dept": "Sales & Showroom Operations"},
+            {"branch_code": "YELAHANKA", "code": "EMP-YEL-214", "name": "GAGAN", "designation": "Sales Executive", "dept": "Sales & Showroom Operations"},
             {"branch_code": "YELAHANKA", "code": "EMP-YEL-215", "name": "SUCHITHRA", "designation": "Sales Executive", "dept": "Sales & Showroom Operations"},
             {"branch_code": "YELAHANKA", "code": "EMP-YEL-216", "name": "SANGEETHA M", "designation": "Sales Executive", "dept": "Sales & Showroom Operations"},
 

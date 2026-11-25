@@ -149,7 +149,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Full Name *"
-              placeholder="e.g. THAGGELLAPPA"
+              placeholder="e.g. GAGAN"
               value={formData.full_name}
               onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
               required

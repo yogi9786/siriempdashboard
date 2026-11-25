@@ -481,7 +481,7 @@ export const HrCustomersPage: React.FC = () => {
                 <th className="px-5 py-3.5">Customer & Contact</th>
                 <th className="px-5 py-3.5">Branch</th>
                 <th className="px-5 py-3.5">Attended By Staff</th>
-                <th className="px-5 py-3.5">Outcome</th>
+                <th className="px-5 py-3.5 whitespace-nowrap min-w-[140px]">Outcome</th>
                 <th className="px-5 py-3.5">Value (₹)</th>
                 <th className="px-5 py-3.5">Verification</th>
                 <th className="px-5 py-3.5 text-right">View</th>
@@ -564,17 +564,20 @@ export const HrCustomersPage: React.FC = () => {
                       </td>
 
                       {/* Outcome */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
+                      <td className="px-5 py-3.5 whitespace-nowrap min-w-[140px]">
                         <span
-                          className={`whitespace-nowrap inline-flex items-center justify-center shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold leading-normal border ${
-                            outcome === 'Sold'
+                          style={{ whiteSpace: 'nowrap' }}
+                          className={`whitespace-nowrap inline-flex items-center justify-center shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold leading-none border select-none ${
+                            outcome === 'Sold' || outcome.toLowerCase().includes('sold')
                               ? 'bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]'
-                              : outcome === 'Exchange'
+                              : outcome === 'Exchange' || outcome.toLowerCase().includes('exchange')
                               ? 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]'
-                              : outcome === 'Window Shopping'
+                              : outcome === 'Window Shopping' || outcome.toLowerCase().includes('window') || outcome.toLowerCase().includes('walkin')
                               ? 'bg-[#FAF8F3] text-[#5E5A52] border-[#E4DFD4]'
-                              : outcome === 'Lost'
+                              : outcome === 'Lost' || outcome.toLowerCase().includes('lost')
                               ? 'bg-[#FEE2E2] text-[#DC2626] border-[#FECACA]'
+                              : outcome === 'In Hold / Follow Up' || outcome.toLowerCase().includes('hold') || outcome.toLowerCase().includes('follow')
+                              ? 'bg-[#FAF1EC] text-[#B97855] border-[#ECCFC0]'
                               : 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]'
                           }`}
                         >

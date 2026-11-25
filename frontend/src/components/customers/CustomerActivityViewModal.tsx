@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar,
   Phone,
@@ -26,6 +26,7 @@ import { Button } from '../ui/Button';
 import { CustomerActivity, CustomerDetailItem } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
 import { getMediaUrl } from '../../utils/media';
+import api from '../../api/client';
 
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -49,6 +50,36 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
   onReject,
 }) => {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [productNames, setProductNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!activity) return;
+    const parsedItems: CustomerDetailItem[] = parseCustomerBreakdown(
+      activity.breakdown,
+      activity.customers_count || 1,
+      activity.status,
+      activity.customer_name,
+      activity.phone_number,
+      activity.dob,
+      activity.anniversary,
+      activity.product_value
+    );
+    parsedItems.forEach((item) => {
+      if (item.product_id) {
+        if (item.product_name) {
+          setProductNames((prev) => prev[item.product_id!] === item.product_name ? prev : ({ ...prev, [item.product_id!]: item.product_name! }));
+        } else if (!productNames[item.product_id]) {
+          api.get(`/api/v1/products/${encodeURIComponent(item.product_id)}`)
+            .then((res) => {
+              if (res.data?.item_name) {
+                setProductNames((prev) => ({ ...prev, [item.product_id!]: res.data.item_name }));
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    });
+  }, [activity?.id, activity?.breakdown]);
 
   if (!isOpen || !activity) return null;
 
@@ -236,10 +267,15 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
                     </div>
 
                     <div className="p-2.5 rounded-xl bg-[#FAF8F3] border border-[#EFEBE1]">
-                      <span className="text-[10px] uppercase font-bold text-[#8A8479] block">Product Code</span>
+                      <span className="text-[10px] uppercase font-bold text-[#8A8479] block">Product / Tag</span>
                       <div className="font-mono font-bold text-[#536B8A] mt-0.5 uppercase truncate">
                         {cust.product_id || '—'}
                       </div>
+                      {(cust.product_name || productNames[cust.product_id || '']) && (
+                        <div className="text-[10.5px] font-sans font-extrabold text-[#1D1D1B] truncate mt-0.5" title={cust.product_name || productNames[cust.product_id || '']}>
+                          {cust.product_name || productNames[cust.product_id || '']}
+                        </div>
+                      )}
                     </div>
 
                     <div className="p-2.5 rounded-xl bg-[#FAF8F3] border border-[#EFEBE1]">

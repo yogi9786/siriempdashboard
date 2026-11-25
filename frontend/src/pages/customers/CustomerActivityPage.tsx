@@ -304,15 +304,15 @@ export const CustomerActivityPage: React.FC = () => {
     switch (status) {
       case 'Sold':
         return (
-          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5] shrink-0">
+          <span style={{ whiteSpace: 'nowrap' }} className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5] shrink-0 select-none">
             <CheckCircle2 className="w-3 h-3 text-[#21845F]" />
             <span>Sold</span>
           </span>
         );
       case 'Exchange':
         return (
-          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EDF2F7] text-[#536B8A] border border-[#C5D5E6] shrink-0">
-            <ArrowUpDown className="w-3 h-3 text-[#536B8A]" />
+          <span style={{ whiteSpace: 'nowrap' }} className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] shrink-0 select-none">
+            <ArrowUpDown className="w-3 h-3 text-[#92400E]" />
             <span>Exchange</span>
           </span>
         );
@@ -320,15 +320,15 @@ export const CustomerActivityPage: React.FC = () => {
       case 'In Hold':
       case 'Follow Up':
         return (
-          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FAF1EC] text-[#B97855] border border-[#ECCFC0] shrink-0">
+          <span style={{ whiteSpace: 'nowrap' }} className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FAF1EC] text-[#B97855] border border-[#ECCFC0] shrink-0 select-none">
             <Clock className="w-3 h-3 text-[#B97855]" />
             <span>In Hold / Follow Up</span>
           </span>
         );
       case 'Lost':
         return (
-          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FDECEC] text-[#C24141] border border-[#F9C3C3] shrink-0">
-            <XCircle className="w-3 h-3 text-[#C24141]" />
+          <span style={{ whiteSpace: 'nowrap' }} className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] shrink-0 select-none">
+            <XCircle className="w-3 h-3 text-[#DC2626]" />
             <span>Lost</span>
           </span>
         );
@@ -336,7 +336,7 @@ export const CustomerActivityPage: React.FC = () => {
       case 'Walkin':
       default:
         return (
-          <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FAF8F3] text-[#8A8479] border border-[#E4DFD4] shrink-0">
+          <span style={{ whiteSpace: 'nowrap' }} className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FAF8F3] text-[#8A8479] border border-[#E4DFD4] shrink-0 select-none">
             <Users className="w-3 h-3 text-[#8A8479]" />
             <span>Window Shopping</span>
           </span>

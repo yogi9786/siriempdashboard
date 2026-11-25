@@ -131,7 +131,7 @@ export const EmployeeAddPage: React.FC = () => {
               name="full_name"
               value={formData.full_name}
               onChange={handleChange}
-              placeholder="e.g. THAGGELLAPPA"
+              placeholder="e.g. GAGAN"
               required
               autoFocus
             />

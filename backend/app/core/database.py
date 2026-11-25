@@ -175,6 +175,13 @@ def auto_migrate_db_schema():
                         except Exception as e:
                             logger.warning(f"Column migration warning for {table_name}.{col.name}: {e}")
 
+        # Ensure employee 214 / EMP-YEL-214 is properly named GAGAN in roster
+        try:
+            conn.execute(text("UPDATE employees SET full_name = 'GAGAN' WHERE id = 214 OR employee_code = 'EMP-YEL-214' OR full_name = 'THAGGELLAPPA'"))
+            conn.commit()
+        except Exception as e:
+            logger.debug(f"Employee Gagan sync notice: {e}")
+
 
 def get_db():
     """Dependency generator for database sessions with automatic commit/rollback/close."""

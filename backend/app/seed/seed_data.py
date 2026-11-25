@@ -92,7 +92,7 @@ BRANCHES_DATA = [
             {"id": 204, "name": "NAGINDRAPPA", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 211, "name": "MADHU", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 213, "name": "MAHESWHARI", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
-            {"id": 214, "name": "THAGGELLAPPA", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
+            {"id": 214, "name": "GAGAN", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 215, "name": "SUCHITHRA", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
             {"id": 216, "name": "SANGEETHA M", "designation": "Sales Executive", "department": "Sales & Showroom Operations"},
         ],

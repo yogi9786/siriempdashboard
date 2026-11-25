@@ -66,64 +66,89 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
   let fieldPhotoUrl = '';
   let exchangeType = '';
   let productId = '';
+  let productName = '';
   let noteNotificationDate = '';
+  const allPhotos: string[] = [];
+  const customerItems: any[] = [];
+
+  const addPhoto = (url?: string | null) => {
+    if (url && typeof url === 'string' && url.trim() && !allPhotos.includes(url.trim())) {
+      allPhotos.push(url.trim());
+    }
+  };
 
   if (breakdownStr) {
     try {
       const parsed = JSON.parse(breakdownStr);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        for (const item of parsed) {
-          if (!productId && item.product_id) productId = item.product_id;
-          if (!soldImageUrl && item.sold_image_url) soldImageUrl = item.sold_image_url;
-          if (!fieldPhotoUrl && (item.photo_url || item.field_photo_url || item.outdoor_photo_url)) {
-            fieldPhotoUrl = item.photo_url || item.field_photo_url || item.outdoor_photo_url;
-          }
-          if (!soldImageUrl && (item.photo_url || item.field_photo_url)) {
-            soldImageUrl = item.photo_url || item.field_photo_url;
-          }
-          if (!exchangeType && item.exchange_type) exchangeType = item.exchange_type;
-          if (!noteNotificationDate && item.note_notification_date) noteNotificationDate = item.note_notification_date;
-          if (!hasScheme && (item.has_scheme || item.scheme_name)) {
-            hasScheme = true;
-            schemePlan = item.scheme_name || '';
-            schemeMonthly = item.scheme_amount || '';
-            schemeReminderDate = item.scheme_reminder_date || '';
-            schemeNotes = item.scheme_notes || '';
-          }
-          if (!hasReview && (item.has_google_review || item.google_review_text || item.google_review_screenshot)) {
-            hasReview = true;
-            reviewRating = item.google_review_rating || 5;
-            reviewText = item.google_review_text || '';
-            reviewScreenshot = item.google_review_screenshot || item.screenshot_url || '';
-          }
-          if (!hasFeedback && (item.has_customer_feedback || item.feedback_text)) {
-            hasFeedback = true;
-            feedbackRating = item.feedback_rating || 5;
-            feedbackText = item.feedback_text || '';
-          }
-          if (!hasVideoReview && (item.has_video_review || item.video_title || item.video_screenshot || item.video_url)) {
-            hasVideoReview = true;
-            videosCount = item.videos_count ? Number(item.videos_count) : 1;
-            videoTitle = item.video_title || '';
-            videoScreenshot = item.video_screenshot || item.screenshot_url || '';
-            videoUrl = item.video_url || '';
-          }
+      const items = Array.isArray(parsed) ? parsed : (typeof parsed === 'object' && parsed !== null ? [parsed] : []);
+
+      for (const item of items) {
+        customerItems.push(item);
+        if (!productId && (item.product_id || item.tag_no || item.productId)) {
+          productId = item.product_id || item.tag_no || item.productId;
         }
-      } else if (typeof parsed === 'object') {
-        productId = parsed.product_id || '';
-        hasScheme = Boolean(parsed.goldScheme?.enrolled);
-        schemePlan = parsed.goldScheme?.planName || '';
-        schemeMonthly = parsed.goldScheme?.monthlyAmount || '';
-        hasReview = Boolean(parsed.googleReview?.submitted);
-        reviewRating = parsed.googleReview?.rating || 5;
-        reviewText = parsed.googleReview?.reviewText || '';
-        reviewScreenshot = parsed.googleReview?.screenshot_url || '';
-        hasFeedback = Boolean(parsed.feedback?.rating);
-        feedbackRating = parsed.feedback?.rating || 5;
-        feedbackText = parsed.feedback?.comments || '';
+        if (!productName && (item.product_name || item.item_name || item.productName)) {
+          productName = item.product_name || item.item_name || item.productName;
+        }
+
+        if (item.sold_image_url) {
+          if (!soldImageUrl) soldImageUrl = item.sold_image_url;
+          addPhoto(item.sold_image_url);
+        } else if (item.status === 'Sold' && (item.photo_url || item.image_url)) {
+          if (!soldImageUrl) soldImageUrl = item.photo_url || item.image_url;
+          addPhoto(item.photo_url || item.image_url);
+        }
+
+        const fieldPhoto = item.field_photo_url || item.outdoor_photo_url || item.proof_photo_url || (item.status === 'Outdoor Marketing' ? (item.photo_url || item.image_url) : '');
+        if (fieldPhoto) {
+          if (!fieldPhotoUrl) fieldPhotoUrl = fieldPhoto;
+          addPhoto(fieldPhoto);
+        }
+
+        if (item.photo_url) addPhoto(item.photo_url);
+        if (item.image_url) addPhoto(item.image_url);
+
+        if (!exchangeType && item.exchange_type) exchangeType = item.exchange_type;
+        if (!noteNotificationDate && item.note_notification_date) noteNotificationDate = item.note_notification_date;
+
+        if (!hasScheme && (item.has_scheme || item.scheme_name || item.goldScheme?.enrolled)) {
+          hasScheme = true;
+          schemePlan = item.scheme_name || item.goldScheme?.planName || '';
+          schemeMonthly = item.scheme_amount || item.goldScheme?.monthlyAmount || '';
+          schemeReminderDate = item.scheme_reminder_date || '';
+          schemeNotes = item.scheme_notes || '';
+        }
+
+        const revScreen = item.google_review_screenshot || item.review_screenshot || item.screenshot_url || item.googleReview?.screenshot_url;
+        if (revScreen) addPhoto(revScreen);
+        if (!hasReview && (item.has_google_review || item.google_review_text || revScreen || item.googleReview?.submitted)) {
+          hasReview = true;
+          reviewRating = item.google_review_rating || item.googleReview?.rating || 5;
+          reviewText = item.google_review_text || item.googleReview?.reviewText || '';
+          reviewScreenshot = revScreen || '';
+        }
+
+        if (!hasFeedback && (item.has_customer_feedback || item.feedback_text || item.feedback?.rating)) {
+          hasFeedback = true;
+          feedbackRating = item.feedback_rating || item.feedback?.rating || 5;
+          feedbackText = item.feedback_text || item.feedback?.comments || '';
+        }
+
+        const vidScreen = item.video_screenshot || item.video_review_proof || item.videoScreenshot;
+        if (vidScreen) addPhoto(vidScreen);
+        if (!hasVideoReview && (item.has_video_review || item.video_title || vidScreen || item.video_url)) {
+          hasVideoReview = true;
+          videosCount = item.videos_count ? Number(item.videos_count) : 1;
+          videoTitle = item.video_title || '';
+          videoScreenshot = vidScreen || '';
+          videoUrl = item.video_url || '';
+        }
       }
     } catch {}
   }
+
+  const primaryPhoto = soldImageUrl || fieldPhotoUrl || reviewScreenshot || videoScreenshot || (allPhotos.length > 0 ? allPhotos[0] : '');
+
   return {
     hasScheme,
     schemePlan,
@@ -144,9 +169,13 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
     videoUrl,
     soldImageUrl,
     fieldPhotoUrl,
+    primaryPhoto,
+    allPhotos,
     exchangeType,
     productId,
+    productName,
     noteNotificationDate,
+    customerItems,
   };
 };
 
@@ -221,6 +250,27 @@ export const PendingCustomerActivityPage: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState<string>('');
   const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
   const [inspectActivity, setInspectActivity] = useState<CustomerActivity | null>(null);
+  const [productNames, setProductNames] = useState<Record<string, string>>({});
+
+  // Auto-fetch product names from catalog for any tag_no present in activities
+  useEffect(() => {
+    activities.forEach((act) => {
+      const sub = getSubrecordDetails(act.breakdown);
+      if (sub.productId) {
+        if (sub.productName) {
+          setProductNames((prev) => prev[sub.productId] === sub.productName ? prev : ({ ...prev, [sub.productId]: sub.productName }));
+        } else if (!productNames[sub.productId]) {
+          api.get(`/api/v1/products/${encodeURIComponent(sub.productId)}`)
+            .then((res) => {
+              if (res.data?.item_name) {
+                setProductNames((prev) => ({ ...prev, [sub.productId]: res.data.item_name }));
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    });
+  }, [activities]);
 
   // Section Mode: Customer Activity vs Employee Leaves
   const [sectionMode, setSectionMode] = useState<'ACTIVITIES' | 'LEAVES'>('ACTIVITIES');
@@ -468,25 +518,13 @@ export const PendingCustomerActivityPage: React.FC = () => {
   const rejectedCount = activities.filter((a) => a.approval_status === 'REJECTED').length;
 
   const getStatusBadgeStyle = (status: string) => {
-    switch (status) {
-      case 'Sold':
-      case 'Purchased':
-        return 'bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]';
-      case 'Exchange':
-        return 'bg-[#EDF2F7] text-[#536B8A] border-[#C5D5E6]';
-      case 'In Hold / Follow Up':
-      case 'In Hold':
-      case 'Follow Up':
-        return 'bg-[#FAF1EC] text-[#B97855] border-[#ECCFC0]';
-      case 'Lost':
-        return 'bg-[#FDECEC] text-[#C24141] border-[#F9C3C3]';
-      case 'Outdoor Marketing':
-        return 'bg-[#E8F4EE] text-[#1B694C] border-[#A7F3D0]';
-      case 'Window Shopping':
-      case 'Walkin':
-      default:
-        return 'bg-[#FAF8F3] text-[#8A8479] border-[#E4DFD4]';
-    }
+    const s = (status || '').toLowerCase();
+    if (s === 'sold' || s === 'purchased') return 'bg-[#E8F4EE] text-[#21845F] border-[#C5E3D5]';
+    if (s.includes('exchange')) return 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]';
+    if (s.includes('hold') || s.includes('follow')) return 'bg-[#FAF1EC] text-[#B97855] border-[#ECCFC0]';
+    if (s.includes('lost')) return 'bg-[#FEE2E2] text-[#DC2626] border-[#FECACA]';
+    if (s.includes('outdoor')) return 'bg-[#E8F4EE] text-[#1B694C] border-[#A7F3D0]';
+    return 'bg-[#FAF8F3] text-[#8A8479] border-[#E4DFD4]';
   };
 
   return (
@@ -853,7 +891,10 @@ export const PendingCustomerActivityPage: React.FC = () => {
                           </span>
                         )}
                         {(!isOutdoorActivity(act) || (act.status && act.status !== 'Outdoor Marketing')) && (
-                          <span className={`whitespace-nowrap shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(act.status)}`}>
+                          <span
+                            style={{ whiteSpace: 'nowrap' }}
+                            className={`whitespace-nowrap shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border select-none leading-none ${getStatusBadgeStyle(act.status)}`}
+                          >
                             {act.status === 'Walkin' ? 'Window Shopping' : (act.status || 'Window Shopping')}
                           </span>
                         )}
@@ -940,7 +981,23 @@ export const PendingCustomerActivityPage: React.FC = () => {
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FAF5FF] text-[#7E22CE] border border-[#E9D5FF] text-[10px] font-mono font-bold">
                             <Sparkles className="w-2.5 h-2.5 text-[#D97706]" />
                             <span>Tag: {subrecords.productId}</span>
+                            {(subrecords.productName || productNames[subrecords.productId]) && (
+                              <span className="font-sans font-extrabold text-[#1D1D1B] ml-0.5 truncate max-w-[150px]">
+                                • {subrecords.productName || productNames[subrecords.productId]}
+                              </span>
+                            )}
                           </span>
+                        )}
+                        {subrecords.primaryPhoto && (
+                          <button
+                            type="button"
+                            onClick={() => setViewProofUrl(getMediaUrl(subrecords.primaryPhoto))}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E8F4EE] text-[#166534] border border-[#A7F3D0] text-[10px] font-bold cursor-pointer hover:bg-[#D1FAE5]"
+                            title="Click to view attached photo proof"
+                          >
+                            <FileImage className="w-2.5 h-2.5 text-[#21845F]" />
+                            <span>Photo Proof</span>
+                          </button>
                         )}
                         {subrecords.hasFeedback && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F5EDF1] text-[#6B4657] border border-[#E5CFDB] text-[10px] font-bold">
@@ -1157,7 +1214,8 @@ export const PendingCustomerActivityPage: React.FC = () => {
                           )}
                           {(!isOutdoorActivity(act) || (act.status && act.status !== 'Outdoor Marketing')) && (
                             <span
-                              className={`whitespace-nowrap shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(
+                              style={{ whiteSpace: 'nowrap' }}
+                              className={`whitespace-nowrap shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border select-none leading-none ${getStatusBadgeStyle(
                                 act.status
                               )}`}
                             >
@@ -1202,10 +1260,26 @@ export const PendingCustomerActivityPage: React.FC = () => {
                             </span>
                           )}
                           {subrecords.productId && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#FAF5FF] text-[#7E22CE] border border-[#E9D5FF] text-[9px] font-mono font-bold">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#FAF5FF] text-[#7E22CE] border border-[#E9D5FF] text-[9.5px] font-mono font-bold">
                               <Sparkles className="w-2.5 h-2.5 text-[#D97706]" />
-                              Tag: {subrecords.productId}
+                              <span>Tag: {subrecords.productId}</span>
+                              {(subrecords.productName || productNames[subrecords.productId]) && (
+                                <span className="font-sans font-bold text-[#1D1D1B] truncate max-w-[140px]">
+                                  • {subrecords.productName || productNames[subrecords.productId]}
+                                </span>
+                              )}
                             </span>
+                          )}
+                          {subrecords.primaryPhoto && (
+                            <button
+                              type="button"
+                              onClick={() => setViewProofUrl(getMediaUrl(subrecords.primaryPhoto))}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E8F4EE] text-[#166534] border border-[#A7F3D0] text-[9.5px] font-bold cursor-pointer hover:bg-[#D1FAE5] shadow-2xs"
+                              title="Click to view attached photo proof"
+                            >
+                              <FileImage className="w-2.5 h-2.5 text-[#21845F]" />
+                              <span>Photo</span>
+                            </button>
                           )}
 
                           {subrecords.hasFeedback && (
@@ -1621,6 +1695,27 @@ export const PendingCustomerActivityPage: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Product Spec Card (Tag ID & Product Name Auto-Lookup) */}
+                    {b.productId && (
+                      <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#FAF5FF] via-white to-[#FAF8F3] border border-[#E9D5FF] flex items-center justify-between gap-3 shadow-2xs">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] uppercase font-bold text-[#7E22CE] tracking-wider flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
+                            <span>Catalog Product Specification</span>
+                          </span>
+                          <div className="text-sm font-extrabold text-[#1D1D1B] mt-1 truncate">
+                            {b.productName || productNames[b.productId] || 'Catalog Jewellery Product'}
+                          </div>
+                          <div className="text-xs font-mono font-bold text-[#7E22CE] mt-0.5">
+                            Tag No / Product ID: {b.productId}
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5] text-[10px] font-extrabold shrink-0">
+                          Verified Stock
+                        </span>
+                      </div>
+                    )}
+
                     {/* WhatsApp Queued indicator */}
                     {hasQueuedWhatsapp(inspectActivity) && (
                       <div className="p-3 rounded-2xl bg-[#E8F8EE] border border-[#A6E7B9] flex items-center gap-2 text-xs font-bold text-[#1E7E34]">
@@ -1629,23 +1724,47 @@ export const PendingCustomerActivityPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Sold Item / Field Marketing Proof Photo Card */}
-                    {(b.fieldPhotoUrl || b.soldImageUrl) && (
+                    {/* Sold Item Proof Photo Card */}
+                    {b.soldImageUrl && (
                       <div className="p-3.5 rounded-2xl bg-[#E8F4EE] border border-[#A7F3D0]">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-bold text-[#166534] flex items-center gap-1.5">
                             <Sparkles className="w-4 h-4 text-[#21845F]" />
-                            {b.fieldPhotoUrl ? 'Field Marketing / Interaction Photo' : 'Sold Ornament / Item Photo'}
+                            <span>Sold Item Ornament / Invoice Photo</span>
                           </span>
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                            {b.fieldPhotoUrl ? 'Field Proof' : 'Closed Sale'}
+                            Closed Deal
                           </span>
                         </div>
                         <div className="w-full max-w-xs rounded-xl overflow-hidden border border-[#86EFAC] bg-white p-1">
                           <img
-                            src={getMediaUrl(b.fieldPhotoUrl || b.soldImageUrl)}
-                            alt="Photo Proof"
-                            onClick={() => setViewProofUrl(getMediaUrl(b.fieldPhotoUrl || b.soldImageUrl))}
+                            src={getMediaUrl(b.soldImageUrl)}
+                            alt="Sold Photo Proof"
+                            onClick={() => setViewProofUrl(getMediaUrl(b.soldImageUrl))}
+                            className="w-full max-h-52 object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                            title="Click to view full image"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Field Marketing Proof Photo Card */}
+                    {b.fieldPhotoUrl && b.fieldPhotoUrl !== b.soldImageUrl && (
+                      <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E4DFD4]">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-[#1B694C] flex items-center gap-1.5">
+                            <Compass className="w-4 h-4 text-[#1B694C]" />
+                            <span>Field Marketing / Customer Interaction Photo</span>
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            Field Proof
+                          </span>
+                        </div>
+                        <div className="w-full max-w-xs rounded-xl overflow-hidden border border-[#CBD5E1] bg-white p-1">
+                          <img
+                            src={getMediaUrl(b.fieldPhotoUrl)}
+                            alt="Field Photo Proof"
+                            onClick={() => setViewProofUrl(getMediaUrl(b.fieldPhotoUrl))}
                             className="w-full max-h-52 object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                             title="Click to view full image"
                           />

@@ -638,12 +638,14 @@ export const HrRevenuePage: React.FC = () => {
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Gross Revenue */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider truncate">
-              Gross Sold Revenue
-            </span>
-            <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs min-w-0 overflow-hidden relative flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 min-w-0">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#21845F] uppercase tracking-wider block truncate">
+                Gross Sold Revenue
+              </span>
+            </div>
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#E8F4EE] border border-[#C5E3D5] text-[#21845F] flex items-center justify-center shrink-0">
               <IndianRupee className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
@@ -661,12 +663,14 @@ export const HrRevenuePage: React.FC = () => {
         </div>
 
         {/* Card 2: Sold Transactions */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#D97706] uppercase tracking-wider truncate">
-              Completed Purchases
-            </span>
-            <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs min-w-0 overflow-hidden relative flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 min-w-0">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#D97706] uppercase tracking-wider block truncate">
+                Completed Purchases
+              </span>
+            </div>
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#D97706] flex items-center justify-center shrink-0">
               <ShoppingBag className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
@@ -681,12 +685,14 @@ export const HrRevenuePage: React.FC = () => {
         </div>
 
         {/* Card 3: Jewellery Savings Schemes */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider truncate">
-              Monthly Schemes Volume
-            </span>
-            <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#3B82F6] flex items-center justify-center shrink-0">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs min-w-0 overflow-hidden relative flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 min-w-0">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider block truncate">
+                Monthly Schemes Volume
+              </span>
+            </div>
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#3B82F6] flex items-center justify-center shrink-0">
               <Sparkles className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
@@ -704,12 +710,14 @@ export const HrRevenuePage: React.FC = () => {
         </div>
 
         {/* Card 4: Average Order Value */}
-        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#8B5CF6] uppercase tracking-wider truncate">
-              Avg Ticket Size
-            </span>
-            <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] flex items-center justify-center shrink-0">
+        <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-5 shadow-xs min-w-0 overflow-hidden relative flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 min-w-0">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#8B5CF6] uppercase tracking-wider block truncate">
+                Avg Ticket Size
+              </span>
+            </div>
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] flex items-center justify-center shrink-0">
               <TrendingUp className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
@@ -806,41 +814,41 @@ export const HrRevenuePage: React.FC = () => {
         {/* Search Bar & Tabs Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#F0ECE1]">
           {/* Main Tabs */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('SOLD')}
-              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'SOLD'
                   ? 'bg-[#21845F] text-white shadow-xs'
                   : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#F2EDE4] border border-[#E4DFD4]'
               }`}
             >
               <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Customer Purchases ({filteredSold.length})</span>
+              <span className="whitespace-nowrap">Customer Purchases ({filteredSold.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('SCHEMES')}
-              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'SCHEMES'
                   ? 'bg-[#D97706] text-white shadow-xs'
                   : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#F2EDE4] border border-[#E4DFD4]'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Savings Schemes ({filteredSchemes.length})</span>
+              <span className="whitespace-nowrap">Savings Schemes ({filteredSchemes.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('INVENTORY')}
-              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'INVENTORY'
                   ? 'bg-[#1D1D1B] text-[#E5C378] shadow-xs border border-[#3F3F46]'
                   : 'bg-[#FAF8F3] text-[#5E5A52] hover:bg-[#F2EDE4] border border-[#E4DFD4]'
               }`}
             >
               <Tag className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
-              <span className="truncate">Sold Stock Inventory</span>
+              <span className="whitespace-nowrap">Sold Stock Inventory</span>
             </button>
           </div>
 

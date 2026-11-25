@@ -656,7 +656,7 @@ export const HrPaySlipsPage: React.FC = () => {
               <tr className="bg-[#FAF8F3] border-b border-[#EBE6DC] text-[#6B6559] uppercase font-bold text-[10px] tracking-wider">
                 <th className="px-5 py-3.5 whitespace-nowrap">Employee</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Branch</th>
-                <th className="px-5 py-3.5 whitespace-nowrap">Pay Period</th>
+                <th className="px-5 py-3.5 whitespace-nowrap min-w-[130px]">Pay Period</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Net Salary (₹)</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Issued Date</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Document</th>
@@ -695,9 +695,12 @@ export const HrPaySlipsPage: React.FC = () => {
                     </td>
 
                     {/* Period */}
-                    <td className="px-5 py-3.5 font-bold text-[#1D1D1B] whitespace-nowrap">
-                      <span className="whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] font-sans shrink-0 leading-normal text-xs font-bold">
-                        {slip.pay_period}
+                    <td className="px-5 py-3.5 font-bold text-[#1D1D1B] whitespace-nowrap min-w-[130px]">
+                      <span
+                        style={{ whiteSpace: 'nowrap' }}
+                        className="whitespace-nowrap inline-flex items-center shrink-0 px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] font-sans text-xs font-bold leading-none select-none"
+                      >
+                        {(slip.pay_period || `${slip.month} ${slip.year}`).trim()}
                       </span>
                     </td>
 

@@ -836,6 +836,11 @@ def create_hr_payslip(
         "employee_id": payslip.employee_id,
         "employee_name": emp.full_name,
         "pay_period": payslip.pay_period,
+        "month": payslip.month,
+        "year": payslip.year,
+        "amount": payslip.amount,
+        "notes": payslip.notes,
+        "file_url": payslip.file_url,
         "message": f"Pay slip for {emp.full_name} ({payslip.pay_period}) issued successfully.",
     }
 

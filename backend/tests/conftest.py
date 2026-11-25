@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import date
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -14,6 +15,8 @@ from backend.app.core.config import settings
 from backend.app.core.database import Base, get_db
 from backend.app.core.security import get_password_hash
 from backend.app.models.branch import Branch, User
+from backend.app.models.employee import Employee
+from backend.app.seed.seed_data import BRANCHES_DATA
 
 # Create test in-memory SQLite engine
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -27,7 +30,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
-    """Create schema in in-memory test database and seed 3 branches & 9 managers."""
+    """Create schema in in-memory test database and seed 3 branches, managers, HR, and employees."""
     Base.metadata.create_all(bind=test_engine)
 
     db = TestingSessionLocal()
@@ -121,6 +124,40 @@ def setup_test_db():
             )
             db.add(u)
 
+        # Seed HR User
+        hr_u = User(
+            branch_id=b_yelahanka.id,
+            email=f"{settings.HR_USERNAME}@sirisamruddhigold.com",
+            username=settings.HR_USERNAME,
+            full_name=settings.HR_NAME or "HR Manager",
+            hashed_password=get_password_hash(settings.HR_PASSWORD),
+            role="HR",
+            is_active=True,
+        )
+        db.add(hr_u)
+
+        # Seed Employees for each branch from verified BRANCHES_DATA roster
+        for b_data in BRANCHES_DATA:
+            b_code = b_data["code"].upper()
+            target_branch = b_yelahanka if b_code == "YELAHANKA" else (b_kolar if b_code == "KOLAR" else b_udupi)
+            code_prefix = b_data.get("code_prefix", "")
+
+            for emp_item in b_data.get("employees", []):
+                e_id = emp_item["id"]
+                e_code = f"{code_prefix}{e_id:03d}"
+                emp = Employee(
+                    branch_id=target_branch.id,
+                    employee_code=e_code,
+                    full_name=emp_item["name"].strip(),
+                    designation=emp_item.get("designation", "Sales Executive"),
+                    department=emp_item.get("department", "Sales & Showroom Operations"),
+                    date_of_joining=date.today(),
+                    status="active",
+                    is_outdoor_marketing_employee=False,
+                    notes=f"Verified employee {e_code} for {target_branch.name}",
+                )
+                db.add(emp)
+
         db.commit()
     finally:
         db.close()
@@ -153,10 +190,85 @@ def manager_token(client) -> str:
             "password": settings.MANAGER_1_PASSWORD,
         },
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     return response.json()["access_token"]
 
 
 @pytest.fixture
 def manager_auth_headers(manager_token) -> dict:
     return {"Authorization": f"Bearer {manager_token}"}
+
+
+@pytest.fixture
+def kolar_manager_token(client) -> str:
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "branch_code": "KOLAR",
+            "username": settings.KOLAR_MANAGER_1_USERNAME,
+            "password": settings.KOLAR_MANAGER_1_PASSWORD,
+        },
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+def kolar_manager_auth_headers(kolar_manager_token) -> dict:
+    return {"Authorization": f"Bearer {kolar_manager_token}"}
+
+
+@pytest.fixture
+def hr_token(client) -> str:
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "username": settings.HR_USERNAME,
+            "password": settings.HR_PASSWORD,
+        },
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+def hr_auth_headers(hr_token) -> dict:
+    return {"Authorization": f"Bearer {hr_token}"}
+
+
+@pytest.fixture
+def admin_token(client) -> str:
+    response = client.post(
+        "/api/v1/admin/auth/login",
+        json={
+            "username": settings.ADMIN_EMAIL,
+            "password": settings.ADMIN_PASSWORD_HASH,
+        },
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+def admin_auth_headers(admin_token) -> dict:
+    return {"Authorization": f"Bearer {admin_token}"}
+
+
+@pytest.fixture
+def employee_token(client) -> str:
+    response = client.post(
+        "/api/v1/auth/employee/login",
+        json={
+            "branch_code": "YELAHANKA",
+            "username": "EMP-YEL-008",
+            "password": "Shylaja@siri1234",
+        },
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+def employee_auth_headers(employee_token) -> dict:
+    return {"Authorization": f"Bearer {employee_token}"}
+

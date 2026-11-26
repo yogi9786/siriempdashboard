@@ -348,12 +348,18 @@ def seed_database():
                     db.commit()
                     print(f"    * Updated Employee [{employee.id} | {emp_code}]: {emp_name} for {branch.name}")
 
-        # Clean up any legacy employees not in the official 66 list
+        # Safely retire any legacy employees not in the official roster without breaking historical FK records
         legacy_employees = db.query(Employee).filter(~Employee.employee_code.in_(all_new_emp_codes)).all()
         if legacy_employees:
             for leg in legacy_employees:
-                print(f"  - Removing legacy employee record: ID {leg.id} - {leg.full_name} ({leg.employee_code})")
-                db.delete(leg)
+                try:
+                    with db.begin_nested():
+                        db.delete(leg)
+                        db.flush()
+                    print(f"  - Removed legacy employee record: ID {leg.id} - {leg.full_name} ({leg.employee_code})")
+                except Exception:
+                    leg.status = "inactive"
+                    print(f"  - Archived legacy employee record (has history): ID {leg.id} - {leg.full_name} ({leg.employee_code})")
             db.commit()
 
         print("[SUCCESS] Database seeding completed successfully for all 3 branches, 9 managers, and 66 employees with verified IDs.")

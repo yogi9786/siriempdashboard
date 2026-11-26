@@ -2271,8 +2271,8 @@ export const EmployeePortalPage: React.FC = () => {
                               </span>
                             )}
                             {subrecords.hasFeedback && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FDF2F8] text-[#BE185D] border border-[#FBCFE8] text-[10px] font-bold">
-                                <MessageSquareHeart className="w-3 h-3 text-[#EC4899]" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F5EDF1] text-[#6B4657] border border-[#E5CFDB] text-[10px] font-bold">
+                                <MessageSquareHeart className="w-3 h-3 text-[#6B4657]" />
                                 <span>Feedback ({subrecords.feedbackRating}★)</span>
                               </span>
                             )}

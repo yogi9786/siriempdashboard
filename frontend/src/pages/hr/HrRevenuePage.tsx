@@ -26,6 +26,7 @@ import api from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import { CustomerActivity, CustomerDetailItem, Employee } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
+import { fetchProductMetaBatch, ProductMeta, formatProductLabel } from '../../utils/productLookup';
 import { CustomerActivityViewModal } from '../../components/customers/CustomerActivityViewModal';
 import { SoldStockInventoryTable } from '../../components/revenue/SoldStockInventoryTable';
 
@@ -34,6 +35,7 @@ export const HrRevenuePage: React.FC = () => {
   const { error: toastError, success: toastSuccess } = useToast();
 
   const [activities, setActivities] = useState<CustomerActivity[]>([]);
+  const [productMetaMap, setProductMetaMap] = useState<Record<string, ProductMeta>>({});
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branchBreakdown, setBranchBreakdown] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -116,6 +118,35 @@ export const HrRevenuePage: React.FC = () => {
     fetchRevenueData();
   }, [selectedBranch, dateFilter, fromDate, toDate]);
 
+  useEffect(() => {
+    const missingTags: string[] = [];
+    activities.forEach((act) => {
+      const items = parseCustomerBreakdown(
+        act.breakdown,
+        act.customers_count || 1,
+        act.status,
+        act.customer_name,
+        act.phone_number,
+        act.dob,
+        act.anniversary,
+        act.product_value
+      );
+      items.forEach((item) => {
+        const tag = (item.product_id || (act as any).product_id || '').trim();
+        if (tag && (!item.product_name || !item.product_category)) {
+          missingTags.push(tag);
+        }
+      });
+    });
+    if (missingTags.length > 0) {
+      fetchProductMetaBatch(missingTags).then((resolved) => {
+        if (Object.keys(resolved).length > 0) {
+          setProductMetaMap((prev) => ({ ...prev, ...resolved }));
+        }
+      });
+    }
+  }, [activities]);
+
   // Date filtering helper
   const pad = (n: number) => String(n).padStart(2, '0');
   const toLocalDateStr = (d: Date) =>
@@ -178,6 +209,8 @@ export const HrRevenuePage: React.FC = () => {
       exchangeType?: string;
       productId: string;
       productName?: string;
+      productCategory?: string;
+      productType?: string;
       productValue: number;
       employeeName: string;
       employeeCode: string;
@@ -207,6 +240,8 @@ export const HrRevenuePage: React.FC = () => {
         const isSoldOrExchange = itemStatus === 'Sold' || itemStatus === 'Exchange' || val > 0;
 
         if (isSoldOrExchange) {
+          const rawTag = (item.product_id || (act as any).product_id || '').trim();
+          const meta = rawTag ? productMetaMap[rawTag] : undefined;
           list.push({
             id: `${act.id}-${idx}`,
             activityId: act.id,
@@ -214,8 +249,10 @@ export const HrRevenuePage: React.FC = () => {
             phone: item.phone || act.phone_number || '',
             status: itemStatus === 'Sold' ? 'Sold' : itemStatus === 'Exchange' ? 'Exchange' : 'Sold',
             exchangeType: item.exchange_type,
-            productId: item.product_id || (act as any).product_id || '',
-            productName: item.product_name || (act as any).product_name || '',
+            productId: rawTag,
+            productName: item.product_name || (act as any).product_name || meta?.itemName || '',
+            productCategory: item.product_category || meta?.category || '',
+            productType: item.product_type || meta?.itemType || '',
             productValue: val > 0 ? val : Number(act.product_value) || 0,
             employeeName: act.employee_name || 'Showroom Staff',
             employeeCode: act.employee_code || '',
@@ -231,7 +268,7 @@ export const HrRevenuePage: React.FC = () => {
     });
 
     return list;
-  }, [activities]);
+  }, [activities, productMetaMap]);
 
   // Flattened Scheme Enrollments
   const schemeEnrollments = useMemo(() => {
@@ -311,6 +348,8 @@ export const HrRevenuePage: React.FC = () => {
           s.customerName.toLowerCase().includes(q) ||
           s.phone.includes(q) ||
           s.productId.toLowerCase().includes(q) ||
+          (s.productName || '').toLowerCase().includes(q) ||
+          (s.productCategory || '').toLowerCase().includes(q) ||
           s.employeeName.toLowerCase().includes(q) ||
           s.employeeCode.toLowerCase().includes(q) ||
           s.branchName.toLowerCase().includes(q);
@@ -975,10 +1014,15 @@ export const HrRevenuePage: React.FC = () => {
                               </div>
                               {item.productName && (
                                 <div
-                                  className="text-[11px] font-semibold text-[#D97706] mt-0.5 max-w-[150px] truncate"
-                                  title={item.productName}
+                                  className="text-[11px] font-semibold text-[#D97706] mt-0.5 max-w-[180px] truncate"
+                                  title={formatProductLabel(item.productName, item.productCategory, item.productType)}
                                 >
                                   {item.productName}
+                                </div>
+                              )}
+                              {(item.productType || (item.productCategory && item.productCategory.toUpperCase() !== (item.productName || '').toUpperCase())) && (
+                                <div className="text-[10px] font-medium text-[#536B8A] truncate max-w-[180px]">
+                                  {[item.productType, item.productCategory].filter(Boolean).join(' • ')}
                                 </div>
                               )}
                             </div>
@@ -1038,7 +1082,7 @@ export const HrRevenuePage: React.FC = () => {
                       <td className="px-5 py-3.5 max-w-xs">
                         {item.productId && (
                           <span className="inline-block px-1.5 py-0.5 text-[10px] font-mono bg-[#FAF8F3] border border-[#E4DFD4] rounded text-[#5E5A52] mr-1">
-                            Tag: {item.productId}
+                            Tag: {item.productId}{item.productName ? ` • ${item.productName}` : ''}
                           </span>
                         )}
                         <span className="text-[#5E5A52] text-xs truncate block">

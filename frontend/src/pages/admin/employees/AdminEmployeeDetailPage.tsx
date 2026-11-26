@@ -31,6 +31,7 @@ import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { useToast } from '../../../context/ToastContext';
 import { formatCleanBreakdownText } from '../../../utils/customerUtils';
+import { getMediaUrl } from '../../../utils/media';
 import api from '../../../api/client';
 
 export const AdminEmployeeDetailPage: React.FC = () => {
@@ -890,7 +891,7 @@ export const AdminEmployeeDetailPage: React.FC = () => {
                   <div key={m.id} className="bg-[#FAF8F3] border border-[#E4DFD4] rounded-2xl overflow-hidden shadow-2xs space-y-2 p-3">
                     <div className="h-36 rounded-xl bg-white border border-[#E4DFD4] flex items-center justify-center overflow-hidden">
                       {m.file_url ? (
-                        <img src={m.file_url} alt={m.form_type} className="w-full h-full object-cover" />
+                        <img src={getMediaUrl(m.file_url)} alt={m.form_type} className="w-full h-full object-cover" />
                       ) : (
                         <FileText className="w-10 h-10 text-[#B97855]" />
                       )}

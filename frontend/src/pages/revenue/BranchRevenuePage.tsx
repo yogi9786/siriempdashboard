@@ -24,6 +24,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { CustomerActivity, CustomerDetailItem, Employee } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
+import { getMediaUrl } from '../../utils/media';
+import { fetchProductMetaBatch, ProductMeta, formatProductLabel } from '../../utils/productLookup';
 import { CustomerActivityViewModal } from '../../components/customers/CustomerActivityViewModal';
 import { SoldStockInventoryTable } from '../../components/revenue/SoldStockInventoryTable';
 
@@ -45,6 +47,36 @@ export const BranchRevenuePage: React.FC = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<string>('ALL');
 
   const [viewingActivity, setViewingActivity] = useState<CustomerActivity | null>(null);
+  const [productMetaMap, setProductMetaMap] = useState<Record<string, ProductMeta>>({});
+
+  useEffect(() => {
+    const missingTags: string[] = [];
+    activities.forEach((act) => {
+      const items = parseCustomerBreakdown(
+        act.breakdown,
+        act.customers_count || 1,
+        act.status,
+        act.customer_name,
+        act.phone_number,
+        act.dob,
+        act.anniversary,
+        act.product_value
+      );
+      items.forEach((item) => {
+        const tag = (item.product_id || act.product_id || '').trim();
+        if (tag && (!item.product_name || !item.product_category)) {
+          missingTags.push(tag);
+        }
+      });
+    });
+    if (missingTags.length > 0) {
+      fetchProductMetaBatch(missingTags).then((resolved) => {
+        if (Object.keys(resolved).length > 0) {
+          setProductMetaMap((prev) => ({ ...prev, ...resolved }));
+        }
+      });
+    }
+  }, [activities]);
 
   const fetchBranchActivities = async () => {
     try {
@@ -131,6 +163,8 @@ export const BranchRevenuePage: React.FC = () => {
       phone: string;
       productId: string;
       productName?: string;
+      productCategory?: string;
+      productType?: string;
       productValue: number;
       soldImageUrl?: string;
       employeeName: string;
@@ -157,13 +191,17 @@ export const BranchRevenuePage: React.FC = () => {
         const isSold = (item.status || '').toLowerCase() === 'sold' || (!item.status && (act.status || '').toLowerCase() === 'sold');
         const val = Number(item.product_value) || (idx === 0 && isSold ? Number(act.product_value) || 0 : 0);
         if (isSold || val > 0) {
+          const rawTag = (item.product_id || act.product_id || '').trim();
+          const meta = rawTag ? productMetaMap[rawTag] : undefined;
           list.push({
             id: `sold-${act.id}-${idx}`,
             activityId: act.id,
             customerName: item.name || act.customer_name || `Customer #${idx + 1}`,
             phone: item.phone || act.phone_number || '',
-            productId: item.product_id || act.product_id || 'JEWELRY-ITEM',
-            productName: item.product_name || (act as any).product_name || '',
+            productId: rawTag || 'JEWELRY-ITEM',
+            productName: item.product_name || (act as any).product_name || meta?.itemName || '',
+            productCategory: item.product_category || meta?.category || '',
+            productType: item.product_type || meta?.itemType || '',
             productValue: val,
             soldImageUrl: item.sold_image_url || act.sold_image_url,
             employeeName: act.employee_name || 'Showroom Staff',
@@ -177,7 +215,7 @@ export const BranchRevenuePage: React.FC = () => {
     });
 
     return list;
-  }, [activities]);
+  }, [activities, productMetaMap]);
 
   // Flattened Scheme Enrollments
   const schemeEnrollments = useMemo(() => {
@@ -252,6 +290,8 @@ export const BranchRevenuePage: React.FC = () => {
           s.customerName.toLowerCase().includes(q) ||
           s.phone.includes(q) ||
           s.productId.toLowerCase().includes(q) ||
+          (s.productName || '').toLowerCase().includes(q) ||
+          (s.productCategory || '').toLowerCase().includes(q) ||
           s.employeeName.toLowerCase().includes(q) ||
           s.employeeCode.toLowerCase().includes(q);
         if (!match) return false;
@@ -691,10 +731,15 @@ export const BranchRevenuePage: React.FC = () => {
                         </div>
                         {item.productName && (
                           <div
-                            className="text-[11px] font-semibold text-[#D97706] mt-0.5 max-w-[150px] truncate"
-                            title={item.productName}
+                            className="text-[11px] font-semibold text-[#D97706] mt-0.5 max-w-[180px] truncate"
+                            title={formatProductLabel(item.productName, item.productCategory, item.productType)}
                           >
                             {item.productName}
+                          </div>
+                        )}
+                        {(item.productType || (item.productCategory && item.productCategory.toUpperCase() !== (item.productName || '').toUpperCase())) && (
+                          <div className="text-[10px] font-medium text-[#536B8A] truncate max-w-[180px]">
+                            {[item.productType, item.productCategory].filter(Boolean).join(' • ')}
                           </div>
                         )}
                       </td>
@@ -718,7 +763,7 @@ export const BranchRevenuePage: React.FC = () => {
                             className="w-9 h-9 rounded-xl overflow-hidden border border-[#A7F3D0] hover:scale-105 transition-transform cursor-pointer"
                             title="Click to view photo"
                           >
-                            <img src={item.soldImageUrl} alt="Sold Item" className="w-full h-full object-cover" />
+                            <img src={getMediaUrl(item.soldImageUrl)} alt="Sold Item" className="w-full h-full object-cover" />
                           </button>
                         ) : (
                           <span className="text-[#8A8479] text-[10px]">—</span>

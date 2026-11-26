@@ -33,6 +33,7 @@ import { CustomerActivity, CustomerDetailItem, Employee } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
 import { getMediaUrl } from '../../utils/media';
 import { SCHEMES, DEFAULT_SCHEME } from '../../constants/schemes';
+import { fetchProductMetaByTag } from '../../utils/productLookup';
 import api from '../../api/client';
 
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
@@ -44,7 +45,9 @@ const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' 
 interface ProductLookupItem {
   id: number;
   tag_no: string;
+  item_id?: string;
   item_name: string;
+  sub_item?: string;
   item_type?: string;
   gross_weight?: number;
   net_weight?: number;
@@ -56,10 +59,12 @@ interface ProductLookupItem {
 const ProductTagSelector: React.FC<{
   productId?: string;
   productName?: string;
-  onSelect: (productId: string, productName: string) => void;
+  productCategory?: string;
+  productType?: string;
+  onSelect: (productId: string, productName: string, productCategory?: string, productType?: string) => void;
   onClear: () => void;
   onChangeText: (text: string) => void;
-}> = ({ productId, productName, onSelect, onClear, onChangeText }) => {
+}> = ({ productId, productName, productCategory, productType, onSelect, onClear, onChangeText }) => {
   const [query, setQuery] = useState(productId || '');
   const [suggestions, setSuggestions] = useState<ProductLookupItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -90,7 +95,7 @@ const ProductTagSelector: React.FC<{
       } finally {
         setIsSearching(false);
       }
-    }, 250);
+    }, 220);
 
     return () => clearTimeout(timer);
   }, [query, productId, productName]);
@@ -98,24 +103,18 @@ const ProductTagSelector: React.FC<{
   const handleSelect = (item: ProductLookupItem) => {
     setQuery(item.tag_no);
     setShowDropdown(false);
-    onSelect(item.tag_no, item.item_name);
+    onSelect(item.tag_no, item.item_name, item.counter || '', item.item_type || '');
   };
 
-  const handleBlur = () => {
-    setTimeout(async () => {
-      setShowDropdown(false);
-      const trimmed = query.trim();
-      if (trimmed && !productName) {
-        try {
-          const res = await api.get<ProductLookupItem>(`/api/v1/products/${encodeURIComponent(trimmed)}`);
-          if (res.data?.item_name) {
-            onSelect(res.data.tag_no, res.data.item_name);
-          }
-        } catch {
-          // Keep manually entered product id
-        }
+  const handleBlur = async () => {
+    setShowDropdown(false);
+    const trimmed = query.trim();
+    if (trimmed && !productName) {
+      const meta = await fetchProductMetaByTag(trimmed);
+      if (meta?.found && meta.itemName) {
+        onSelect(meta.tagNo, meta.itemName, meta.category || '', meta.itemType || '');
       }
-    }, 200);
+    }
   };
 
   return (
@@ -156,7 +155,10 @@ const ProductTagSelector: React.FC<{
           {suggestions.map((s) => (
             <div
               key={s.id}
-              onMouseDown={() => handleSelect(s)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleSelect(s);
+              }}
               className="p-2.5 hover:bg-[#FAF8F3] cursor-pointer flex items-center justify-between text-xs transition-colors"
             >
               <div>
@@ -168,11 +170,11 @@ const ProductTagSelector: React.FC<{
                     <span className="text-[10px] text-[#8A8479]">({s.item_type})</span>
                   )}
                 </div>
-                {(s.gross_weight || s.making_charges) && (
+                {(s.gross_weight || s.making_charges || s.counter) && (
                   <div className="text-[10px] text-[#8A8479] mt-0.5">
                     {s.gross_weight ? `G.Wt: ${s.gross_weight}g` : ''}
                     {s.net_weight ? ` | N.Wt: ${s.net_weight}g` : ''}
-                    {s.counter ? ` | Counter: ${s.counter}` : ''}
+                    {s.counter ? ` | Category: ${s.counter}` : ''}
                   </div>
                 )}
               </div>
@@ -191,11 +193,16 @@ const ProductTagSelector: React.FC<{
         <div className="mt-1.5 flex items-center justify-between p-2 rounded-xl bg-[#FAF8F3] border border-[#E8E4D9]">
           <div className="flex items-center gap-1.5 overflow-hidden">
             <Sparkles className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
-            <div className="truncate text-xs">
-              <span className="font-mono font-bold text-[#1D1D1B] mr-1.5">Tag: {productId}</span>
+            <div className="truncate text-xs flex items-center gap-1.5 flex-wrap">
+              <span className="font-mono font-bold text-[#1D1D1B]">Tag: {productId}</span>
               <span className="font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded-md border border-[#FDE68A]">
                 {productName}
               </span>
+              {(productType || (productCategory && productCategory.toUpperCase() !== productName.toUpperCase())) && (
+                <span className="text-[10px] font-bold text-[#536B8A] bg-[#EDF2F7] px-1.5 py-0.5 rounded border border-[#CBD5E1]">
+                  {[productType, productCategory].filter(Boolean).join(' • ')}
+                </span>
+              )}
             </div>
           </div>
           <button
@@ -347,6 +354,26 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
         initialData.product_value
       );
       setCustomerItems(parsedItems);
+      parsedItems.forEach((item, itemIdx) => {
+        if (item.product_id?.trim() && !item.product_name?.trim()) {
+          fetchProductMetaByTag(item.product_id).then((meta) => {
+            if (meta?.found && meta.itemName) {
+              setCustomerItems((prev) =>
+                prev.map((row, rIdx) =>
+                  rIdx === itemIdx && row.product_id === item.product_id
+                    ? {
+                        ...row,
+                        product_name: meta.itemName,
+                        product_category: meta.category || row.product_category || '',
+                        product_type: meta.itemType || row.product_type || '',
+                      }
+                    : row
+                )
+              );
+            }
+          });
+        }
+      });
     } else {
       const defaultEmp =
         employeeId || (employeesList.length > 0 ? employeesList[0].id : 0);
@@ -705,8 +732,28 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
         }, 0);
       }
 
+      // Ensure any manually typed product_id resolves product_name & category before saving
+      const enrichedItems = await Promise.all(
+        customerItems.map(async (item) => {
+          const cleanTag = (item.product_id || '').trim();
+          if (cleanTag && !item.product_name?.trim()) {
+            const meta = await fetchProductMetaByTag(cleanTag);
+            if (meta?.found && meta.itemName) {
+              return {
+                ...item,
+                product_id: meta.tagNo || cleanTag,
+                product_name: meta.itemName,
+                product_category: meta.category || item.product_category || '',
+                product_type: meta.itemType || item.product_type || '',
+              };
+            }
+          }
+          return item;
+        })
+      );
+
       // WhatsApp will NOT be sent now, but queued for dispatch when Showroom Manager approves!
-      const queuedItems = customerItems.map((item) => ({
+      const queuedItems = enrichedItems.map((item) => ({
         ...item,
         send_whatsapp_on_approval: Boolean(item.phone && item.phone.trim().replace(/\D/g, '').length >= 10),
         queued_whatsapp: true,
@@ -1234,19 +1281,52 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                       <ProductTagSelector
                         productId={item.product_id || ''}
                         productName={item.product_name || ''}
-                        onSelect={(prodId, prodName) => {
-                          handleCustomerFieldChange(idx, 'product_id', prodId);
-                          handleCustomerFieldChange(idx, 'product_name', prodName);
+                        productCategory={item.product_category || ''}
+                        productType={item.product_type || ''}
+                        onSelect={(prodId, prodName, prodCategory, prodType) => {
+                          setCustomerItems((prev) =>
+                            prev.map((row, rIdx) =>
+                              rIdx === idx
+                                ? {
+                                    ...row,
+                                    product_id: prodId,
+                                    product_name: prodName,
+                                    product_category: prodCategory || '',
+                                    product_type: prodType || '',
+                                  }
+                                : row
+                            )
+                          );
                         }}
                         onClear={() => {
-                          handleCustomerFieldChange(idx, 'product_id', '');
-                          handleCustomerFieldChange(idx, 'product_name', '');
+                          setCustomerItems((prev) =>
+                            prev.map((row, rIdx) =>
+                              rIdx === idx
+                                ? {
+                                    ...row,
+                                    product_id: '',
+                                    product_name: '',
+                                    product_category: '',
+                                    product_type: '',
+                                  }
+                                : row
+                            )
+                          );
                         }}
                         onChangeText={(txt) => {
-                          handleCustomerFieldChange(idx, 'product_id', txt);
-                          if (item.product_name && txt !== item.product_id) {
-                            handleCustomerFieldChange(idx, 'product_name', '');
-                          }
+                          setCustomerItems((prev) =>
+                            prev.map((row, rIdx) =>
+                              rIdx === idx
+                                ? {
+                                    ...row,
+                                    product_id: txt,
+                                    ...(row.product_name && txt !== row.product_id
+                                      ? { product_name: '', product_category: '', product_type: '' }
+                                      : {}),
+                                  }
+                                : row
+                            )
+                          );
                         }}
                       />
 
@@ -1511,10 +1591,10 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                           {item.google_review_screenshot ? (
                             <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs">
                               <img
-                                src={item.google_review_screenshot}
+                                src={getMediaUrl(item.google_review_screenshot)}
                                 alt="Review Photo Proof"
                                 className="w-12 h-12 rounded-lg object-cover border border-[#CBD5E1] shrink-0 cursor-pointer hover:opacity-90"
-                                onClick={() => setPreviewProofUrl(item.google_review_screenshot || null)}
+                                onClick={() => setPreviewProofUrl(getMediaUrl(item.google_review_screenshot) || null)}
                               />
                               <div className="flex-1 min-w-0">
                                 <span className="text-xs font-bold text-[#1D1D1B] truncate block">
@@ -1649,10 +1729,10 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
                           {item.video_screenshot ? (
                             <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-[#E9D5FF] shadow-2xs">
                               <img
-                                src={item.video_screenshot}
+                                src={getMediaUrl(item.video_screenshot)}
                                 alt="Video Photo Proof"
                                 className="w-12 h-12 rounded-lg object-cover border border-[#D8B4FE] shrink-0 cursor-pointer hover:opacity-90"
-                                onClick={() => setPreviewProofUrl(item.video_screenshot || null)}
+                                onClick={() => setPreviewProofUrl(getMediaUrl(item.video_screenshot) || null)}
                               />
                               <div className="flex-1 min-w-0">
                                 <span className="text-xs font-bold text-[#1D1D1B] truncate block">
@@ -1798,7 +1878,7 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <span className="text-sm font-black text-[#1D1D1B]">Google Review Photo Proof</span>
+              <span className="text-sm font-black text-[#1D1D1B]">Uploaded Proof Preview</span>
               <button
                 type="button"
                 onClick={() => setPreviewProofUrl(null)}
@@ -1809,8 +1889,8 @@ export const CustomerActivityModal: React.FC<CustomerActivityModalProps> = ({
             </div>
             <div className="flex items-center justify-center p-2 overflow-auto max-h-[75vh]">
               <img
-                src={previewProofUrl}
-                alt="Review Proof"
+                src={getMediaUrl(previewProofUrl)}
+                alt="Attachment Proof"
                 className="max-h-[70vh] w-auto object-contain rounded-xl border border-gray-200"
               />
             </div>

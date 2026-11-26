@@ -300,7 +300,9 @@ class StockService:
             {
                 "id": p.id,
                 "tag_no": p.tag_no,
+                "item_id": p.item_id,
                 "item_name": p.item_name,
+                "sub_item": p.sub_item,
                 "item_type": p.item_type,
                 "gross_weight": p.gross_weight,
                 "net_weight": p.net_weight,
@@ -311,6 +313,30 @@ class StockService:
             }
             for p in results
         ]
+
+    @classmethod
+    def enrich_breakdown_products(cls, db: Session, items: list) -> bool:
+        """Auto-fill product_name, product_category (counter), and product_type (item_type) from StockProduct."""
+        changed = False
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            tag_no = str(item.get("product_id") or item.get("tag_no") or "").strip()
+            if not tag_no:
+                continue
+            product = cls.lookup_product(db, tag_no)
+            if not product:
+                continue
+            if not (item.get("product_name") or "").strip() and product.get("item_name"):
+                item["product_name"] = product["item_name"]
+                changed = True
+            if not (item.get("product_category") or "").strip() and product.get("counter"):
+                item["product_category"] = product["counter"]
+                changed = True
+            if not (item.get("product_type") or "").strip() and product.get("item_type"):
+                item["product_type"] = product["item_type"]
+                changed = True
+        return changed
 
     @classmethod
     def sync_activity_sold_products(cls, db: Session, activity: CustomerActivity):

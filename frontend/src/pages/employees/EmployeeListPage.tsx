@@ -25,6 +25,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { Employee } from '../../types';
+import { getMediaUrl } from '../../utils/media';
 import api from '../../api/client';
 
 import { EmployeeFormModal } from './EmployeeFormModal';
@@ -339,7 +340,7 @@ export const EmployeeListPage: React.FC = () => {
                           <div className="w-9 h-9 rounded-xl bg-[#EDF2F7] border border-[#C5D5E6] text-[#536B8A] flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                             {emp.profile_photo_url ? (
                               <img
-                                src={emp.profile_photo_url}
+                                src={getMediaUrl(emp.profile_photo_url)}
                                 alt={emp.full_name}
                                 className="w-full h-full object-cover rounded-xl"
                               />

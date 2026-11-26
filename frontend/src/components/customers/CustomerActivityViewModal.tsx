@@ -26,6 +26,7 @@ import { Button } from '../ui/Button';
 import { CustomerActivity, CustomerDetailItem } from '../../types';
 import { parseCustomerBreakdown } from '../../utils/customerUtils';
 import { getMediaUrl } from '../../utils/media';
+import { fetchProductMetaBatch, ProductMeta, formatProductLabel } from '../../utils/productLookup';
 import api from '../../api/client';
 
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
@@ -50,7 +51,7 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
   onReject,
 }) => {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-  const [productNames, setProductNames] = useState<Record<string, string>>({});
+  const [productMetaMap, setProductMetaMap] = useState<Record<string, ProductMeta>>({});
 
   useEffect(() => {
     if (!activity) return;
@@ -64,21 +65,16 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
       activity.anniversary,
       activity.product_value
     );
-    parsedItems.forEach((item) => {
-      if (item.product_id) {
-        if (item.product_name) {
-          setProductNames((prev) => prev[item.product_id!] === item.product_name ? prev : ({ ...prev, [item.product_id!]: item.product_name! }));
-        } else if (!productNames[item.product_id]) {
-          api.get(`/api/v1/products/${encodeURIComponent(item.product_id)}`)
-            .then((res) => {
-              if (res.data?.item_name) {
-                setProductNames((prev) => ({ ...prev, [item.product_id!]: res.data.item_name }));
-              }
-            })
-            .catch(() => {});
+    const missingTags = parsedItems
+      .filter((item) => item.product_id && !item.product_name)
+      .map((item) => item.product_id);
+    if (missingTags.length > 0) {
+      fetchProductMetaBatch(missingTags).then((resolved) => {
+        if (Object.keys(resolved).length > 0) {
+          setProductMetaMap((prev) => ({ ...prev, ...resolved }));
         }
-      }
-    });
+      });
+    }
   }, [activity?.id, activity?.breakdown]);
 
   if (!isOpen || !activity) return null;
@@ -271,11 +267,19 @@ export const CustomerActivityViewModal: React.FC<CustomerActivityViewModalProps>
                       <div className="font-mono font-bold text-[#536B8A] mt-0.5 uppercase truncate">
                         {cust.product_id || '—'}
                       </div>
-                      {(cust.product_name || productNames[cust.product_id || '']) && (
-                        <div className="text-[10.5px] font-sans font-extrabold text-[#1D1D1B] truncate mt-0.5" title={cust.product_name || productNames[cust.product_id || '']}>
-                          {cust.product_name || productNames[cust.product_id || '']}
-                        </div>
-                      )}
+                      {(() => {
+                        const meta = cust.product_id ? productMetaMap[cust.product_id] : undefined;
+                        const label = formatProductLabel(
+                          cust.product_name || meta?.itemName,
+                          cust.product_category || meta?.category,
+                          cust.product_type || meta?.itemType
+                        );
+                        return label ? (
+                          <div className="text-[10.5px] font-sans font-extrabold text-[#1D1D1B] truncate mt-0.5" title={label}>
+                            {label}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
 
                     <div className="p-2.5 rounded-xl bg-[#FAF8F3] border border-[#EFEBE1]">

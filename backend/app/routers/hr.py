@@ -476,13 +476,9 @@ def delete_hr_employee(
     emp_name = emp.full_name
     emp_code = emp.employee_code
 
-    # Detach or clean up foreign keys so delete succeeds safely
-    db.query(CustomerActivity).filter(CustomerActivity.employee_id == employee_id).update({"employee_id": None})
-    db.query(EmployeePaySlip).filter(EmployeePaySlip.employee_id == employee_id).delete()
-    db.query(EmployeeLeaveRequest).filter(EmployeeLeaveRequest.employee_id == employee_id).delete()
-
-    db.delete(emp)
-    db.commit()
+    # Clean up dependent foreign keys and cascades safely
+    from backend.app.services.employee_cleanup import delete_employee_with_dependencies
+    delete_employee_with_dependencies(db, emp)
 
     return {
         "message": f"Employee {emp_name} ({emp_code}) deleted successfully.",
@@ -950,14 +946,10 @@ def download_hr_payslip_file(
     if not file_url:
         raise HTTPException(status_code=404, detail="No file attached to this payslip.")
 
-    fname = file_url.split("/")[-1].split("?")[0]
-    file_path = os.path.join(settings.MEDIA_DIR, fname)
-    if not os.path.isfile(file_path):
-        rel_path = file_url.lstrip("/")
-        if os.path.isfile(rel_path):
-            file_path = rel_path
-        else:
-            raise HTTPException(status_code=404, detail="Payslip file does not exist on server storage.")
+    from backend.app.utils.media_storage import resolve_media_file_path
+    file_path = resolve_media_file_path(file_url)
+    if not file_path:
+        raise HTTPException(status_code=404, detail="Payslip file does not exist on server storage.")
 
     media_type = "application/pdf" if file_path.lower().endswith(".pdf") else "image/jpeg"
     emp = db.query(Employee).filter(Employee.id == slip.employee_id).first()

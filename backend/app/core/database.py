@@ -175,9 +175,29 @@ def auto_migrate_db_schema():
                         except Exception as e:
                             logger.warning(f"Column migration warning for {table_name}.{col.name}: {e}")
 
-        # Ensure employee 214 / EMP-YEL-214 is properly named GAGAN in roster
+        # Ensure employee 214 / EMP-YEL-214 (GAGAN) exists and is active Sales Executive in Yelahanka roster
         try:
-            conn.execute(text("UPDATE employees SET full_name = 'GAGAN' WHERE id = 214 OR employee_code = 'EMP-YEL-214' OR full_name = 'THAGGELLAPPA'"))
+            conn.execute(text(
+                "UPDATE employees SET full_name = 'GAGAN', status = 'active' "
+                "WHERE id = 214 OR employee_code = 'EMP-YEL-214' OR full_name = 'THAGGELLAPPA'"
+            ))
+            yel_row = conn.execute(text("SELECT id FROM branches WHERE UPPER(code) = 'YELAHANKA' LIMIT 1")).fetchone()
+            if yel_row:
+                yel_id = yel_row[0]
+                staff_cnt = conn.execute(text("SELECT COUNT(*) FROM employees WHERE branch_id = :bid"), {"bid": yel_id}).scalar() or 0
+                has_214 = conn.execute(text("SELECT 1 FROM employees WHERE employee_code = 'EMP-YEL-214' LIMIT 1")).fetchone()
+                if staff_cnt >= 10 and not has_214:
+                    mgr_row = conn.execute(
+                        text("SELECT id FROM users WHERE branch_id = :bid AND role = 'MANAGER' ORDER BY id ASC LIMIT 1"),
+                        {"bid": yel_id},
+                    ).fetchone()
+                    conn.execute(
+                        text(
+                            "INSERT INTO employees (branch_id, manager_id, employee_code, full_name, phone, designation, department, date_of_joining, status, notes, is_outdoor_marketing_employee, created_at, updated_at) "
+                            "VALUES (:bid, :mid, 'EMP-YEL-214', 'GAGAN', '', 'Sales Executive', 'Sales & Showroom Operations', CURRENT_DATE, 'active', 'Staff member [EMP-YEL-214] for Yelahanka showroom.', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+                        ),
+                        {"bid": yel_id, "mid": mgr_row[0] if mgr_row else None},
+                    )
             conn.commit()
         except Exception as e:
             logger.debug(f"Employee Gagan sync notice: {e}")

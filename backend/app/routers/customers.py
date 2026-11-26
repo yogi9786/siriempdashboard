@@ -358,6 +358,14 @@ def _sync_activity_subrecords(record: CustomerActivity, db: Session) -> None:
         if not isinstance(items, list):
             return
 
+        # Auto-enrich product name & category from stock inventory whenever a tag number is provided
+        try:
+            from backend.app.services.stock_service import StockService
+            if StockService.enrich_breakdown_products(db, items):
+                record.breakdown = json.dumps(items)
+        except Exception:
+            pass
+
         tag = f"Activity #{record.id}"
 
         # Collect existing review statuses to preserve manual approvals if already verified

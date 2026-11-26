@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Compass,
   User,
@@ -72,6 +72,13 @@ export const EmployeeOutdoorCustomerModal: React.FC<EmployeeOutdoorCustomerModal
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isUploadingFile, setIsUploadingFile] = useState<boolean>(false);
   const [viewProofUrl, setViewProofUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setForm({ ...initialData });
+      setViewProofUrl(null);
+    }
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 

@@ -121,10 +121,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount media directory for static image uploads
+# Mount canonical media directory & fallback routes for static image/PDF uploads
+from backend.app.routers.media import media_router
+from backend.app.utils.media_storage import get_canonical_media_dir
+
+if not os.path.isabs(settings.MEDIA_DIR or ""):
+    settings.MEDIA_DIR = get_canonical_media_dir()
 os.makedirs(settings.MEDIA_DIR, exist_ok=True)
-app.mount("/media", StaticFiles(directory=settings.MEDIA_DIR), name="media")
-app.mount("/uploads", StaticFiles(directory=settings.MEDIA_DIR), name="uploads")
+app.include_router(media_router)
 
 
 import time
@@ -142,9 +146,9 @@ async def log_and_secure_requests(request: Request, call_next):
         status_code = response.status_code
         logger.info(f"[HTTP] {request.method} {path} -> {status_code} ({duration_ms}ms)")
 
-    # Enforce Security Headers
+    # Enforce Security Headers (SAMEORIGIN allows PDF iframe previews on the dashboard)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
     return response

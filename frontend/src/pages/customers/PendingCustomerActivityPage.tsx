@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { CustomerActivityModal } from '../../components/customers/CustomerActivityModal';
 import { getMediaUrl } from '../../utils/media';
+import { fetchProductMetaBatch, ProductMeta, formatProductLabel } from '../../utils/productLookup';
 import {
   Clock,
   CheckCircle2,
@@ -67,6 +68,8 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
   let exchangeType = '';
   let productId = '';
   let productName = '';
+  let productCategory = '';
+  let productType = '';
   let noteNotificationDate = '';
   const allPhotos: string[] = [];
   const customerItems: any[] = [];
@@ -89,6 +92,12 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
         }
         if (!productName && (item.product_name || item.item_name || item.productName)) {
           productName = item.product_name || item.item_name || item.productName;
+        }
+        if (!productCategory && (item.product_category || item.counter)) {
+          productCategory = item.product_category || item.counter;
+        }
+        if (!productType && (item.product_type || item.item_type)) {
+          productType = item.product_type || item.item_type;
         }
 
         if (item.sold_image_url) {
@@ -174,6 +183,8 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
     exchangeType,
     productId,
     productName,
+    productCategory,
+    productType,
     noteNotificationDate,
     customerItems,
   };
@@ -250,26 +261,24 @@ export const PendingCustomerActivityPage: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState<string>('');
   const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
   const [inspectActivity, setInspectActivity] = useState<CustomerActivity | null>(null);
-  const [productNames, setProductNames] = useState<Record<string, string>>({});
+  const [productMetaMap, setProductMetaMap] = useState<Record<string, ProductMeta>>({});
 
-  // Auto-fetch product names from catalog for any tag_no present in activities
+  // Auto-fetch product names & categories from catalog for any tag_no present in activities
   useEffect(() => {
+    const missingTags: string[] = [];
     activities.forEach((act) => {
       const sub = getSubrecordDetails(act.breakdown);
-      if (sub.productId) {
-        if (sub.productName) {
-          setProductNames((prev) => prev[sub.productId] === sub.productName ? prev : ({ ...prev, [sub.productId]: sub.productName }));
-        } else if (!productNames[sub.productId]) {
-          api.get(`/api/v1/products/${encodeURIComponent(sub.productId)}`)
-            .then((res) => {
-              if (res.data?.item_name) {
-                setProductNames((prev) => ({ ...prev, [sub.productId]: res.data.item_name }));
-              }
-            })
-            .catch(() => {});
-        }
+      if (sub.productId && (!sub.productName || !sub.productCategory)) {
+        missingTags.push(sub.productId);
       }
     });
+    if (missingTags.length > 0) {
+      fetchProductMetaBatch(missingTags).then((resolved) => {
+        if (Object.keys(resolved).length > 0) {
+          setProductMetaMap((prev) => ({ ...prev, ...resolved }));
+        }
+      });
+    }
   }, [activities]);
 
   // Section Mode: Customer Activity vs Employee Leaves
@@ -981,11 +990,19 @@ export const PendingCustomerActivityPage: React.FC = () => {
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FAF5FF] text-[#7E22CE] border border-[#E9D5FF] text-[10px] font-mono font-bold">
                             <Sparkles className="w-2.5 h-2.5 text-[#D97706]" />
                             <span>Tag: {subrecords.productId}</span>
-                            {(subrecords.productName || productNames[subrecords.productId]) && (
-                              <span className="font-sans font-extrabold text-[#1D1D1B] ml-0.5 truncate max-w-[150px]">
-                                • {subrecords.productName || productNames[subrecords.productId]}
-                              </span>
-                            )}
+                            {(() => {
+                              const meta = productMetaMap[subrecords.productId];
+                              const label = formatProductLabel(
+                                subrecords.productName || meta?.itemName,
+                                subrecords.productCategory || meta?.category,
+                                subrecords.productType || meta?.itemType
+                              );
+                              return label ? (
+                                <span className="font-sans font-extrabold text-[#1D1D1B] ml-0.5 truncate max-w-[180px]" title={label}>
+                                  • {label}
+                                </span>
+                              ) : null;
+                            })()}
                           </span>
                         )}
                         {subrecords.primaryPhoto && (
@@ -1263,11 +1280,19 @@ export const PendingCustomerActivityPage: React.FC = () => {
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#FAF5FF] text-[#7E22CE] border border-[#E9D5FF] text-[9.5px] font-mono font-bold">
                               <Sparkles className="w-2.5 h-2.5 text-[#D97706]" />
                               <span>Tag: {subrecords.productId}</span>
-                              {(subrecords.productName || productNames[subrecords.productId]) && (
-                                <span className="font-sans font-bold text-[#1D1D1B] truncate max-w-[140px]">
-                                  • {subrecords.productName || productNames[subrecords.productId]}
-                                </span>
-                              )}
+                              {(() => {
+                                const meta = productMetaMap[subrecords.productId];
+                                const label = formatProductLabel(
+                                  subrecords.productName || meta?.itemName,
+                                  subrecords.productCategory || meta?.category,
+                                  subrecords.productType || meta?.itemType
+                                );
+                                return label ? (
+                                  <span className="font-sans font-bold text-[#1D1D1B] truncate max-w-[170px]" title={label}>
+                                    • {label}
+                                  </span>
+                                ) : null;
+                              })()}
                             </span>
                           )}
                           {subrecords.primaryPhoto && (
@@ -1703,9 +1728,19 @@ export const PendingCustomerActivityPage: React.FC = () => {
                             <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
                             <span>Catalog Product Specification</span>
                           </span>
-                          <div className="text-sm font-extrabold text-[#1D1D1B] mt-1 truncate">
-                            {b.productName || productNames[b.productId] || 'Catalog Jewellery Product'}
-                          </div>
+                          {(() => {
+                            const meta = productMetaMap[b.productId];
+                            const label = formatProductLabel(
+                              b.productName || meta?.itemName,
+                              b.productCategory || meta?.category,
+                              b.productType || meta?.itemType
+                            );
+                            return (
+                              <div className="text-sm font-extrabold text-[#1D1D1B] mt-1 truncate" title={label || 'Catalog Jewellery Product'}>
+                                {label || 'Catalog Jewellery Product'}
+                              </div>
+                            );
+                          })()}
                           <div className="text-xs font-mono font-bold text-[#7E22CE] mt-0.5">
                             Tag No / Product ID: {b.productId}
                           </div>

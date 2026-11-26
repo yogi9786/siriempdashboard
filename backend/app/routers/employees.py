@@ -23,14 +23,14 @@ router = APIRouter(prefix="/api/v1/employees", tags=["Employees"])
 
 
 def get_manager_exclusions(db: Session):
-    """Returns manager names, usernames, and codes to strictly exclude managers from employee rosters."""
+    """Returns manager names, usernames, and codes to exclude pure manager accounts from employee rosters."""
     manager_users = db.query(User).filter(User.role == "MANAGER").all()
     manager_names = {u.full_name.strip().lower() for u in manager_users if u.full_name}
     manager_usernames = {u.username.strip().lower() for u in manager_users if u.username}
     manager_codes = {getattr(u, "manager_code", "").strip().lower() for u in manager_users if getattr(u, "manager_code", None)}
     known_manager_names = {
         "adarsha", "dileep h e", "basavaraj baraddi", "manjunath p s",
-        "vijay sarathy", "gagan", "pradeep kumar b n", "aslam pasha a",
+        "vijay sarathy", "pradeep kumar b n", "aslam pasha a",
         "siva r", "sandeepa", "prithviraj", "prithviraju b v", "shivakumar m k", "shivakumar"
     }
     manager_names.update(known_manager_names)
@@ -41,11 +41,12 @@ def is_manager_staff(emp: Employee, manager_names: set, manager_usernames: set, 
     desig = (emp.designation or "").lower()
     if "manager" in desig:
         return True
-    name = (emp.full_name or "").strip().lower()
-    if name in manager_names:
-        return True
     code = (emp.employee_code or "").strip().lower()
     if code in manager_codes or code in manager_usernames:
+        return True
+    # Only exclude by name when there isn't an explicit non-manager showroom employee badge
+    name = (emp.full_name or "").strip().lower()
+    if name in manager_names and not code.startswith("emp-"):
         return True
     return False
 
@@ -436,8 +437,8 @@ def delete_employee(
         )
 
     try:
-        db.delete(employee)
-        db.commit()
+        from backend.app.services.employee_cleanup import delete_employee_with_dependencies
+        delete_employee_with_dependencies(db, employee)
         return {"message": "Employee deleted successfully."}
     except Exception as e:
         db.rollback()

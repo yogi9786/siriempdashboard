@@ -15,19 +15,23 @@ export const getMediaUrl = (url?: string | null): string => {
     return trimmed;
   }
 
-  // Normalize legacy or corrupted media paths: e.g. /api/media/xxx -> /uploads/xxx
+  // Route /uploads/* and /media/* through /api/v1/* so Vite proxy (dev) and Nginx /api proxy (prod) both serve media cleanly
   let cleanUrl = trimmed;
-  if (cleanUrl.startsWith('/api/media/')) {
-    cleanUrl = cleanUrl.replace(/^\/api\/media\//, '/uploads/');
-  } else if (cleanUrl.startsWith('api/media/')) {
-    cleanUrl = cleanUrl.replace(/^api\/media\//, '/uploads/');
+  if (cleanUrl.startsWith('/api/media/') || cleanUrl.startsWith('api/media/')) {
+    cleanUrl = `/api/v1/media/${cleanUrl.replace(/^\/?api\/media\//, '')}`;
+  } else if (cleanUrl.startsWith('/api/uploads/') || cleanUrl.startsWith('api/uploads/')) {
+    cleanUrl = `/api/v1/uploads/${cleanUrl.replace(/^\/?api\/uploads\//, '')}`;
+  } else if (cleanUrl.startsWith('/uploads/') || cleanUrl.startsWith('uploads/')) {
+    cleanUrl = `/api/v1/uploads/${cleanUrl.replace(/^\/?uploads\//, '')}`;
+  } else if (cleanUrl.startsWith('/media/') || cleanUrl.startsWith('media/')) {
+    cleanUrl = `/api/v1/media/${cleanUrl.replace(/^\/?media\//, '')}`;
   }
 
   let baseUrl = import.meta.env.VITE_API_BASE_URL;
   if (!baseUrl) {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-      // In dev and prod, root-relative paths /uploads/... and /media/... are proxied/routed cleanly on same origin
+      // In dev and prod, root-relative paths /api/v1/uploads/... and /api/v1/media/... route cleanly on same origin
       baseUrl = (hostname === 'localhost' || hostname === '127.0.0.1') ? '' : (window.location.origin || '');
     } else {
       baseUrl = '';
@@ -60,6 +64,10 @@ export const triggerFileDownload = async (url: string, suggestedFilename?: strin
     const response = await fetch(fullUrl, { mode: 'cors' });
     if (!response.ok) {
       throw new Error(`Failed to fetch file: ${response.status}`);
+    }
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    if (contentType.includes('text/html')) {
+      throw new Error('Server returned HTML instead of downloadable file.');
     }
     const blob = await response.blob();
     const blobUrl = window.URL.createObjectURL(blob);

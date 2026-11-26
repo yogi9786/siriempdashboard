@@ -130,6 +130,8 @@ export interface CustomerDetailItem {
   field_photo_url?: string;
   product_id?: string;
   product_name?: string;
+  product_category?: string;
+  product_type?: string;
   product_value?: number | string;
   notes?: string;
   // Schemes Closed

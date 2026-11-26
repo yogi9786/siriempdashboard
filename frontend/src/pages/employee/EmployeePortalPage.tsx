@@ -119,6 +119,9 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
   let videoTitle = '';
   let videoScreenshot = '';
   let productId = '';
+  let productName = '';
+  let productCategory = '';
+  let productType = '';
   let noteNotificationDate = '';
   let schemeReminderDate = '';
 
@@ -127,8 +130,17 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
       const parsed = JSON.parse(breakdownStr);
       if (Array.isArray(parsed) && parsed.length > 0) {
         for (const item of parsed) {
-          if (!productId && item.product_id) {
-            productId = item.product_id;
+          if (!productId && (item.product_id || item.tag_no)) {
+            productId = item.product_id || item.tag_no;
+          }
+          if (!productName && (item.product_name || item.item_name)) {
+            productName = item.product_name || item.item_name;
+          }
+          if (!productCategory && (item.product_category || item.counter)) {
+            productCategory = item.product_category || item.counter;
+          }
+          if (!productType && (item.product_type || item.item_type)) {
+            productType = item.product_type || item.item_type;
           }
           if (!noteNotificationDate && item.note_notification_date) {
             noteNotificationDate = item.note_notification_date;
@@ -190,6 +202,9 @@ const getSubrecordDetails = (breakdownStr?: string | null) => {
     videoTitle,
     videoScreenshot,
     productId,
+    productName,
+    productCategory,
+    productType,
     noteNotificationDate,
     schemeReminderDate,
   };
@@ -1419,13 +1434,13 @@ export const EmployeePortalPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F3EC] text-[#1D1D1B] flex flex-col font-sans selection:bg-[#7E22CE]/20 selection:text-[#7E22CE]">
-      {/* Top Navbar - Black Background with Light Content */}
-      <header className="sticky top-0 z-40 bg-[#0B0F17] border-b border-[#1E293B] px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 shadow-md">
+    <div className="min-h-screen bg-[#F6F3EC] text-[#1D1D1B] flex flex-col font-sans selection:bg-[#526F91]/20 selection:text-[#1D1D1B]">
+      {/* Top Navbar - Obsidian Charcoal Background matching Manager Sidebar */}
+      <header className="sticky top-0 z-40 bg-[#18181B] border-b border-[#27272A] px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 shadow-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand Logo & Title */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#131B2E] border border-[#2A3756] p-1 flex items-center justify-center shrink-0 shadow-2xs">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#27272A] border border-[#3F3F46] p-1 flex items-center justify-center shrink-0 shadow-2xs">
               <img
                 src={logoImg}
                 alt="Siri Samruddhi Gold Palace"
@@ -1437,12 +1452,12 @@ export const EmployeePortalPage: React.FC = () => {
                 <h1 className="text-xs sm:text-base font-black uppercase tracking-wider text-white truncate">
                   Siri Samruddhi
                 </h1>
-                <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1E293B] text-[#93C5FD] border border-[#334155] uppercase tracking-wide shrink-0">
+                <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#27272A] text-[#E2E8F0] border border-[#3F3F46] uppercase tracking-wide shrink-0">
                   Employee Dashboard
                 </span>
               </div>
-              <p className="text-[10px] sm:text-[11px] font-semibold text-[#94A3B8] tracking-wide truncate">
-                Showroom: <span className="text-[#FBBF24] font-bold">{selectedBranch?.name || user?.branch_name || 'Showroom'}</span>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-[#A1A1AA] tracking-wide truncate">
+                Showroom: <span className="text-[#E5C378] font-bold">{selectedBranch?.name || user?.branch_name || 'Showroom'}</span>
               </p>
             </div>
           </div>
@@ -1453,17 +1468,17 @@ export const EmployeePortalPage: React.FC = () => {
             <button
               type="button"
               onClick={handleOpenNotifications}
-              className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#131B2E] hover:bg-[#1E293B] border border-[#2A3756] text-white transition-all cursor-pointer shadow-2xs group shrink-0"
+              className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#27272A] hover:bg-[#3F3F46]/80 border border-[#3F3F46] text-white transition-all cursor-pointer shadow-2xs group shrink-0"
               title="Notifications: Manager attire checks & review approvals"
             >
-              <div className="relative flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-[#1E293B] text-[#A78BFA] group-hover:bg-[#2E1065] transition-colors shrink-0">
-                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#A78BFA] group-hover:scale-110 transition-transform" />
+              <div className="relative flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-[#18181B] text-[#E5C378] group-hover:bg-[#3F3F46] transition-colors shrink-0">
+                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#E5C378] group-hover:scale-110 transition-transform" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#EF4444] rounded-full ring-2 ring-[#0B0F17] animate-pulse" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#EF4444] rounded-full ring-2 ring-[#18181B] animate-pulse" />
                 )}
               </div>
               <div className="text-left hidden sm:block">
-                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#94A3B8] block leading-none">
+                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#A1A1AA] block leading-none">
                   Updates
                 </span>
                 <span className="text-xs font-bold text-white leading-tight flex items-center gap-1">
@@ -1481,32 +1496,32 @@ export const EmployeePortalPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('REVIEWS')}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#131B2E] hover:bg-[#1E293B] border border-[#2A3756] shadow-2xs cursor-pointer transition-all group shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#27272A] hover:bg-[#3F3F46]/80 border border-[#3F3F46] shadow-2xs cursor-pointer transition-all group shrink-0"
               title="Click to view Review & Video Points Ledger"
             >
-              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-[#1E293B] border border-[#334155] text-[#FBBF24] flex items-center justify-center font-black text-xs shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-[#FBBF24] text-[#FBBF24]" />
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-[#18181B] border border-[#3F3F46] text-[#E5C378] flex items-center justify-center font-black text-xs shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-[#E5C378] text-[#E5C378]" />
               </div>
               <div className="text-left">
-                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#94A3B8] block leading-none">
+                <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-[#A1A1AA] block leading-none">
                   Points
                 </span>
-                <span className="text-xs sm:text-sm font-black text-[#FBBF24] font-mono leading-tight">
-                  {dashboardSummary?.total_points ?? 0} <span className="text-[9px] sm:text-[10px] font-bold text-[#94A3B8]">pts</span>
+                <span className="text-xs sm:text-sm font-black text-[#E5C378] font-mono leading-tight">
+                  {dashboardSummary?.total_points ?? 0} <span className="text-[9px] sm:text-[10px] font-bold text-[#A1A1AA]">pts</span>
                 </span>
               </div>
             </button>
 
             {/* Employee Profile Tag */}
-            <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#131B2E] border border-[#2A3756]">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-[#7E22CE] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+            <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#27272A] border border-[#3F3F46]">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-[#526F91] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
                 {user?.full_name?.charAt(0) || 'E'}
               </div>
               <div className="text-left">
                 <div className="text-xs font-bold text-white truncate max-w-[100px] md:max-w-[150px]">
                   {user?.full_name || 'Showroom Staff'}
                 </div>
-                <div className="text-[10px] text-[#A78BFA] font-mono font-bold">
+                <div className="text-[10px] text-[#E5C378] font-mono font-bold">
                   {user?.employee_code || 'STAFF'}
                 </div>
               </div>
@@ -1516,7 +1531,7 @@ export const EmployeePortalPage: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => setShowLogoutModal(true)}
-              className="bg-[#131B2E] hover:bg-red-950/60 text-red-400 hover:text-red-300 border-[#334155] hover:border-red-500 text-xs flex items-center gap-1.5 rounded-xl transition-all cursor-pointer shadow-2xs p-2 sm:px-3 sm:py-1.5"
+              className="bg-[#27272A] hover:bg-red-950/60 text-red-400 hover:text-red-300 border-[#3F3F46] hover:border-red-500 text-xs flex items-center gap-1.5 rounded-xl transition-all cursor-pointer shadow-2xs p-2 sm:px-3 sm:py-1.5"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Sign Out</span>
@@ -1527,54 +1542,86 @@ export const EmployeePortalPage: React.FC = () => {
 
       {/* Main Workspace Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Welcome Clean Hero Banner */}
-        <div className="relative bg-white border border-[#E4DFD4] rounded-3xl p-6 sm:p-8 shadow-xs overflow-hidden text-[#1D1D1B]">
-          {/* Hero Content */}
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3">
-              {/* Showroom Branch Badge & Desk Tag */}
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="text-xs font-bold text-[#1D1D1B] px-3.5 py-1.5 rounded-full bg-white border border-[#D8B4FE] flex items-center gap-2 shadow-2xs">
-                  <span className="w-2 h-2 rounded-full bg-[#7E22CE] animate-pulse" />
-                  <span>{selectedBranch?.name || user?.branch_name || 'Showroom'}</span>
-                </span>
+        {/* Welcome Colored Hero Banner + Metric Strip */}
+        <div className="relative bg-white border border-[#E4DFD4] rounded-3xl shadow-sm overflow-hidden text-[#1D1D1B]">
+          {/* Colored Welcome Banner Section (Obsidian & Champagne Gold matching Manager Theme) */}
+          <div className="relative overflow-hidden bg-linear-to-br from-[#18181B] via-[#27272A] to-[#1E293B] text-white p-5 sm:p-7 lg:p-8 border-b border-[#E4DFD4]">
+            {/* Subtle Ambient Champagne & Slate Highlights */}
+            <div className="pointer-events-none absolute -top-16 -right-12 w-56 h-56 rounded-full bg-[#C6A45C]/12 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -left-10 w-64 h-64 rounded-full bg-[#526F91]/18 blur-3xl" />
 
-                <span className="text-xs font-bold text-[#7E22CE] px-3 py-1.5 rounded-full bg-[#F3E8FF] border border-[#D8B4FE] flex items-center gap-1.5 shadow-2xs">
-                  <Sparkles className="w-3.5 h-3.5 text-[#7E22CE]" />
-                  <span>Employee Dashboard</span>
-                </span>
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5 sm:gap-6">
+              <div className="flex items-start gap-3.5 sm:gap-4 min-w-0">
+                {/* Staff Monogram Avatar */}
+                <div className="hidden xs:flex w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#27272A] border border-[#C6A45C]/50 text-[#E5C378] font-black text-lg sm:text-xl items-center justify-center shrink-0 shadow-inner">
+                  {user?.full_name?.charAt(0) || 'E'}
+                </div>
+
+                <div className="space-y-2.5 min-w-0 flex-1">
+                  {/* Showroom Branch, Role & Staff Code Pills */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] sm:text-xs font-bold text-white px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-xs flex items-center gap-1.5 shadow-2xs">
+                      <span className="w-2 h-2 rounded-full bg-[#34D399] animate-pulse shrink-0" />
+                      <Building2 className="w-3.5 h-3.5 text-[#A7F3D0] shrink-0" />
+                      <span>{selectedBranch?.name || user?.branch_name || 'Showroom'}</span>
+                    </span>
+
+                    <span className="text-[11px] sm:text-xs font-bold text-[#E5C378] px-3 py-1 rounded-full bg-[#27272A]/85 border border-[#C6A45C]/45 flex items-center gap-1.5 shadow-2xs">
+                      <Sparkles className="w-3.5 h-3.5 text-[#E5C378] shrink-0" />
+                      <span>Employee Dashboard</span>
+                    </span>
+
+                    {user?.employee_code && (
+                      <span className="text-[11px] font-mono font-bold text-[#E2E8F0] px-2.5 py-1 rounded-full bg-[#526F91]/30 border border-[#93A8C4]/40">
+                        {user.employee_code}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Welcome Title */}
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+                      Welcome back,{' '}
+                      <span className="text-[#E5C378] font-black">{user?.full_name || 'Team Member'}</span>!
+                    </h2>
+                    <p className="text-xs sm:text-sm text-[#D4D4D8] font-medium mt-1.5 leading-relaxed max-w-2xl">
+                      Log customer interactions, gold savings schemes, customer calls, and review point submissions.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Welcome Title */}
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-black text-[#1D1D1B] tracking-tight">
-                  Welcome back, <span className="text-[#7E22CE] font-extrabold">{user?.full_name || 'Team Member'}</span>!
-                </h2>
-                <p className="text-xs sm:text-sm text-[#5E5A52] font-medium mt-1 leading-relaxed">
-                  Log customer interactions, gold savings schemes, customer calls, and review point submissions.
-                </p>
-              </div>
-            </div>
+              {/* Hero Quick Actions (Manager Executive Ivory + Obsidian Contrast Buttons) */}
+              <div className="flex flex-col xs:flex-row sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={handleOpenAddCustomer}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#FAF8F3] hover:bg-white text-[#18181B] border border-[#E5C378] text-xs font-extrabold shadow-md transition-all cursor-pointer active:scale-98 whitespace-nowrap"
+                >
+                  <Plus className="w-4 h-4 text-[#21845F] stroke-[2.5]" />
+                  <span>Log Customer</span>
+                </button>
 
-            {/* Hero Quick Actions (Mobile Responsive) */}
-            <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
-              <button
-                onClick={() => {
-                  fetchSummary();
-                  if (activeTab === 'CUSTOMERS') fetchCustomerActivities();
-                  else if (activeTab === 'CALLS') fetchCallLogs();
-                  else if (activeTab === 'REVIEWS') fetchReviews();
-                }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#FAF5FF] text-[#3B0764] text-xs font-bold border border-[#D8B4FE] shadow-2xs transition-all cursor-pointer hover:scale-102"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 text-[#7E22CE] ${isLoadingCustomers ? 'animate-spin' : ''}`} />
-                <span>Refresh Data</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    fetchSummary();
+                    if (activeTab === 'CUSTOMERS') fetchCustomerActivities();
+                    else if (activeTab === 'CALLS') fetchCallLogs();
+                    else if (activeTab === 'REVIEWS') fetchReviews();
+                  }}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/18 text-white text-xs font-bold border border-white/25 backdrop-blur-xs shadow-2xs transition-all cursor-pointer active:scale-98 whitespace-nowrap"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#E5C378] ${isLoadingCustomers ? 'animate-spin' : ''}`} />
+                  <span>Refresh Data</span>
+                </button>
+              </div>
             </div>
           </div>
 
           {/* 6 Distinct Solid Colored Metric Blocks (Exact Manager Dashboard Palette - Fully Mobile Responsive) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-[#EBE6DC]">
+          <div className="p-4 sm:p-6 lg:p-7 bg-[#FAF9F6]/60">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
             {/* Block 1: Total Points Earned (Warm Terracotta #FAF1EC & #B97855 - matching Manager Rating card) */}
             <div
               onClick={() => setActiveTab('REVIEWS')}
@@ -1604,28 +1651,28 @@ export const EmployeePortalPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Block 2: Total Customer Logs (Purple #F3E8FF & #7E22CE - matching Manager Staff card) */}
+            {/* Block 2: Total Customer Logs (Champagne Gold #F4EEDC & #9A782F - matching Manager Luxury Theme) */}
             <div
               onClick={() => setActiveTab('CUSTOMERS')}
-              className="bg-[#F3E8FF] border border-[#D8B4FE] hover:border-[#7E22CE] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-w-0"
+              className="bg-[#F4EEDC] border border-[#DFCFA6] hover:border-[#9A782F] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_18px_rgba(40,35,25,0.045)] hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-w-0"
             >
               <div>
                 <div className="flex items-start justify-between gap-1">
                   <div className="min-w-0 flex-1">
-                    <span className="text-[10px] sm:text-[11px] font-bold text-[#7E22CE] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-[#9A782F] uppercase tracking-wider block mb-0.5 sm:mb-1 truncate">
                       Customer Logs
                     </span>
                     <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight leading-none truncate">
                       {dashboardSummary?.total_customer_activities ?? customerActivities.length}
                     </div>
-                    <span className="text-[10px] sm:text-xs text-[#8A8479] font-medium mt-0.5 sm:mt-1 block truncate">Walk-ins Logged</span>
+                    <span className="text-[10px] sm:text-xs text-[#6B6559] font-medium mt-0.5 sm:mt-1 block truncate">Walk-ins Logged</span>
                   </div>
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl bg-white border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[#7E22CE]" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl bg-white border border-[#DFCFA6] text-[#9A782F] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[#9A782F]" />
                   </div>
                 </div>
 
-                <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-2.5 border-t border-[#D8B4FE] flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-[#7E22CE]">
+                <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-2.5 border-t border-[#DFCFA6] flex items-center justify-between text-[9px] sm:text-[10px] font-bold text-[#9A782F]">
                   <span>Showroom Logs</span>
                   <span className="font-mono">Active</span>
                 </div>
@@ -1750,184 +1797,155 @@ export const EmployeePortalPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
 
         {/* Tab Selection & Main Action Header */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-[#E6E1D6] pb-4">
-          <div className="w-full lg:w-auto flex items-center gap-1.5 p-1.5 bg-white border border-[#D8B4FE]/70 rounded-2xl shadow-xs overflow-x-auto flex-nowrap scrollbar-none max-w-full pb-1 sm:pb-1.5">
-            {/* Tab 1: Customer Logs */}
-            <button
-              onClick={() => setActiveTab('CUSTOMERS')}
-              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'CUSTOMERS'
-                  ? 'bg-[#7E22CE] text-white shadow-xs scale-[1.01]'
-                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FAF5FF]'
-              }`}
-            >
-              <Users className="w-4 h-4 shrink-0" />
-              <span>Customer Logs</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
-                activeTab === 'CUSTOMERS'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-[#F3E8FF] text-[#7E22CE]'
-              }`}>
-                {customerActivities.length}
-              </span>
-            </button>
-
-            {/* Tab 2: Call Activities */}
-            <button
-              onClick={() => setActiveTab('CALLS')}
-              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'CALLS'
-                  ? 'bg-[#526F91] text-white shadow-xs scale-[1.01]'
-                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#EDF2F8]'
-              }`}
-            >
-              <PhoneCall className="w-4 h-4 shrink-0" />
-              <span>Call Activities</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
-                activeTab === 'CALLS'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-[#EDF2F8] text-[#526F91]'
-              }`}>
-                {callLogs.length}
-              </span>
-            </button>
-
-            {/* Tab 3: Review Points */}
-            <button
-              onClick={() => setActiveTab('REVIEWS')}
-              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'REVIEWS'
-                  ? 'bg-[#7E22CE] text-white shadow-xs scale-[1.01]'
-                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FAF5FF]'
-              }`}
-            >
-              <Award className="w-4 h-4 shrink-0" />
-              <span>Review Points</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
-                activeTab === 'REVIEWS'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE]'
-              }`}>
-                🏆 {dashboardSummary?.total_points ?? 0}
-              </span>
-            </button>
-
-            {/* Tab 4: Outdoor Entry */}
-            <button
-              onClick={() => setActiveTab('OUTDOOR')}
-              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'OUTDOOR'
-                  ? 'bg-[#23815F] text-white shadow-xs scale-[1.01]'
-                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#E8F4EE]'
-              }`}
-            >
-              <Compass className="w-4 h-4 shrink-0" />
-              <span>Outdoor Entry</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
-                activeTab === 'OUTDOOR'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-[#E8F4EE] text-[#23815F] border border-[#C5E3D5]'
-              }`}>
-                {outdoorCustomersList.length || (outdoorDuty?.customers?.length ?? (dashboardSummary?.total_outdoor_customers ?? 0))}
-              </span>
-            </button>
-
-            {/* Tab 5: Pay Slips */}
-            <button
-              onClick={() => {
-                setActiveTab('PAYSLIPS');
-                fetchMyPayslips();
-              }}
-              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'PAYSLIPS'
-                  ? 'bg-[#21845F] text-white shadow-xs scale-[1.01]'
-                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#E8F4EE]'
-              }`}
-            >
-              <Receipt className="w-4 h-4 shrink-0" />
-              <span>Pay Slips</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
-                activeTab === 'PAYSLIPS'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]'
-              }`}>
-                {myPayslips.length}
-              </span>
-            </button>
-
-            {/* Tab 6: Leave Update */}
-            <button
-              onClick={() => {
-                setActiveTab('LEAVES');
-                fetchMyLeaves();
-              }}
-              className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'LEAVES'
-                  ? 'bg-[#D97706] text-white shadow-xs scale-[1.01]'
-                  : 'text-[#5E5A52] hover:text-[#1D1D1B] hover:bg-[#FFFBEB]'
-              }`}
-            >
-              <CalendarDays className="w-4 h-4 shrink-0" />
-              <span>Leave Update</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
-                activeTab === 'LEAVES'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]'
-              }`}>
-                {myLeaves.length}
-              </span>
-            </button>
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 border-b border-[#E6E1D6] pb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap xl:flex-nowrap items-stretch lg:items-center gap-2 p-2 bg-white border border-[#E4DFD4] rounded-2xl shadow-xs w-full lg:w-auto">
+            {[
+              {
+                id: 'CUSTOMERS' as const,
+                label: 'Customer Logs',
+                count: customerActivities.length,
+                icon: Users,
+                activeCls: 'bg-[#1D1D1B] text-white border-[#1D1D1B] shadow-sm',
+                inactiveCls: 'bg-[#FAF8F5] text-[#4B473F] border-[#EAE4D7] hover:bg-[#F4EEDC]/70 hover:text-[#1D1D1B] hover:border-[#DFCFA6]',
+                badgeActiveCls: 'bg-[#E5C378] text-[#18181B]',
+                badgeInactiveCls: 'bg-[#F4EEDC] text-[#9A782F] border border-[#DFCFA6]',
+                onSelect: () => setActiveTab('CUSTOMERS'),
+              },
+              {
+                id: 'CALLS' as const,
+                label: 'Call Activities',
+                count: callLogs.length,
+                icon: PhoneCall,
+                activeCls: 'bg-[#526F91] text-white border-[#526F91] shadow-sm',
+                inactiveCls: 'bg-[#FAF8F5] text-[#4B473F] border-[#EAE4D7] hover:bg-[#EDF2F8] hover:text-[#1E3A5F] hover:border-[#C6D4E3]',
+                badgeActiveCls: 'bg-white/20 text-white',
+                badgeInactiveCls: 'bg-[#EDF2F8] text-[#526F91] border border-[#C6D4E3]',
+                onSelect: () => setActiveTab('CALLS'),
+              },
+              {
+                id: 'REVIEWS' as const,
+                label: 'Review Points',
+                count: `🏆 ${dashboardSummary?.total_points ?? 0}`,
+                icon: Award,
+                activeCls: 'bg-[#9A782F] text-white border-[#9A782F] shadow-sm',
+                inactiveCls: 'bg-[#FAF8F5] text-[#4B473F] border-[#EAE4D7] hover:bg-[#F4EEDC] hover:text-[#6E531A] hover:border-[#DFCFA6]',
+                badgeActiveCls: 'bg-white/20 text-white',
+                badgeInactiveCls: 'bg-[#F4EEDC] text-[#9A782F] border border-[#DFCFA6]',
+                onSelect: () => setActiveTab('REVIEWS'),
+              },
+              {
+                id: 'OUTDOOR' as const,
+                label: 'Outdoor Entry',
+                count: outdoorCustomersList.length || (outdoorDuty?.customers?.length ?? (dashboardSummary?.total_outdoor_customers ?? 0)),
+                icon: Compass,
+                activeCls: 'bg-[#23815F] text-white border-[#23815F] shadow-sm',
+                inactiveCls: 'bg-[#FAF8F5] text-[#4B473F] border-[#EAE4D7] hover:bg-[#E8F4EE] hover:text-[#166534] hover:border-[#C5E3D5]',
+                badgeActiveCls: 'bg-white/20 text-white',
+                badgeInactiveCls: 'bg-[#E8F4EE] text-[#23815F] border border-[#C5E3D5]',
+                onSelect: () => setActiveTab('OUTDOOR'),
+              },
+              {
+                id: 'PAYSLIPS' as const,
+                label: 'Pay Slips',
+                count: myPayslips.length,
+                icon: Receipt,
+                activeCls: 'bg-[#21845F] text-white border-[#21845F] shadow-sm',
+                inactiveCls: 'bg-[#FAF8F5] text-[#4B473F] border-[#EAE4D7] hover:bg-[#E8F4EE] hover:text-[#166534] hover:border-[#C5E3D5]',
+                badgeActiveCls: 'bg-white/20 text-white',
+                badgeInactiveCls: 'bg-[#E8F4EE] text-[#21845F] border border-[#C5E3D5]',
+                onSelect: () => {
+                  setActiveTab('PAYSLIPS');
+                  fetchMyPayslips();
+                },
+              },
+              {
+                id: 'LEAVES' as const,
+                label: 'Leave Update',
+                count: myLeaves.length,
+                icon: CalendarDays,
+                activeCls: 'bg-[#B97855] text-white border-[#B97855] shadow-sm',
+                inactiveCls: 'bg-[#FAF8F5] text-[#4B473F] border-[#EAE4D7] hover:bg-[#FAF1EC] hover:text-[#7D492D] hover:border-[#ECCFC0]',
+                badgeActiveCls: 'bg-white/20 text-white',
+                badgeInactiveCls: 'bg-[#FAF1EC] text-[#9A5B39] border border-[#ECCFC0]',
+                onSelect: () => {
+                  setActiveTab('LEAVES');
+                  fetchMyLeaves();
+                },
+              },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={tab.onSelect}
+                  className={`min-h-[44px] flex items-center justify-between lg:justify-start gap-1.5 sm:gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer active:scale-98 ${
+                    isActive ? `${tab.activeCls} scale-[1.01]` : tab.inactiveCls
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{tab.label}</span>
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 whitespace-nowrap ${
+                      isActive ? tab.badgeActiveCls : tab.badgeInactiveCls
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Primary Action Button */}
           {activeTab === 'CUSTOMERS' && (
             <Button
               onClick={handleOpenAddCustomer}
-              className="w-full sm:w-auto bg-[#7E22CE] hover:bg-[#6B21A8] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+              className="w-full lg:w-auto min-h-[44px] bg-[#1D1D1B] hover:bg-[#2A2A28] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer shrink-0 border border-[#C6A45C]/40"
             >
-              <Plus className="w-4 h-4 text-white" />
+              <Plus className="w-4 h-4 text-[#E5C378]" />
               <span>Add Customer Log</span>
             </Button>
           )}
           {activeTab === 'CALLS' && (
             <Button
               onClick={() => setShowAddCallModal(true)}
-              className="w-full sm:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+              className="w-full lg:w-auto min-h-[44px] bg-[#526F91] hover:bg-[#425B78] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer shrink-0"
             >
               <Plus className="w-4 h-4 text-white" />
               <span>Log Customer Call</span>
             </Button>
           )}
           {activeTab === 'OUTDOOR' && (
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button
-                onClick={handleOpenAddOutdoorCustomer}
-                className="w-full sm:w-auto bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4 text-white" />
-                <span>+ Add Outdoor Customer</span>
-              </Button>
-            </div>
+            <Button
+              onClick={handleOpenAddOutdoorCustomer}
+              className="w-full lg:w-auto min-h-[44px] bg-[#23815F] hover:bg-[#1B694C] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4 text-white" />
+              <span>Add Outdoor Customer</span>
+            </Button>
           )}
           {activeTab === 'REVIEWS' && (
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button
-                onClick={handleOpenAddCustomer}
-                className="w-full sm:w-auto bg-[#7E22CE] hover:bg-[#6B21A8] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4 text-white" />
-                <span>Add Customer & Review</span>
-              </Button>
-            </div>
+            <Button
+              onClick={handleOpenAddCustomer}
+              className="w-full lg:w-auto min-h-[44px] bg-[#1D1D1B] hover:bg-[#2A2A28] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer shrink-0 border border-[#C6A45C]/40"
+            >
+              <Plus className="w-4 h-4 text-[#E5C378]" />
+              <span>Add Customer & Review</span>
+            </Button>
           )}
           {activeTab === 'PAYSLIPS' && (
             <Button
               onClick={fetchMyPayslips}
-              className="w-full sm:w-auto bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+              className="w-full lg:w-auto min-h-[44px] bg-[#21845F] hover:bg-[#1A6B4C] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer shrink-0"
             >
               <RefreshCw className={`w-4 h-4 text-white ${isLoadingPayslips ? 'animate-spin' : ''}`} />
               <span>Refresh Slips</span>
@@ -1936,7 +1954,7 @@ export const EmployeePortalPage: React.FC = () => {
           {activeTab === 'LEAVES' && (
             <Button
               onClick={fetchMyLeaves}
-              className="w-full sm:w-auto bg-[#D97706] hover:bg-[#B45309] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+              className="w-full lg:w-auto min-h-[44px] bg-[#B97855] hover:bg-[#9A5B39] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm rounded-xl px-5 py-2.5 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer shrink-0"
             >
               <RefreshCw className={`w-4 h-4 text-white ${isLoadingLeaves ? 'animate-spin' : ''}`} />
               <span>Refresh Leaves</span>
@@ -1949,118 +1967,158 @@ export const EmployeePortalPage: React.FC = () => {
         {/* ------------------------------------------------------------------- */}
         {activeTab === 'CUSTOMERS' && (
           <div className="space-y-4">
-            {/* Customer Status Quick Filter Bar (Requirement 6: Lost, Interested, Sold) */}
-            <div className="bg-white border border-[#E4DFD4] p-2.5 sm:p-3.5 rounded-2xl shadow-xs">
-              <div className="flex items-center gap-1.5 py-0.5 overflow-x-auto flex-nowrap scrollbar-none pb-1 sm:pb-0">
-                <span className="text-xs font-black text-[#3B0764] mr-1 uppercase tracking-wider text-[11px] flex items-center gap-1.5 shrink-0">
-                  <Filter className="w-3.5 h-3.5 text-[#7E22CE]" />
-                  <span>Customer Status:</span>
-                </span>
-                {[
-                  {
-                    id: 'ALL',
-                    label: 'All Statuses',
-                    activeCls: 'bg-[#7E22CE] text-white border-[#7E22CE] shadow-sm shadow-purple-500/20',
-                    inactiveCls: 'bg-white text-[#5E5A52] border-[#D8B4FE] hover:bg-[#FAF5FF]',
-                  },
-                  {
-                    id: 'Sold',
-                    label: 'Sold',
-                    activeCls: 'bg-[#21845F] text-white border-[#21845F] shadow-sm shadow-emerald-500/20',
-                    inactiveCls: 'bg-[#E8F4EE] text-[#21845F] border-[#A7F3D0] hover:bg-[#D1FAE5]',
-                  },
-                  {
-                    id: 'Exchange',
-                    label: 'Exchange (Gold/Diamond/Silver)',
-                    activeCls: 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm shadow-blue-500/20',
-                    inactiveCls: 'bg-[#EFF6FF] text-[#1E40AF] border-[#BFDBFE] hover:bg-[#DBEAFE]',
-                  },
-                  {
-                    id: 'In Hold',
-                    label: 'In Hold / Follow Up',
-                    activeCls: 'bg-[#B97855] text-white border-[#B97855] shadow-xs',
-                    inactiveCls: 'bg-[#FAF1EC] text-[#B97855] border-[#ECCFC0] hover:bg-[#F5E5DC]',
-                  },
-                  {
-                    id: 'Interested',
-                    label: 'Interested',
-                    activeCls: 'bg-[#475569] text-white border-[#475569] shadow-xs',
-                    inactiveCls: 'bg-[#F1F5F9] text-[#475569] border-[#CBD5E1] hover:bg-[#E2E8F0]',
-                  },
-                  {
-                    id: 'Lost',
-                    label: 'Lost',
-                    activeCls: 'bg-[#C24141] text-white border-[#C24141] shadow-sm shadow-red-500/20',
-                    inactiveCls: 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA] hover:bg-[#FEE2E2]',
-                  },
-                  {
-                    id: 'Window Shopping',
-                    label: 'Window Shopping',
-                    activeCls: 'bg-[#5E5A52] text-white border-[#5E5A52] shadow-xs',
-                    inactiveCls: 'bg-[#F4F1EA] text-[#5E5A52] border-[#E4DFD4] hover:bg-[#EBE6DC]',
-                  },
-                  {
-                    id: 'Outdoor Marketing',
-                    label: 'Outdoor Marketing',
-                    activeCls: 'bg-[#1B694C] text-white border-[#1B694C] shadow-sm shadow-emerald-700/20',
-                    inactiveCls: 'bg-[#E8F4EE] text-[#1B694C] border-[#A7F3D0] hover:bg-[#D1FAE5]',
-                  },
-                ].map((sTab) => {
-                  const isSelected = customerStatusFilter === sTab.id;
-                  return (
+            {/* Unified Mobile-First Customer Filters & Search Card */}
+            <div className="bg-white border border-[#E4DFD4] rounded-2xl p-3.5 sm:p-4 shadow-xs space-y-3.5">
+              {/* Row 1: Search Input & Approval Quick Tabs */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div className="relative w-full lg:max-w-sm">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#526F91]" />
+                  <input
+                    type="text"
+                    placeholder="Search customer name, phone, notes..."
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && fetchCustomerActivities()}
+                    className="w-full min-h-[42px] pl-10 pr-9 py-2 bg-[#FAF8F5] border border-[#D5CFC2] rounded-xl text-xs font-medium text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#526F91] focus:ring-2 focus:ring-[#526F91]/15 shadow-2xs"
+                  />
+                  {customerSearch && (
                     <button
-                      key={sTab.id}
                       type="button"
-                      onClick={() => setCustomerStatusFilter(sTab.id as any)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                        isSelected
-                          ? `${sTab.activeCls} font-black scale-[1.02]`
-                          : `${sTab.inactiveCls} font-bold`
-                      }`}
+                      onClick={() => setCustomerSearch('')}
+                      aria-label="Clear search"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-[#8A8479] hover:text-[#1D1D1B] hover:bg-[#E6E1D6]/60 cursor-pointer"
                     >
-                      <span>{sTab.label}</span>
+                      <X className="w-3.5 h-3.5" />
                     </button>
-                  );
-                })}
-              </div>
-            </div>
+                  )}
+                </div>
 
-            {/* Filter & Search Bar */}
-            <div className="bg-white border border-[#E6E1D6] rounded-2xl p-3 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 shadow-xs">
-              <div className="relative w-full md:w-80">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8A8479]" />
-                <input
-                  type="text"
-                  placeholder="Search customer name, phone, notes..."
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && fetchCustomerActivities()}
-                  className="w-full pl-9 pr-4 py-2 bg-[#FAF8F5] border border-[#CBD5E1] rounded-xl text-xs text-[#1D1D1B] placeholder-[#8A8479] focus:outline-hidden focus:border-[#7E22CE] focus:ring-2 focus:ring-[#7E22CE]/15 shadow-inner"
-                />
+                {/* Approval Filter Pills (2x2 Grid on Mobile, Single Row on Desktop) */}
+                <div className="space-y-1.5 lg:space-y-0 lg:flex lg:items-center lg:gap-2">
+                  <span className="text-[10px] font-black text-[#5E5A52] uppercase tracking-wider flex items-center gap-1 shrink-0">
+                    <CheckCircle2 className="w-3 h-3 text-[#526F91]" />
+                    <span>Approval:</span>
+                  </span>
+                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
+                    {[
+                      { id: 'ALL', label: 'All', active: 'bg-[#1D1D1B] text-white border-[#1D1D1B] shadow-xs', inactive: 'bg-[#FAF8F5] text-[#5E5A52] border-[#E4DFD4] hover:bg-white' },
+                      { id: 'PENDING', label: 'Pending Review', active: 'bg-[#B97855] text-white border-[#B97855] shadow-xs', inactive: 'bg-[#FAF1EC] text-[#9A5B39] border-[#ECCFC0] hover:bg-[#F5E5DC]' },
+                      { id: 'APPROVED', label: 'Approved', active: 'bg-[#21845F] text-white border-[#21845F] shadow-xs', inactive: 'bg-[#E8F4EE] text-[#166534] border-[#C5E3D5] hover:bg-[#D1FAE5]' },
+                      { id: 'REJECTED', label: 'Rejected', active: 'bg-[#C24141] text-white border-[#C24141] shadow-xs', inactive: 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA] hover:bg-[#FEE2E2]' },
+                    ].map((tab) => {
+                      const isSel = customerApprovalFilter === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setCustomerApprovalFilter(tab.id as any)}
+                          className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer whitespace-nowrap flex items-center justify-center ${
+                            isSel ? `${tab.active} font-black` : tab.inactive
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
-              {/* Approval Filter Tabs */}
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full md:w-auto">
-                <span className="text-xs font-bold text-[#5E5A52] mr-1 hidden sm:inline uppercase text-[10px] shrink-0">Approval:</span>
-                {[
-                  { id: 'ALL', label: 'All', active: 'bg-[#7E22CE] text-white shadow-xs', inactive: 'bg-[#FAF8F5] text-[#5E5A52] border border-[#E6E1D6] hover:bg-white' },
-                  { id: 'PENDING', label: 'Pending Review', active: 'bg-[#7E22CE] text-white shadow-xs', inactive: 'bg-[#FEFCE8] text-[#854D0E] border border-[#FEF08A] hover:bg-[#FEF08A]' },
-                  { id: 'APPROVED', label: 'Approved', active: 'bg-[#21845F] text-white shadow-xs', inactive: 'bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7]' },
-                  { id: 'REJECTED', label: 'Rejected', active: 'bg-[#C24141] text-white shadow-xs', inactive: 'bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA] hover:bg-[#FEE2E2]' },
-                ].map((tab) => {
-                  const isSel = customerApprovalFilter === tab.id;
-                  return (
+              {/* Row 2: Customer Status Wrapping Chips (All Options Visible Without Side-Scroll) */}
+              <div className="pt-2.5 border-t border-[#F0ECE1] space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-black text-[#1D1D1B] uppercase tracking-wider flex items-center gap-1.5">
+                    <Filter className="w-3.5 h-3.5 text-[#526F91]" />
+                    <span>Customer Status</span>
+                  </span>
+                  {customerStatusFilter !== 'ALL' && (
                     <button
-                      key={tab.id}
-                      onClick={() => setCustomerApprovalFilter(tab.id as any)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                        isSel ? `${tab.active} font-black` : tab.inactive
-                      }`}
+                      type="button"
+                      onClick={() => setCustomerStatusFilter('ALL')}
+                      className="text-[11px] font-bold text-[#526F91] hover:underline cursor-pointer"
                     >
-                      {tab.label}
+                      Reset Filter
                     </button>
-                  );
-                })}
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  {[
+                    {
+                      id: 'ALL',
+                      label: 'All Statuses',
+                      dotCls: 'bg-[#526F91]',
+                      activeCls: 'bg-[#1D1D1B] text-white border-[#1D1D1B] shadow-xs',
+                      inactiveCls: 'bg-[#FAF8F5] text-[#4B473F] border-[#D5CFC2] hover:bg-[#FAF8F3]',
+                    },
+                    {
+                      id: 'Sold',
+                      label: 'Sold',
+                      dotCls: 'bg-[#21845F]',
+                      activeCls: 'bg-[#21845F] text-white border-[#21845F] shadow-xs',
+                      inactiveCls: 'bg-[#E8F4EE] text-[#166534] border-[#C5E3D5] hover:bg-[#D1FAE5]',
+                    },
+                    {
+                      id: 'Exchange',
+                      label: 'Exchange (Gold/Diamond/Silver)',
+                      dotCls: 'bg-[#526F91]',
+                      activeCls: 'bg-[#526F91] text-white border-[#526F91] shadow-xs',
+                      inactiveCls: 'bg-[#EDF2F8] text-[#3B5574] border-[#C6D4E3] hover:bg-[#E2EAF3]',
+                    },
+                    {
+                      id: 'In Hold',
+                      label: 'In Hold / Follow Up',
+                      dotCls: 'bg-[#B97855]',
+                      activeCls: 'bg-[#B97855] text-white border-[#B97855] shadow-xs',
+                      inactiveCls: 'bg-[#FAF1EC] text-[#9A5B39] border-[#ECCFC0] hover:bg-[#F5E5DC]',
+                    },
+                    {
+                      id: 'Interested',
+                      label: 'Interested',
+                      dotCls: 'bg-[#9A782F]',
+                      activeCls: 'bg-[#9A782F] text-white border-[#9A782F] shadow-xs',
+                      inactiveCls: 'bg-[#F4EEDC] text-[#7D6124] border-[#DFCFA6] hover:bg-[#ECE3C8]',
+                    },
+                    {
+                      id: 'Lost',
+                      label: 'Lost',
+                      dotCls: 'bg-[#C24141]',
+                      activeCls: 'bg-[#C24141] text-white border-[#C24141] shadow-xs',
+                      inactiveCls: 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA] hover:bg-[#FEE2E2]',
+                    },
+                    {
+                      id: 'Window Shopping',
+                      label: 'Window Shopping',
+                      dotCls: 'bg-[#5E5A52]',
+                      activeCls: 'bg-[#5E5A52] text-white border-[#5E5A52] shadow-xs',
+                      inactiveCls: 'bg-[#F4F1EA] text-[#4B473F] border-[#E4DFD4] hover:bg-[#EBE6DC]',
+                    },
+                    {
+                      id: 'Outdoor Marketing',
+                      label: 'Outdoor Marketing',
+                      dotCls: 'bg-[#23815F]',
+                      activeCls: 'bg-[#23815F] text-white border-[#23815F] shadow-xs',
+                      inactiveCls: 'bg-[#E8F4EE] text-[#1B694C] border-[#A7F3D0] hover:bg-[#D1FAE5]',
+                    },
+                  ].map((sTab) => {
+                    const isSelected = customerStatusFilter === sTab.id;
+                    return (
+                      <button
+                        key={sTab.id}
+                        type="button"
+                        onClick={() => setCustomerStatusFilter(sTab.id as any)}
+                        className={`min-h-[36px] px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                          isSelected
+                            ? `${sTab.activeCls} font-black scale-[1.01]`
+                            : `${sTab.inactiveCls} font-bold`
+                        }`}
+                      >
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-white' : sTab.dotCls}`} />
+                        <span>{sTab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -2097,7 +2155,7 @@ export const EmployeePortalPage: React.FC = () => {
                         {/* Header: Date, ID, Status Badge */}
                         <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-[#F0ECE1]">
                           <div className="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1B]">
-                            <Calendar className="w-3.5 h-3.5 text-[#7E22CE]" />
+                            <Calendar className="w-3.5 h-3.5 text-[#526F91]" />
                             <span>{act.activity_date}</span>
                             <span className="text-[10px] text-[#8A8479] font-mono">#{act.id}</span>
                           </div>
@@ -2137,7 +2195,7 @@ export const EmployeePortalPage: React.FC = () => {
                               <User className="w-3.5 h-3.5 text-[#B97855] shrink-0" />
                               <span className="truncate">{act.customer_name || 'Walk-in Customer'}</span>
                               {(act.customers_count || 1) > 1 && (
-                                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] font-bold shrink-0">
+                                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#EDF2F8] text-[#526F91] border border-[#C6D4E3] font-bold shrink-0">
                                   {act.customers_count} People
                                 </span>
                               )}
@@ -2168,36 +2226,47 @@ export const EmployeePortalPage: React.FC = () => {
                         </div>
 
                         {/* Schemes & Reviews badges */}
-                        {(subrecords.hasScheme || subrecords.hasReview || subrecords.hasVideoReview || subrecords.hasFeedback || subrecords.noteNotificationDate || subrecords.schemeReminderDate) && (
+                        {(subrecords.productId || subrecords.hasScheme || subrecords.hasReview || subrecords.hasVideoReview || subrecords.hasFeedback || subrecords.noteNotificationDate || subrecords.schemeReminderDate) && (
                           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                            {subrecords.productId && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F4EEDC] text-[#7D6124] border border-[#DFCFA6] text-[10px] font-mono font-bold">
+                                <Sparkles className="w-3 h-3 text-[#9A782F]" />
+                                <span>Tag: {subrecords.productId}</span>
+                                {subrecords.productName && (
+                                  <span className="font-sans font-extrabold text-[#1D1D1B] truncate max-w-[140px]">
+                                    • {subrecords.productName}
+                                  </span>
+                                )}
+                              </span>
+                            )}
                             {subrecords.noteNotificationDate && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE] text-[10px] font-bold">
-                                <Calendar className="w-3 h-3 text-[#2563EB]" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EDF2F8] text-[#3B5574] border border-[#C6D4E3] text-[10px] font-bold">
+                                <Calendar className="w-3 h-3 text-[#526F91]" />
                                 <span>Reminder: {subrecords.noteNotificationDate}</span>
                               </span>
                             )}
                             {subrecords.schemeReminderDate && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A] text-[10px] font-bold">
-                                <Clock className="w-3 h-3 text-[#D97706]" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FAF1EC] text-[#9A5B39] border border-[#ECCFC0] text-[10px] font-bold">
+                                <Clock className="w-3 h-3 text-[#B97855]" />
                                 <span>Scheme Due: {subrecords.schemeReminderDate}</span>
                               </span>
                             )}
                             {subrecords.hasVideoReview && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] text-[10px] font-bold">
-                                <Video className="w-3 h-3 text-[#7E22CE]" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EDF2F8] text-[#3B5574] border border-[#C6D4E3] text-[10px] font-bold">
+                                <Video className="w-3 h-3 text-[#526F91]" />
                                 <span>{subrecords.videosCount} Video(s) • +{subrecords.videosCount * 5} Pts</span>
                               </span>
                             )}
                             {subrecords.hasScheme && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold">
-                                <Award className="w-3 h-3 text-[#D97706]" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F4EEDC] text-[#7D6124] border border-[#DFCFA6] text-[10px] font-bold">
+                                <Award className="w-3 h-3 text-[#9A782F]" />
                                 <span>{subrecords.schemePlan || 'Scheme'}</span>
                                 {subrecords.schemeMonthly && <span className="font-mono"> (₹{subrecords.schemeMonthly})</span>}
                               </span>
                             )}
                             {subrecords.hasReview && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-[10px] font-bold">
-                                <Star className="w-3 h-3 text-[#F59E0B] fill-[#F59E0B]" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F4EEDC] text-[#7D6124] border border-[#DFCFA6] text-[10px] font-bold">
+                                <Star className="w-3 h-3 text-[#B8943D] fill-[#B8943D]" />
                                 <span>{subrecords.reviewRating}★ Google Review</span>
                               </span>
                             )}
@@ -2278,7 +2347,7 @@ export const EmployeePortalPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleOpenEditCustomer(act)}
-                              className="w-full py-2 px-2 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#F3E8FF] hover:border-[#D8B4FE] text-[#7E22CE] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 active:scale-[0.98]"
+                              className="w-full py-2 px-2 rounded-xl bg-white border border-[#E6E1D6] hover:bg-[#EDF2F8] hover:border-[#C6D4E3] text-[#526F91] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1 active:scale-[0.98]"
                               title="Update customer log"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -2332,7 +2401,7 @@ export const EmployeePortalPage: React.FC = () => {
                             {/* Date */}
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <div className="flex items-center gap-1.5 font-bold text-[#1D1D1B]">
-                                <Calendar className="w-3.5 h-3.5 text-[#7E22CE]" />
+                                <Calendar className="w-3.5 h-3.5 text-[#526F91]" />
                                 <span>{act.activity_date}</span>
                               </div>
                               <span className="text-[10px] text-[#8A8479] ml-5 font-mono">
@@ -2346,7 +2415,7 @@ export const EmployeePortalPage: React.FC = () => {
                                 <User className="w-3.5 h-3.5 text-[#B97855]" />
                                 <span>{act.customer_name || 'Walk-in Customer'}</span>
                                 {(act.customers_count || 1) > 1 && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] font-bold">
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EDF2F8] text-[#526F91] border border-[#C6D4E3] font-bold">
                                     {act.customers_count} People
                                   </span>
                                 )}
@@ -2418,23 +2487,34 @@ export const EmployeePortalPage: React.FC = () => {
                             {/* Special tags */}
                             <td className="px-4 py-3.5">
                               <div className="flex flex-wrap items-center gap-1.5">
+                                {subrecords.productId && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F4EEDC] text-[#7D6124] border border-[#DFCFA6] text-[10px] font-mono font-bold">
+                                    <Sparkles className="w-3 h-3 text-[#9A782F]" />
+                                    <span>Tag: {subrecords.productId}</span>
+                                    {subrecords.productName && (
+                                      <span className="font-sans font-extrabold text-[#1D1D1B] truncate max-w-[140px]">
+                                        • {subrecords.productName}
+                                      </span>
+                                    )}
+                                  </span>
+                                )}
                                 {subrecords.noteNotificationDate && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE] text-[10px] font-bold">
-                                    <Calendar className="w-3 h-3 text-[#2563EB]" />
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EDF2F8] text-[#3B5574] border border-[#C6D4E3] text-[10px] font-bold">
+                                    <Calendar className="w-3 h-3 text-[#526F91]" />
                                     <span>Reminder: {subrecords.noteNotificationDate}</span>
                                   </span>
                                 )}
 
                                 {subrecords.schemeReminderDate && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A] text-[10px] font-bold">
-                                    <Clock className="w-3 h-3 text-[#D97706]" />
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FAF1EC] text-[#9A5B39] border border-[#ECCFC0] text-[10px] font-bold">
+                                    <Clock className="w-3 h-3 text-[#B97855]" />
                                     <span>Scheme Due: {subrecords.schemeReminderDate}</span>
                                   </span>
                                 )}
 
                                 {subrecords.hasScheme && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold">
-                                    <Award className="w-3 h-3 text-[#D97706]" />
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F4EEDC] text-[#7D6124] border border-[#DFCFA6] text-[10px] font-bold">
+                                    <Award className="w-3 h-3 text-[#9A782F]" />
                                     <span>{subrecords.schemePlan || 'Scheme'}</span>
                                     {subrecords.schemeMonthly && (
                                       <span className="font-mono"> (₹{subrecords.schemeMonthly})</span>
@@ -2443,22 +2523,22 @@ export const EmployeePortalPage: React.FC = () => {
                                 )}
 
                                 {subrecords.hasReview && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-[10px] font-bold">
-                                    <Star className="w-3 h-3 text-[#F59E0B] fill-[#F59E0B]" />
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F4EEDC] text-[#7D6124] border border-[#DFCFA6] text-[10px] font-bold">
+                                    <Star className="w-3 h-3 text-[#B8943D] fill-[#B8943D]" />
                                     <span>{subrecords.reviewRating}★ Review</span>
                                   </span>
                                 )}
 
                                 {subrecords.hasFeedback && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FDF2F8] text-[#BE185D] border border-[#FBCFE8] text-[10px] font-bold">
-                                    <MessageSquareHeart className="w-3 h-3 text-[#EC4899]" />
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F5EDF1] text-[#6B4657] border border-[#E5CFDB] text-[10px] font-bold">
+                                    <MessageSquareHeart className="w-3 h-3 text-[#6B4657]" />
                                     <span>Feedback ({subrecords.feedbackRating}★)</span>
                                   </span>
                                 )}
 
                                 {subrecords.hasVideoReview && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] text-[10px] font-bold">
-                                    <Video className="w-3 h-3 text-[#7E22CE]" />
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EDF2F8] text-[#3B5574] border border-[#C6D4E3] text-[10px] font-bold">
+                                    <Video className="w-3 h-3 text-[#526F91]" />
                                     <span>{subrecords.videosCount} Video(s) • +{subrecords.videosCount * 5} Pts</span>
                                   </span>
                                 )}
@@ -2466,6 +2546,7 @@ export const EmployeePortalPage: React.FC = () => {
                                 {!subrecords.hasScheme &&
                                   !subrecords.hasReview &&
                                   !subrecords.hasFeedback &&
+                                  !subrecords.productId &&
                                   !subrecords.noteNotificationDate && (
                                     <span className="text-[11px] text-[#8A8479]">
                                       {isOutdoorActivity(act) ? 'Outdoor Interaction' : 'Standard Window Shopping'}
@@ -2532,7 +2613,7 @@ export const EmployeePortalPage: React.FC = () => {
                                   type="button"
                                   onClick={() => handleOpenEditCustomer(act)}
                                   title="Edit / Update customer log"
-                                  className="p-1.5 rounded-lg bg-white border border-[#E6E1D6] hover:bg-[#F3E8FF] hover:border-[#D8B4FE] text-[#7E22CE] transition-all cursor-pointer shadow-2xs"
+                                  className="p-1.5 rounded-lg bg-white border border-[#E6E1D6] hover:bg-[#EDF2F8] hover:border-[#C6D4E3] text-[#526F91] transition-all cursor-pointer shadow-2xs"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
@@ -2795,17 +2876,17 @@ export const EmployeePortalPage: React.FC = () => {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[#EBE6DC]">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] flex items-center gap-1.5 shadow-2xs">
-                      <Trophy className="w-3.5 h-3.5 text-[#7E22CE]" />
+                    <span className="px-3 py-1 rounded-full text-xs font-black bg-[#F4EEDC] text-[#9A782F] border border-[#DFCFA6] flex items-center gap-1.5 shadow-2xs">
+                      <Trophy className="w-3.5 h-3.5 text-[#9A782F]" />
                       <span>Employee Recognition & Points</span>
                     </span>
-                    <span className="text-xs text-[#7E22CE] font-bold">Showroom Staff Reward Scheme</span>
+                    <span className="text-xs text-[#9A782F] font-bold">Showroom Staff Reward Scheme</span>
                   </div>
                   <h3 className="text-xl sm:text-2xl font-black text-[#1D1D1B] mt-2 tracking-tight">
                     Review Contributions & Point Ledger
                   </h3>
                   <p className="text-xs sm:text-sm text-[#5E5A52] font-medium mt-1">
-                    1 Customer Google Review = <strong className="text-[#7E22CE] font-bold">1 Point</strong> • 1 Video Review = <strong className="text-[#7E22CE] font-bold">5 Points</strong> (5 points per video review)
+                    1 Customer Google Review = <strong className="text-[#1D1D1B] font-bold">1 Point</strong> • 1 Video Review = <strong className="text-[#9A782F] font-bold">5 Points</strong> (5 points per video review)
                   </p>
                 </div>
 
@@ -2813,9 +2894,9 @@ export const EmployeePortalPage: React.FC = () => {
                   <Button
                     size="sm"
                     onClick={handleOpenAddCustomer}
-                    className="bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold rounded-xl px-4 py-2.5 cursor-pointer shadow-sm hover:scale-[1.02] transition-all"
+                    className="bg-[#1D1D1B] hover:bg-[#2A2A28] text-white text-xs font-bold rounded-xl px-4 py-2.5 cursor-pointer shadow-sm hover:scale-[1.02] transition-all border border-[#C6A45C]/40"
                   >
-                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    <Plus className="w-3.5 h-3.5 mr-1 text-[#E5C378]" />
                     <span>Add Customer Log</span>
                   </Button>
                 </div>
@@ -2843,22 +2924,22 @@ export const EmployeePortalPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 2. Google Review Points (Purple #F3E8FF & #7E22CE) */}
-                <div className="p-4 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] shadow-xs flex flex-col justify-between">
+                {/* 2. Google Review Points (Champagne Sand #F4EEDC & #9A782F) */}
+                <div className="p-4 rounded-2xl bg-[#F4EEDC] border border-[#DFCFA6] shadow-xs flex flex-col justify-between">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-[10px] font-bold text-[#7E22CE] uppercase tracking-wider block mb-1">
+                      <span className="text-[10px] font-bold text-[#9A782F] uppercase tracking-wider block mb-1">
                         Google Points
                       </span>
                       <div className="text-2xl sm:text-3xl font-bold text-[#1D1D1B] font-mono tracking-tight">
                         {dashboardSummary?.google_review_points ?? 0}
                       </div>
                     </div>
-                    <div className="w-8 h-8 rounded-xl bg-white border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0">
-                      <Star className="w-4 h-4 fill-[#7E22CE] text-[#7E22CE]" />
+                    <div className="w-8 h-8 rounded-xl bg-white border border-[#DFCFA6] text-[#9A782F] flex items-center justify-center shrink-0">
+                      <Star className="w-4 h-4 fill-[#B8943D] text-[#B8943D]" />
                     </div>
                   </div>
-                  <div className="mt-3 pt-2 border-t border-[#D8B4FE] text-[10px] text-[#7E22CE] font-bold">
+                  <div className="mt-3 pt-2 border-t border-[#DFCFA6] text-[10px] text-[#9A782F] font-bold">
                     1 review = 1 point
                   </div>
                 </div>
@@ -3143,7 +3224,7 @@ export const EmployeePortalPage: React.FC = () => {
               if (filtered.length === 0) {
                 return (
                   <div className="bg-white rounded-3xl border border-[#E6E1D6] p-8 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center mx-auto">
+                    <div className="w-12 h-12 rounded-2xl bg-[#F4EEDC] text-[#9A782F] border border-[#DFCFA6] flex items-center justify-center mx-auto">
                       <Award className="w-6 h-6" />
                     </div>
                     <h4 className="text-sm font-bold text-[#1D1D1B]">No Review Points Found</h4>
@@ -3153,9 +3234,9 @@ export const EmployeePortalPage: React.FC = () => {
                     <Button
                       size="sm"
                       onClick={handleOpenAddCustomer}
-                      className="bg-[#7E22CE] hover:bg-[#6B21A8] text-white text-xs font-bold rounded-xl px-4 py-2"
+                      className="bg-[#1D1D1B] hover:bg-[#2A2A28] text-white text-xs font-bold rounded-xl px-4 py-2 border border-[#C6A45C]/40"
                     >
-                      <Plus className="w-4 h-4 mr-1" />
+                      <Plus className="w-4 h-4 mr-1 text-[#E5C378]" />
                       <span>Add Customer Log</span>
                     </Button>
                   </div>
@@ -3178,13 +3259,13 @@ export const EmployeePortalPage: React.FC = () => {
                           {/* Card Header: Type badge & Points Earned */}
                           <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-[#F0ECE1]">
                             {item.reviewType === 'GOOGLE' ? (
-                              <span className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] flex items-center gap-1.5">
-                                <Star className="w-3.5 h-3.5 fill-[#D97706] text-[#D97706]" />
+                              <span className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-[#F4EEDC] text-[#7D6124] border border-[#DFCFA6] flex items-center gap-1.5">
+                                <Star className="w-3.5 h-3.5 fill-[#B8943D] text-[#B8943D]" />
                                 Google Review
                               </span>
                             ) : (
-                              <span className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-[#F3E8FF] text-[#7E22CE] border border-[#D8B4FE] flex items-center gap-1.5">
-                                <Video className="w-3.5 h-3.5 text-[#7E22CE]" />
+                              <span className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-[#EDF2F8] text-[#3B5574] border border-[#C6D4E3] flex items-center gap-1.5">
+                                <Video className="w-3.5 h-3.5 text-[#526F91]" />
                                 Video Review ({item.videosCount} Video{item.videosCount! > 1 ? 's' : ''})
                               </span>
                             )}
@@ -3428,8 +3509,8 @@ export const EmployeePortalPage: React.FC = () => {
                   {
                     id: 'Interested',
                     label: 'Interested',
-                    activeCls: 'bg-[#D97706] text-white border-[#D97706] shadow-sm shadow-amber-500/20',
-                    inactiveCls: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A] hover:bg-[#FDE047]/30',
+                    activeCls: 'bg-[#9A782F] text-white border-[#9A782F] shadow-xs',
+                    inactiveCls: 'bg-[#F4EEDC] text-[#7D6124] border-[#DFCFA6] hover:bg-[#ECE3C8]',
                   },
                   {
                     id: 'Converted',
@@ -3495,7 +3576,7 @@ export const EmployeePortalPage: React.FC = () => {
                   <span className="text-xs font-bold text-[#5E5A52] mr-1 hidden sm:inline uppercase text-[10px] shrink-0">Approval:</span>
                   {[
                     { id: 'ALL', label: 'All', active: 'bg-[#23815F] text-white shadow-xs', inactive: 'bg-[#FAF8F5] text-[#5E5A52] border border-[#E6E1D6] hover:bg-white' },
-                    { id: 'PENDING', label: 'Pending Review', active: 'bg-[#B45309] text-white shadow-xs', inactive: 'bg-[#FEFCE8] text-[#854D0E] border border-[#FEF08A] hover:bg-[#FEF08A]' },
+                    { id: 'PENDING', label: 'Pending Review', active: 'bg-[#B97855] text-white shadow-xs', inactive: 'bg-[#FAF1EC] text-[#9A5B39] border border-[#ECCFC0] hover:bg-[#F5E5DC]' },
                     { id: 'APPROVED', label: 'Approved', active: 'bg-[#21845F] text-white shadow-xs', inactive: 'bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7]' },
                     { id: 'REJECTED', label: 'Rejected', active: 'bg-[#C24141] text-white shadow-xs', inactive: 'bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA] hover:bg-[#FEE2E2]' },
                   ].map((tab) => {
@@ -4319,7 +4400,7 @@ export const EmployeePortalPage: React.FC = () => {
             {/* Header */}
             <div className="p-4 sm:p-5 border-b border-[#F0ECE1] flex items-center justify-between gap-3 bg-[#FAF8F5]">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-2xl bg-[#F3E8FF] border border-[#D8B4FE] text-[#7E22CE] flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="w-10 h-10 rounded-2xl bg-[#F4EEDC] border border-[#DFCFA6] text-[#9A782F] flex items-center justify-center shrink-0 shadow-2xs">
                   <Bell className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
@@ -4336,10 +4417,10 @@ export const EmployeePortalPage: React.FC = () => {
                   type="button"
                   onClick={fetchNotifications}
                   disabled={isLoadingNotifications}
-                  className="p-2 rounded-xl text-[#8A8479] hover:text-[#7E22CE] hover:bg-white border border-transparent hover:border-[#E6E1D6] transition-all cursor-pointer"
+                  className="p-2 rounded-xl text-[#8A8479] hover:text-[#1D1D1B] hover:bg-white border border-transparent hover:border-[#E6E1D6] transition-all cursor-pointer"
                   title="Refresh Notifications"
                 >
-                  <RefreshCw className={`w-4 h-4 ${isLoadingNotifications ? 'animate-spin text-[#7E22CE]' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${isLoadingNotifications ? 'animate-spin text-[#526F91]' : ''}`} />
                 </button>
                 <button
                   type="button"
@@ -4377,8 +4458,8 @@ export const EmployeePortalPage: React.FC = () => {
                     onClick={() => setNotificationTab(tab.id as any)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                       isActive
-                        ? 'bg-[#7E22CE] text-white shadow-xs'
-                        : 'bg-[#FAF8F5] text-[#5E5A52] hover:bg-[#F3E8FF] hover:text-[#7E22CE]'
+                        ? 'bg-[#1D1D1B] text-white shadow-xs'
+                        : 'bg-[#FAF8F5] text-[#5E5A52] hover:bg-[#F4EEDC] hover:text-[#1D1D1B]'
                     }`}
                   >
                     <span>{tab.label}</span>

@@ -227,6 +227,7 @@ interface PhotoLightboxModalProps {
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
+  onSelect: (index: number) => void;
 }
 
 const PhotoLightboxModal: React.FC<PhotoLightboxModalProps> = ({
@@ -234,6 +235,7 @@ const PhotoLightboxModal: React.FC<PhotoLightboxModalProps> = ({
   onClose,
   onPrev,
   onNext,
+  onSelect,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -329,9 +331,7 @@ const PhotoLightboxModal: React.FC<PhotoLightboxModalProps> = ({
             {lightbox.photos.map((url, idx) => (
               <button
                 key={idx}
-                onClick={() => {
-                  lightbox.currentIndex = idx;
-                }}
+                onClick={() => onSelect(idx)}
                 className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
                   lightbox.currentIndex === idx
                     ? 'border-[#23815F] scale-105 shadow-xs'
@@ -870,7 +870,7 @@ export const OutdoorMarketingPage: React.FC = () => {
   // Lightbox Navigation Handlers
   const handleOpenLightbox = useCallback((photos: string[], index: number, title: string, subtitle: string) => {
     setLightbox({
-      photos,
+      photos: photos.map((p) => getMediaUrl(p)),
       currentIndex: index,
       title,
       subtitle,
@@ -2277,7 +2277,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                           {photos.slice(0, 4).map((photoUrl, pIdx) => (
                             <img
                               key={pIdx}
-                              src={photoUrl}
+                              src={getMediaUrl(photoUrl)}
                               alt="Proof"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -2411,7 +2411,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                           className="relative group shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-[#C5E3D5] bg-black/5 hover:border-[#23815F] shadow-2xs hover:shadow-md transition-all cursor-pointer"
                         >
                           <img
-                            src={photoUrl}
+                            src={getMediaUrl(photoUrl)}
                             alt={`Proof #${pIdx + 1}`}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
                           />
@@ -2935,7 +2935,7 @@ export const OutdoorMarketingPage: React.FC = () => {
                         className="relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border border-[#C5E3D5] bg-black/5 cursor-pointer group shadow-2xs shrink-0"
                       >
                         <img
-                          src={photoUrl}
+                          src={getMediaUrl(photoUrl)}
                           alt="Proof"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
@@ -3464,6 +3464,7 @@ export const OutdoorMarketingPage: React.FC = () => {
         onClose={() => setLightbox(null)}
         onPrev={handlePrevLightbox}
         onNext={handleNextLightbox}
+        onSelect={(idx) => setLightbox((prev) => (prev ? { ...prev, currentIndex: idx } : null))}
       />
 
       {/* Delete Assignment Confirm Dialog */}

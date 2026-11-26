@@ -22,7 +22,9 @@ router = APIRouter(prefix="/api/v1", tags=["Products & Stock Inventory"])
 class ProductLookupItem(BaseModel):
     id: int
     tag_no: str
+    item_id: Optional[str] = None
     item_name: str
+    sub_item: Optional[str] = None
     item_type: Optional[str] = None
     gross_weight: Optional[float] = 0.0
     net_weight: Optional[float] = 0.0
@@ -108,12 +110,12 @@ def lookup_stock_products(
 
 
 @router.get(
-    "/products/{tag_no}",
+    "/products/by-tag",
     response_model=ProductDetailResponse,
-    summary="Get detailed product specs by tag number",
+    summary="Get detailed product specs by tag number query param",
 )
-def get_product_by_tag(
-    tag_no: str,
+def get_product_by_tag_query(
+    tag_no: str = Query(..., min_length=1, description="Tag number to lookup"),
     db: Session = Depends(get_db),
 ):
     prod = StockService.lookup_product(db, tag_no)
@@ -249,6 +251,24 @@ def sync_stock_catalog(
         "total_products": count,
         "message": f"Stock inventory synchronized successfully with {count} items.",
     }
+
+
+@router.get(
+    "/products/{tag_no:path}",
+    response_model=ProductDetailResponse,
+    summary="Get detailed product specs by tag number",
+)
+def get_product_by_tag(
+    tag_no: str,
+    db: Session = Depends(get_db),
+):
+    prod = StockService.lookup_product(db, tag_no)
+    if not prod:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with Tag No '{tag_no}' not found in stock inventory.",
+        )
+    return prod
 
 
 # -------------------------------------------------------------------------
